@@ -161,9 +161,12 @@ class OutboxWorker(
         ledgerDao: com.company.stockpro.core.database.dao.LedgerDao,
         now: Long,
     ) {
-        // Parse deltaMilli from payload to compute inverse
-        val deltaMilliMatch = Regex("\"deltaMilli\":(-?\\d+)").find(entry.payload)
-        val originalDelta = deltaMilliMatch?.groupValues?.get(1)?.toLongOrNull() ?: 0L
+        // Parse deltaMilli from payload safely via JSONObject
+        val originalDelta = try {
+            org.json.JSONObject(entry.payload).optLong("deltaMilli", 0L)
+        } catch (_: Exception) {
+            0L
+        }
 
         // Apply inverse delta to roll back optimistic update
         itemDao.applyOptimisticDelta(entry.itemId, -originalDelta, now)

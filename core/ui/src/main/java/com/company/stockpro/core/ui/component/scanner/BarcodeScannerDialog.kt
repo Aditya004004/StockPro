@@ -250,9 +250,17 @@ fun BarcodeScannerDialog(
                 } else {
                     // CameraX Viewfinder
                     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
+                    var cameraProviderRef by remember { mutableStateOf<ProcessCameraProvider?>(null) }
+                    var barcodeScannerRef by remember { mutableStateOf<com.google.mlkit.vision.barcode.BarcodeScanner?>(null) }
 
                     DisposableEffect(Unit) {
                         onDispose {
+                            try {
+                                cameraProviderRef?.unbindAll()
+                            } catch (_: Exception) {}
+                            try {
+                                barcodeScannerRef?.close()
+                            } catch (_: Exception) {}
                             cameraExecutor.shutdown()
                         }
                     }
@@ -272,6 +280,7 @@ fun BarcodeScannerDialog(
 
                                 cameraProviderFuture.addListener({
                                     val cameraProvider = cameraProviderFuture.get()
+                                    cameraProviderRef = cameraProvider
                                     val preview = Preview.Builder().build().also {
                                         it.surfaceProvider = previewView.surfaceProvider
                                     }
@@ -280,6 +289,7 @@ fun BarcodeScannerDialog(
                                         .setBarcodeFormats(Barcode.FORMAT_QR_CODE, Barcode.FORMAT_CODE_128)
                                         .build()
                                     val barcodeScanner = BarcodeScanning.getClient(options)
+                                    barcodeScannerRef = barcodeScanner
 
                                     val imageAnalysis = ImageAnalysis.Builder()
                                         .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)

@@ -24,6 +24,7 @@ data class UserProfile(
     val role: Role,
     val plantId: String,
     val plantName: String,
+    val orgId: String = "org_demo",
 ) {
     val initials: String
         get() {

@@ -99,7 +99,7 @@ fun SettingsRoute(
                     type = "text/csv"
                 }
                 val shareIntent = Intent.createChooser(sendIntent, "Export StockPro Settings")
-                context.startActivity(shareIntent)
+                runCatching { context.startActivity(shareIntent) }
                 viewModel.clearExportedCsv()
             }
         }
@@ -132,7 +132,15 @@ fun SettingsRoute(
                 onClearCache = { viewModel.clearCache() },
                 onExportData = { viewModel.exportData() },
                 onNavigateToTeam = onNavigateToTeam,
-                onLogoutClick = onLogoutClick,
+                onLogoutClick = { viewModel.logout(onLogoutClick) },
+                onDeleteAccountClick = {
+                    viewModel.deleteAccount(
+                        onSuccess = onLogoutClick,
+                        onError = { msg ->
+                            android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_LONG).show()
+                        },
+                    )
+                },
                 modifier = modifier,
             )
         }
@@ -163,6 +171,7 @@ fun SettingsScreen(
     onExportData: () -> Unit,
     onNavigateToTeam: () -> Unit,
     onLogoutClick: () -> Unit,
+    onDeleteAccountClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -406,7 +415,10 @@ fun SettingsScreen(
                         putExtra(Intent.EXTRA_EMAIL, arrayOf("support@company.com"))
                         putExtra(Intent.EXTRA_SUBJECT, "StockPro Support Inquiry")
                     }
-                    context.startActivity(Intent.createChooser(intent, "Send Email"))
+                    val chooser = Intent.createChooser(intent, "Send Email")
+                    if (runCatching { context.startActivity(chooser) }.isFailure) {
+                        onShowDialog(SettingsDialog.Feedback)
+                    }
                 },
             )
         }
@@ -433,7 +445,9 @@ fun SettingsScreen(
                 subtitle = "DPDP Act 2023 compliance & employee data notice",
                 onClick = {
                     val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://stockpro-manufacturing.com/privacy"))
-                    context.startActivity(browserIntent)
+                    if (runCatching { context.startActivity(browserIntent) }.isFailure) {
+                        onShowDialog(SettingsDialog.PrivacyPolicy)
+                    }
                 },
             )
             HorizontalDivider(color = StockProColors.OutlineSubtle)
@@ -445,7 +459,9 @@ fun SettingsScreen(
                 subtitle = "System terms & data ownership policy",
                 onClick = {
                     val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://stockpro-manufacturing.com/terms"))
-                    context.startActivity(browserIntent)
+                    if (runCatching { context.startActivity(browserIntent) }.isFailure) {
+                        onShowDialog(SettingsDialog.TermsOfService)
+                    }
                 },
             )
         }
@@ -470,6 +486,28 @@ fun SettingsScreen(
                 color = StockProColors.Danger,
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.titleMedium,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(Spacing.x2))
+
+        // Delete Account (Play Store Compliance)
+        TextButton(
+            onClick = { onShowDialog(SettingsDialog.DeleteAccountConfirm) },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = null,
+                tint = StockProColors.Danger,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(modifier = Modifier.width(Spacing.x2))
+            Text(
+                text = "Delete Account & Data",
+                color = StockProColors.Danger,
+                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.bodyMedium,
             )
         }
 
@@ -684,7 +722,7 @@ fun SettingsScreen(
                 onDismissRequest = onDismissDialog,
                 title = { Text("Logout of StockPro?") },
                 text = {
-                    Text("All pending outbox entries will remain safely stored locally until you sign back in.")
+                    Text("Your device cached data will be cleared securely and outbox entries preserved until next sign-in.")
                 },
                 confirmButton = {
                     TextButton(onClick = {
@@ -697,6 +735,60 @@ fun SettingsScreen(
                 dismissButton = {
                     TextButton(onClick = onDismissDialog) { Text("Cancel") }
                 },
+            )
+        }
+        SettingsDialog.DeleteAccountConfirm -> {
+            AlertDialog(
+                onDismissRequest = onDismissDialog,
+                title = { Text("Delete Account Permanently?") },
+                text = {
+                    Text("This action cannot be undone. Per Google Play and data privacy policies, your account and all associated personal data will be completely deleted.")
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        onDismissDialog()
+                        onDeleteAccountClick()
+                    }) {
+                        Text("Delete Permanently", color = StockProColors.Danger, fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = onDismissDialog) { Text("Cancel") }
+                },
+            )
+        }
+        SettingsDialog.PrivacyPolicy -> {
+            AlertDialog(
+                onDismissRequest = onDismissDialog,
+                title = { Text("Privacy Policy") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(Spacing.x2)) {
+                        Text("StockPro Manufacturing Inventory Policy", fontWeight = FontWeight.Bold)
+                        Text("StockPro complies with the Digital Personal Data Protection (DPDP) Act 2023. We only process operational inventory, tool calibration, and audit movements necessary for factory plant operations.")
+                        Text("All transactions are encrypted in transit and at rest. Account deletion purges personal identifiers from the system.")
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = onDismissDialog) { Text("Close") }
+                },
+                dismissButton = null,
+            )
+        }
+        SettingsDialog.TermsOfService -> {
+            AlertDialog(
+                onDismissRequest = onDismissDialog,
+                title = { Text("Terms of Service") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(Spacing.x2)) {
+                        Text("StockPro Enterprise Terms", fontWeight = FontWeight.Bold)
+                        Text("StockPro provides server-authoritative inventory and stock management services for authorized plant personnel.")
+                        Text("Users must safeguard plant credentials and ensure ledger records accurately reflect physical movements.")
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = onDismissDialog) { Text("Close") }
+                },
+                dismissButton = null,
             )
         }
         SettingsDialog.HelpFaq -> {

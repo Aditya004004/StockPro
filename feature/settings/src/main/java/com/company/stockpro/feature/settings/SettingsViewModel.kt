@@ -7,6 +7,7 @@ import com.company.stockpro.core.domain.model.NotificationPreferences
 import com.company.stockpro.core.domain.model.ThemeMode
 import com.company.stockpro.core.domain.model.UnitSystem
 import com.company.stockpro.core.domain.repository.InventoryRepository
+import com.company.stockpro.core.domain.util.DataResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -56,45 +57,97 @@ class SettingsViewModel @Inject constructor(
 
     fun updateDisplayName(name: String) {
         viewModelScope.launch {
-            runCatching { repository.updateUserProfile(name) }
+            try {
+                repository.updateUserProfile(name)
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+            }
             dismissDialog()
         }
     }
 
     fun updateTheme(themeMode: ThemeMode) {
         viewModelScope.launch {
-            runCatching { repository.updateThemeMode(themeMode) }
+            try {
+                repository.updateThemeMode(themeMode)
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+            }
             dismissDialog()
         }
     }
 
     fun updateLanguage(language: AppLanguage) {
         viewModelScope.launch {
-            runCatching { repository.updateLanguage(language) }
+            try {
+                repository.updateLanguage(language)
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+            }
             dismissDialog()
         }
     }
 
     fun updateUnitSystem(unitSystem: UnitSystem) {
         viewModelScope.launch {
-            runCatching { repository.updateUnitSystem(unitSystem) }
+            try {
+                repository.updateUnitSystem(unitSystem)
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+            }
             dismissDialog()
         }
     }
 
     fun updateNotificationPreferences(preferences: NotificationPreferences) {
         viewModelScope.launch {
-            runCatching { repository.updateNotificationPreferences(preferences) }
+            try {
+                repository.updateNotificationPreferences(preferences)
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+            }
         }
     }
 
     fun clearCache() {
         viewModelScope.launch {
-            runCatching {
+            try {
                 repository.clearCache()
                 cacheSizeBytesFlow.value = 0L
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
             }
             dismissDialog()
+        }
+    }
+
+    fun logout(onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            try {
+                repository.logout()
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+            }
+            dismissDialog()
+            onSuccess()
+        }
+    }
+
+    fun deleteAccount(onSuccess: () -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            when (val result = repository.deleteAccount()) {
+                is DataResult.Success -> {
+                    dismissDialog()
+                    onSuccess()
+                }
+                is DataResult.Error -> {
+                    val msg = when (val text = result.message) {
+                        is com.company.stockpro.core.domain.util.UiText.Dynamic -> text.value
+                        is com.company.stockpro.core.domain.util.UiText.StringResource -> "Failed to delete account."
+                    }
+                    onError(msg)
+                }
+            }
         }
     }
 

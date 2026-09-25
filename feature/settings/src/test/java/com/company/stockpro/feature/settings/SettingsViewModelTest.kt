@@ -219,6 +219,7 @@ private class FakeSettingsRepository : InventoryRepository {
     override fun observeItemsByClass(itemClass: com.company.stockpro.core.domain.model.ItemClass, sortOrder: com.company.stockpro.core.domain.model.SortOrder) = emptyFlow<List<com.company.stockpro.core.domain.model.Item>>()
     override fun searchItems(query: String) = emptyFlow<List<com.company.stockpro.core.domain.model.Item>>()
     override fun observeSummary() = emptyFlow<com.company.stockpro.core.domain.model.InventorySummary>()
+    override fun observeTopLowStock(limit: Int) = emptyFlow<List<com.company.stockpro.core.domain.model.Item>>()
     override fun observeItem(itemId: String) = emptyFlow<com.company.stockpro.core.domain.model.Item?>()
     override fun observeLedger(itemId: String) = emptyFlow<List<com.company.stockpro.core.domain.model.StockMovement>>()
     override fun observeRecentMovements(limit: Int) = emptyFlow<List<com.company.stockpro.core.domain.model.StockMovement>>()
@@ -226,6 +227,8 @@ private class FakeSettingsRepository : InventoryRepository {
     override suspend fun getItemByCode(code: String) = DataResult.Error(com.company.stockpro.core.domain.util.UiText.Dynamic("Not found"))
     override suspend fun createItem(item: com.company.stockpro.core.domain.model.Item) = DataResult.Success(item)
     override suspend fun postMovement(movement: com.company.stockpro.core.domain.model.StockMovement) = DataResult.Success(movement)
+    override suspend fun logout(): DataResult<Unit> = DataResult.Success(Unit)
+    override suspend fun deleteAccount(): DataResult<Unit> = DataResult.Success(Unit)
     override fun observePendingCount() = flowOf(0)
     override fun observeFailedEntries() = emptyFlow<List<com.company.stockpro.core.domain.model.FailedOutboxEntry>>()
     override suspend fun retryFailedOutbox(id: Long) {}

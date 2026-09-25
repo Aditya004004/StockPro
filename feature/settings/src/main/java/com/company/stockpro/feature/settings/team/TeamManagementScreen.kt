@@ -37,12 +37,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -66,26 +67,17 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TeamManagementScreen(
-    repository: InventoryRepository,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
+    viewModel: TeamViewModel = hiltViewModel(),
 ) {
-    val coroutineScope = rememberCoroutineScope()
-    val members by repository.observeTeamMembers().collectAsState(initial = emptyList())
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val members = uiState.members
+    val filterActiveOnly = uiState.filterActiveOnly
 
-    var filterActiveOnly by remember { mutableStateOf<Boolean?>(null) } // null = All, true = Active, false = Deactivated
     var showInviteDialog by remember { mutableStateOf(false) }
-    var selectedMemberForAction by remember { mutableStateOf<TeamMember?>(null) }
     var showRoleChangeDialog by remember { mutableStateOf<TeamMember?>(null) }
     var showDeactivateConfirmDialog by remember { mutableStateOf<TeamMember?>(null) }
-
-    val filteredMembers = remember(members, filterActiveOnly) {
-        when (filterActiveOnly) {
-            true -> members.filter { it.isActive }
-            false -> members.filter { !it.isActive }
-            null -> members
-        }
-    }
 
     Column(
         modifier = modifier
@@ -129,7 +121,7 @@ fun TeamManagementScreen(
                 IconButton(onClick = { showInviteDialog = true }) {
                     Icon(
                         imageVector = Icons.Filled.PersonAdd,
-                        contentDescription = "Invite Member",
+                        contentDescription = "Invite Team Member",
                         tint = StockProColors.Primary,
                     )
                 }
@@ -145,7 +137,7 @@ fun TeamManagementScreen(
         ) {
             FilterChip(
                 selected = filterActiveOnly == null,
-                onClick = { filterActiveOnly = null },
+                onClick = { viewModel.setFilter(null) },
                 label = { Text("All (${members.size})") },
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = StockProColors.PrimaryContainer,
@@ -154,7 +146,7 @@ fun TeamManagementScreen(
             )
             FilterChip(
                 selected = filterActiveOnly == true,
-                onClick = { filterActiveOnly = true },
+                onClick = { viewModel.setFilter(true) },
                 label = { Text("Active (${members.count { it.isActive }})") },
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = StockProColors.SuccessContainer,
@@ -163,7 +155,7 @@ fun TeamManagementScreen(
             )
             FilterChip(
                 selected = filterActiveOnly == false,
-                onClick = { filterActiveOnly = false },
+                onClick = { viewModel.setFilter(false) },
                 label = { Text("Deactivated (${members.count { !it.isActive }})") },
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = StockProColors.DangerContainer,
@@ -181,7 +173,7 @@ fun TeamManagementScreen(
             verticalArrangement = Arrangement.spacedBy(Spacing.x2),
         ) {
             items(
-                items = filteredMembers,
+                items = members,
                 key = { it.id },
                 contentType = { "team_member" },
             ) { member ->
@@ -200,10 +192,8 @@ fun TeamManagementScreen(
         InviteMemberDialog(
             onDismiss = { showInviteDialog = false },
             onInvite = { email, name, role ->
-                coroutineScope.launch {
-                    repository.inviteMember(email, name, role, "plant_01")
-                    showInviteDialog = false
-                }
+                viewModel.inviteMember(email, name, role)
+                showInviteDialog = false
             },
         )
     }
@@ -215,10 +205,8 @@ fun TeamManagementScreen(
             member = member,
             onDismiss = { showRoleChangeDialog = null },
             onConfirmRole = { newRole ->
-                coroutineScope.launch {
-                    repository.updateMemberRole(member.id, newRole)
-                    showRoleChangeDialog = null
-                }
+                viewModel.updateRole(member.id, newRole)
+                showRoleChangeDialog = null
             },
         )
     }
@@ -230,10 +218,8 @@ fun TeamManagementScreen(
             member = member,
             onDismiss = { showDeactivateConfirmDialog = null },
             onConfirm = {
-                coroutineScope.launch {
-                    repository.deactivateMember(member.id)
-                    showDeactivateConfirmDialog = null
-                }
+                viewModel.deactivateMember(member.id)
+                showDeactivateConfirmDialog = null
             },
         )
     }

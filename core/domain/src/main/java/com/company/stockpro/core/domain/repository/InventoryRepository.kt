@@ -28,8 +28,11 @@ interface InventoryRepository {
     /** Full-text search over item name, code, and category. Sub-100ms, offline. */
     fun searchItems(query: String): Flow<List<Item>>
 
-    /** Aggregate summary metrics (Total, Low Stock, Out of Stock, Reserved) for the current plant. */
+    /** Aggregate summary metrics for the current plant. */
     fun observeSummary(): Flow<com.company.stockpro.core.domain.model.InventorySummary>
+
+    /** Top items at or below reorder level, sorted by on-hand ascending. */
+    fun observeTopLowStock(limit: Int = 5): Flow<List<Item>>
 
     /** Reactive stream of a single item by ID. */
     fun observeItem(itemId: String): Flow<Item?>
@@ -119,6 +122,12 @@ interface InventoryRepository {
 
     /** Clear app cache and return number of bytes freed. */
     suspend fun clearCache(): DataResult<Long>
+
+    /** Purge all local cached Room data, clear tables, and reset session state on logout. */
+    suspend fun logout(): DataResult<Unit>
+
+    /** Delete user account and purge local cached data. */
+    suspend fun deleteAccount(): DataResult<Unit>
 
     // ==========================================
     // Phase 5: Team Management

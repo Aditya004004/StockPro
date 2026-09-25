@@ -62,27 +62,17 @@ class HomeViewModel @Inject constructor(
 
     val uiState: StateFlow<HomeUiState> = combine(
         repository.observeSummary(),
-        repository.observeItems(),
+        repository.observeTopLowStock(5),
         repository.observeRecentMovements(5),
         userContext,
-    ) { summary, items, recentMovements, userCtx ->
-        val rawMaterials = items.count { it.itemClass == ItemClass.RAW_MATERIAL }.toLong()
-        val finishedGoods = items.count { it.itemClass == ItemClass.FINISHED_GOOD }.toLong()
-
-        // Valuation sum: onHand * unitCost
-        val valuationPaise = items.sumOf {
-            (it.onHand.toUnitsDouble * it.unitCost.paise).toLong()
-        }
-
-        // Top 5 low stock items: onHand <= reorderLevel, sorted ascending by onHand
-        val topLowStock = items
-            .filter { it.onHand.milli <= it.reorderLevel.milli }
-            .sortedBy { it.onHand.milli }
-            .take(5)
+    ) { summary, topLowStock, recentMovements, userCtx ->
+        val rawMaterials = summary.rawMaterialsCount.toLong()
+        val finishedGoods = summary.finishedGoodsCount.toLong()
+        val valuationPaise = summary.totalValuationPaise
 
         // Stock distribution segments
         val inStockCount = (summary.totalItems - summary.lowStockCount - summary.outOfStockCount).coerceAtLeast(0)
-        val inProductionCount = items.sumOf { (it.inProduction.toUnitsDouble).toLong() }
+        val inProductionCount = summary.inProductionCount
         val segments = listOf(
             StockSegment("In Stock", inStockCount.toLong(), StockProColors.Success),
             StockSegment("Low Stock", summary.lowStockCount.toLong(), StockProColors.Warning),

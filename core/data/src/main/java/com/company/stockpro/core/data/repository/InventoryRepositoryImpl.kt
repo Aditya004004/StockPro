@@ -36,6 +36,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.util.UUID
 
 /**
@@ -79,6 +80,9 @@ class InventoryRepositoryImpl(
     /** Reads the current plant ID from user settings to avoid hardcoding. */
     private val currentPlantId: String get() = userSettingsFlow.value.profile.plantId
 
+    /** Reads the current organization ID from user settings to avoid hardcoding. */
+    private val currentOrgId: String get() = userSettingsFlow.value.profile.orgId
+
     init {
         appScope.launch {
             seedDefaultsIfEmpty()
@@ -101,8 +105,13 @@ class InventoryRepositoryImpl(
                         }
                         appScope.launch {
                             try {
-                                syncManager?.pullDelta("org_01", currentPlantId)
+                                com.google.firebase.messaging.FirebaseMessaging.getInstance()
+                                    .subscribeToTopic("plant_$currentPlantId")
+                            } catch (_: Exception) {}
+                            try {
+                                syncManager?.pullDelta(currentOrgId, currentPlantId)
                             } catch (e: Exception) {
+                                if (e is kotlinx.coroutines.CancellationException) throw e
                                 android.util.Log.w("InventoryRepo", "Delta pull failed: ${e.message}")
                             }
                         }
@@ -165,13 +174,22 @@ class InventoryRepositoryImpl(
     override fun observeSummary(): Flow<com.company.stockpro.core.domain.model.InventorySummary> =
         itemDao.observeSummary().map { it.toDomain() }
 
+    override fun observeTopLowStock(limit: Int): Flow<List<Item>> =
+        itemDao.observeTopLowStock(limit).map { entities -> entities.map { it.toDomain() } }
+
     override fun observeItem(itemId: String): Flow<Item?> =
         itemDao.observeItem(itemId).map { it?.toDomain() }
 
     override fun searchItems(query: String): Flow<List<Item>> {
-        // Room FTS MATCH requires a sanitised query with trailing wildcard
-        val ftsQuery = query.trim().replace("\"", "").let { "$it*" }
-        return itemDao.searchItems(ftsQuery).map { entities -> entities.map { it.toDomain() } }
+        val sanitized = query.trim()
+            .split(Regex("[^a-zA-Z0-9]+"))
+            .filter { it.isNotBlank() }
+            .joinToString(" ") { "$it*" }
+        return if (sanitized.isBlank()) {
+            itemDao.observeActiveItems().map { entities -> entities.map { it.toDomain() } }
+        } else {
+            itemDao.searchItems(sanitized).map { entities -> entities.map { it.toDomain() } }
+        }
     }
 
     override fun observeLedger(itemId: String): Flow<List<StockMovement>> =
@@ -227,13 +245,30 @@ class InventoryRepositoryImpl(
             itemDao.upsert(entity)
             appScope.launch {
                 try {
-                    syncManager?.pushItem("org_01", currentPlantId, entity)
+                    val functions = com.google.firebase.functions.FirebaseFunctions.getInstance()
+                    functions.getHttpsCallable("createItem").call(
+                        mapOf(
+                            "orgId" to currentOrgId,
+                            "plantId" to currentPlantId,
+                            "code" to entity.code,
+                            "name" to entity.name,
+                            "itemClass" to entity.itemClass,
+                            "categoryName" to entity.categoryName,
+                            "unitOfMeasure" to entity.unitOfMeasure,
+                            "reorderLevelMilli" to entity.reorderLevelMilli,
+                            "parLevelMilli" to entity.parLevelMilli,
+                            "unitCostPaise" to entity.unitCostPaise,
+                            "locationCode" to entity.locationCode,
+                        )
+                    )
                 } catch (e: Exception) {
-                    android.util.Log.w("InventoryRepo", "Background pushItem failed: ${e.message}")
+                    if (e is kotlinx.coroutines.CancellationException) throw e
+                    android.util.Log.w("InventoryRepo", "Background Cloud Function createItem failed or offline: ${e.message}")
                 }
             }
             DataResult.Success(entity.toDomain())
         } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
             DataResult.Error(UiText.Dynamic(e.message ?: "Failed to create item."))
         }
     }
@@ -411,6 +446,49 @@ class InventoryRepositoryImpl(
         return DataResult.Success(0L)
     }
 
+    override suspend fun logout(): DataResult<Unit> = kotlinx.coroutines.withContext(Dispatchers.IO) {
+        try {
+            database.clearAllTables()
+            userSettingsFlow.update { current ->
+                current.copy(
+                    profile = UserProfile(
+                        uid = "",
+                        displayName = "User",
+                        email = "",
+                        role = Role.INVENTORY_MANAGER,
+                        plantId = "plant_01",
+                        plantName = "Plant 1",
+                        orgId = "org_demo",
+                    )
+                )
+            }
+            try {
+                com.google.firebase.messaging.FirebaseMessaging.getInstance()
+                    .unsubscribeFromTopic("plant_$currentPlantId")
+            } catch (_: Exception) {}
+            try {
+                com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
+            } catch (_: Exception) {}
+            DataResult.Success(Unit)
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            DataResult.Error(UiText.Dynamic(e.localizedMessage ?: "Logout failed."))
+        }
+    }
+
+    override suspend fun deleteAccount(): DataResult<Unit> = kotlinx.coroutines.withContext(Dispatchers.IO) {
+        try {
+            val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+            if (user != null) {
+                user.delete().await()
+            }
+            logout()
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            DataResult.Error(UiText.Dynamic(e.localizedMessage ?: "Failed to delete account. Please re-authenticate and try again."))
+        }
+    }
+
     // ==========================================
     // Phase 5: Team Management
     // ==========================================
@@ -535,7 +613,7 @@ class InventoryRepositoryImpl(
     private fun buildPayloadJson(movement: StockMovement, signedDelta: Long): String {
         return buildString {
             append("{")
-            append("\"orgId\":\"org_01\",")
+            append("\"orgId\":\"${escapeJson(currentOrgId)}\",")
             append("\"plantId\":\"${escapeJson(currentPlantId)}\",")
             append("\"itemId\":\"${escapeJson(movement.itemId)}\",")
             append("\"type\":\"${escapeJson(movement.type.name)}\",")
@@ -625,6 +703,10 @@ private fun com.company.stockpro.core.database.entity.InventorySummaryEntity.toD
         lowStockCount = lowStockCount,
         outOfStockCount = outOfStockCount,
         reservedCount = reservedCount,
+        rawMaterialsCount = rawMaterialsCount,
+        finishedGoodsCount = finishedGoodsCount,
+        totalValuationPaise = totalValuationPaise,
+        inProductionCount = inProductionCount,
     )
 
 private fun NotificationEntity.toDomain(): AppNotification = AppNotification(

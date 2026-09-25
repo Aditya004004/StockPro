@@ -149,7 +149,24 @@ private class FakeHomeRepository : InventoryRepository {
     override fun searchItems(query: String): Flow<List<Item>> = flowOf(emptyList())
 
     override fun observeSummary(): Flow<InventorySummary> =
-        flowOf(InventorySummary(totalItems = items.size, lowStockCount = 1, outOfStockCount = 0, reservedCount = 0))
+        flowOf(
+            InventorySummary(
+                totalItems = items.size,
+                lowStockCount = 1,
+                outOfStockCount = 0,
+                reservedCount = 0,
+                rawMaterialsCount = items.count { it.itemClass == ItemClass.RAW_MATERIAL },
+                finishedGoodsCount = items.count { it.itemClass == ItemClass.FINISHED_GOOD },
+                totalValuationPaise = items.sumOf { (it.onHand.toUnitsDouble * it.unitCost.paise).toLong() },
+                inProductionCount = items.sumOf { it.inProduction.toUnitsDouble.toLong() },
+            )
+        )
+
+    override fun observeTopLowStock(limit: Int): Flow<List<Item>> =
+        flowOf(items.filter { it.onHand.milli <= it.reorderLevel.milli }.sortedBy { it.onHand.milli }.take(limit))
+
+    override suspend fun logout(): DataResult<Unit> = DataResult.Success(Unit)
+    override suspend fun deleteAccount(): DataResult<Unit> = DataResult.Success(Unit)
 
     override fun observeItem(itemId: String): Flow<Item?> = flowOf(items.find { it.id == itemId })
 

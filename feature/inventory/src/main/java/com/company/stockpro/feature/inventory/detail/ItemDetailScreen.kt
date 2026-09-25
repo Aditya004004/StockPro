@@ -217,12 +217,12 @@ fun ItemDetailScreen(
                     ) {
                         MetricCard(
                             label = "On Hand",
-                            value = "${item.onHand.toUnitsDouble.toLong()} ${item.unitOfMeasure.lowercase()}",
+                            value = "${item.onHand.formatted()} ${item.unitOfMeasure.lowercase()}",
                             modifier = Modifier.weight(1f),
                         )
                         MetricCard(
                             label = "Available",
-                            value = "${item.available.toUnitsDouble.toLong()} ${item.unitOfMeasure.lowercase()}",
+                            value = "${item.available.formatted()} ${item.unitOfMeasure.lowercase()}",
                             modifier = Modifier.weight(1f),
                         )
                     }
@@ -235,12 +235,12 @@ fun ItemDetailScreen(
                     ) {
                         MetricCard(
                             label = "Reserved",
-                            value = "${item.reserved.toUnitsDouble.toLong()} ${item.unitOfMeasure.lowercase()}",
+                            value = "${item.reserved.formatted()} ${item.unitOfMeasure.lowercase()}",
                             modifier = Modifier.weight(1f),
                         )
                         MetricCard(
                             label = "In Production",
-                            value = "${item.inProduction.toUnitsDouble.toLong()} ${item.unitOfMeasure.lowercase()}",
+                            value = "${item.inProduction.formatted()} ${item.unitOfMeasure.lowercase()}",
                             modifier = Modifier.weight(1f),
                         )
                     }
@@ -282,7 +282,7 @@ fun ItemDetailScreen(
                                 modifier = Modifier.fillMaxWidth(),
                             ) {
                                 Text("Reorder Point", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("${item.reorderLevel.toUnitsDouble.toLong()} ${item.unitOfMeasure.lowercase()}", style = StockProCodeTextStyle)
+                                Text("${item.reorderLevel.formatted()} ${item.unitOfMeasure.lowercase()}", style = StockProCodeTextStyle)
                             }
                             Spacer(modifier = Modifier.height(Spacing.x2))
                             Row(
@@ -290,7 +290,7 @@ fun ItemDetailScreen(
                                 modifier = Modifier.fillMaxWidth(),
                             ) {
                                 Text("Par Level", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("${item.parLevel.toUnitsDouble.toLong()} ${item.unitOfMeasure.lowercase()}", style = StockProCodeTextStyle)
+                                Text("${item.parLevel.formatted()} ${item.unitOfMeasure.lowercase()}", style = StockProCodeTextStyle)
                             }
                         }
                     }
@@ -457,14 +457,14 @@ private fun LedgerTimelineRow(
 
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "$sign${movement.delta.toUnitsDouble.toLong()} ${unitOfMeasure.lowercase()}",
+                    text = "$sign${movement.delta.formatted()} ${unitOfMeasure.lowercase()}",
                     style = StockProCodeTextStyle.copy(
                         fontWeight = FontWeight.Bold,
                         color = deltaColor,
                     ),
                 )
                 Text(
-                    text = "Bal: ${movement.balanceAfter.toUnitsDouble.toLong()}",
+                    text = "Bal: ${movement.balanceAfter.formatted()}",
                     style = StockProCodeTextStyle.copy(
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,

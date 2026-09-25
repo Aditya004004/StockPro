@@ -68,11 +68,11 @@ fun PostMovementDialog(
     var selectedReason by remember { mutableStateOf("CYCLE_COUNT") }
     var reasonDropdownExpanded by remember { mutableStateOf(false) }
 
-    val availableUnits = item.available.toUnitsDouble.toLong()
+    val reqMilli = quantityUnits * 1000L
     val isIssue = selectedType == MovementType.ISSUE
     val isAdjustment = selectedType == MovementType.ADJUSTMENT
-    val hasInsufficientStock = isIssue && quantityUnits > availableUnits
-    val dropsBelowReorder = isIssue && (item.onHand.toUnitsDouble.toLong() - quantityUnits) <= item.reorderLevel.toUnitsDouble.toLong()
+    val hasInsufficientStock = isIssue && reqMilli > item.available.milli
+    val dropsBelowReorder = isIssue && (item.onHand.milli - reqMilli) <= item.reorderLevel.milli
 
     BasicAlertDialog(
         onDismissRequest = onDismiss,
@@ -160,7 +160,7 @@ fun PostMovementDialog(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(
-                            text = "Insufficient stock. Only $availableUnits ${item.unitOfMeasure.lowercase()} available.",
+                            text = "Insufficient stock. Only ${item.available.formatted()} ${item.unitOfMeasure.lowercase()} available.",
                             style = MaterialTheme.typography.bodySmall,
                             color = StockProColors.Danger,
                             modifier = Modifier.padding(Spacing.x2),

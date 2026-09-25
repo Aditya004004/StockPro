@@ -13,6 +13,9 @@ sealed interface SettingsDialog {
     data object NotificationPreferences : SettingsDialog
     data class ClearCacheConfirm(val estimatedBytes: Long) : SettingsDialog
     data object LogoutConfirm : SettingsDialog
+    data object DeleteAccountConfirm : SettingsDialog
+    data object PrivacyPolicy : SettingsDialog
+    data object TermsOfService : SettingsDialog
     data object HelpFaq : SettingsDialog
     data object Feedback : SettingsDialog
 }

@@ -174,6 +174,12 @@ private class FakeTestRepository : InventoryRepository {
     override fun observeSummary(): Flow<InventorySummary> =
         flowOf(InventorySummary(totalItems = items.size, lowStockCount = 1, outOfStockCount = 0, reservedCount = 0))
 
+    override fun observeTopLowStock(limit: Int): Flow<List<Item>> =
+        flowOf(items.filter { it.onHand.milli <= it.reorderLevel.milli }.sortedBy { it.onHand.milli }.take(limit))
+
+    override suspend fun logout(): DataResult<Unit> = DataResult.Success(Unit)
+    override suspend fun deleteAccount(): DataResult<Unit> = DataResult.Success(Unit)
+
     override fun observeItem(itemId: String): Flow<Item?> = flowOf(items.find { it.id == itemId })
 
     override fun observeLedger(itemId: String): Flow<List<StockMovement>> = flowOf(emptyList())

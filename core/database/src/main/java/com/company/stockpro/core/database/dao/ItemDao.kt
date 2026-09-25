@@ -35,12 +35,26 @@ interface ItemDao {
             COUNT(*) as totalItems,
             COALESCE(SUM(CASE WHEN on_hand_milli <= reorder_level_milli AND on_hand_milli > 0 THEN 1 ELSE 0 END), 0) as lowStockCount,
             COALESCE(SUM(CASE WHEN on_hand_milli <= 0 THEN 1 ELSE 0 END), 0) as outOfStockCount,
-            COALESCE(SUM(CASE WHEN reserved_milli > 0 THEN 1 ELSE 0 END), 0) as reservedCount
+            COALESCE(SUM(CASE WHEN reserved_milli > 0 THEN 1 ELSE 0 END), 0) as reservedCount,
+            COALESCE(SUM(CASE WHEN item_class = 'RAW_MATERIAL' THEN 1 ELSE 0 END), 0) as rawMaterialsCount,
+            COALESCE(SUM(CASE WHEN item_class = 'FINISHED_GOOD' THEN 1 ELSE 0 END), 0) as finishedGoodsCount,
+            COALESCE(SUM((on_hand_milli * unit_cost_paise) / 1000), 0) as totalValuationPaise,
+            COALESCE(SUM(in_production_milli / 1000), 0) as inProductionCount
         FROM items
         WHERE is_active = 1
         """
     )
     fun observeSummary(): Flow<com.company.stockpro.core.database.entity.InventorySummaryEntity>
+
+    @Query(
+        """
+        SELECT * FROM items 
+        WHERE is_active = 1 AND on_hand_milli <= reorder_level_milli 
+        ORDER BY on_hand_milli ASC 
+        LIMIT :limit
+        """
+    )
+    fun observeTopLowStock(limit: Int): Flow<List<ItemEntity>>
 
     @Query("SELECT * FROM items WHERE id = :itemId")
     fun observeItem(itemId: String): Flow<ItemEntity?>

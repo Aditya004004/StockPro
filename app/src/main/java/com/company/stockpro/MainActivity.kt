@@ -1,24 +1,30 @@
 package com.company.stockpro
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -30,10 +36,6 @@ import com.company.stockpro.core.designsystem.component.StockProTopLevelDestinat
 import com.company.stockpro.core.designsystem.theme.StockProTheme
 import com.company.stockpro.core.domain.model.Item
 import com.company.stockpro.core.domain.model.MovementType
-import com.company.stockpro.core.domain.repository.InventoryRepository
-import com.company.stockpro.core.domain.usecase.PostMovementUseCase
-import com.company.stockpro.core.domain.util.DataResult
-import com.company.stockpro.core.domain.util.UiText
 import com.company.stockpro.core.ui.component.NeedsAttentionDialog
 import com.company.stockpro.core.ui.component.notification.NotificationCenterDialog
 import com.company.stockpro.core.ui.component.scanner.BarcodeScannerDialog
@@ -52,37 +54,42 @@ import com.company.stockpro.feature.settings.SettingsViewModel
 import com.company.stockpro.feature.settings.team.TeamManagementScreen
 import com.company.stockpro.navigation.StockProRoute
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-
-    @Inject lateinit var repository: InventoryRepository
-    @Inject lateinit var postMovementUseCase: PostMovementUseCase
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            StockProApp(
-                repository = repository,
-                postMovementUseCase = postMovementUseCase,
-            )
+            StockProApp()
         }
     }
 }
 
 @Composable
 fun StockProApp(
-    repository: InventoryRepository,
-    postMovementUseCase: PostMovementUseCase,
+    mainViewModel: MainViewModel = hiltViewModel(),
     navController: NavHostController = rememberNavController(),
 ) {
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
 
-    // Modal dialog state — survives config changes via rememberSaveable where possible
+    // Request notification permission on Android 13+ (API 33+)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        val permissionLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission(),
+        ) { /* Granted or dismissed */ }
+
+        LaunchedEffect(Unit) {
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
+
+    // Modal dialog state — survives config changes via rememberSaveable
     var movementItem by remember { mutableStateOf<Item?>(null) }
     var movementType by rememberSaveable { mutableStateOf(MovementType.RECEIPT) }
     var showNeedsAttention by rememberSaveable { mutableStateOf(false) }
@@ -90,7 +97,7 @@ fun StockProApp(
     var showNotificationCenter by rememberSaveable { mutableStateOf(false) }
     var showAddItemDialog by rememberSaveable { mutableStateOf(false) }
 
-    val failedEntries by repository.observeFailedEntries().collectAsState(initial = emptyList())
+    val failedEntries by mainViewModel.failedEntries.collectAsStateWithLifecycle()
 
     // Derive current top-level tab from nav back stack
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -109,7 +116,7 @@ fun StockProApp(
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             bottomBar = {
-                // Only show bottom nav on top-level destinations (not detail screens or auth)
+                // Only show bottom nav on top-level destinations
                 val dest = currentTopLevelDestination
                 if (dest != null) {
                     StockProBottomNav(
@@ -206,7 +213,6 @@ fun StockProApp(
                         onAddItemClick = { showAddItemDialog = true },
                         onScanClick = { showBarcodeScanner = true },
                         onQuickMovementClick = {
-                            // Open barcode scanner to pick an item for quick movement
                             showBarcodeScanner = true
                         },
                         onNeedsAttentionClick = { showNeedsAttention = true },
@@ -242,9 +248,10 @@ fun StockProApp(
                             navController.navigate(StockProRoute.TeamManagement)
                         },
                         onLogoutClick = {
-                            com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
-                            navController.navigate(StockProRoute.Auth) {
-                                popUpTo(0) { inclusive = true }
+                            mainViewModel.logout {
+                                navController.navigate(StockProRoute.Auth) {
+                                    popUpTo(0) { inclusive = true }
+                                }
                             }
                         },
                         modifier = modifier,
@@ -254,7 +261,6 @@ fun StockProApp(
                 // ── Team Management ──
                 composable<StockProRoute.TeamManagement> {
                     TeamManagementScreen(
-                        repository = repository,
                         onBackClick = { navController.popBackStack() },
                         modifier = modifier,
                     )
@@ -263,12 +269,12 @@ fun StockProApp(
                 // ── Item Detail ──
                 composable<StockProRoute.ItemDetail> { backStackEntry ->
                     val route = backStackEntry.toRoute<StockProRoute.ItemDetail>()
-                    val item by repository.observeItem(route.itemId).collectAsState(initial = null)
+                    val item by mainViewModel.observeItem(route.itemId).collectAsStateWithLifecycle(initialValue = null)
                     val currentItem = item
 
                     if (currentItem != null) {
-                        val ledger by repository.observeLedger(currentItem.id).collectAsState(initial = emptyList())
-                        val toolCustody by repository.observeToolCustody(currentItem.id).collectAsState(initial = null)
+                        val ledger by mainViewModel.observeLedger(currentItem.id).collectAsStateWithLifecycle(initialValue = emptyList())
+                        val toolCustody by mainViewModel.observeToolCustody(currentItem.id).collectAsStateWithLifecycle(initialValue = null)
 
                         ItemDetailScreen(
                             item = currentItem,
@@ -288,13 +294,13 @@ fun StockProApp(
                             },
                             toolCustody = toolCustody,
                             onIssueTool = { operator, notes ->
-                                coroutineScope.launch { repository.issueTool(currentItem.id, operator, notes) }
+                                mainViewModel.issueTool(currentItem.id, operator, notes)
                             },
                             onReturnTool = { notes ->
-                                coroutineScope.launch { repository.returnTool(currentItem.id, notes) }
+                                mainViewModel.returnTool(currentItem.id, notes)
                             },
                             onLogCalibration = { cal, next, notes ->
-                                coroutineScope.launch { repository.logCalibration(currentItem.id, cal, next, notes) }
+                                mainViewModel.logCalibration(currentItem.id, cal, next, notes)
                             },
                             modifier = modifier,
                         )
@@ -302,7 +308,7 @@ fun StockProApp(
                 }
             }
 
-            // ── Modal Dialogs (overlay on any screen) ──
+            // ── Modal Dialogs ──
 
             // Post Movement Dialog
             if (movementItem != null) {
@@ -312,16 +318,13 @@ fun StockProApp(
                     initialType = movementType,
                     onDismiss = { movementItem = null },
                     onConfirm = { movement ->
-                        coroutineScope.launch {
-                            when (val result = postMovementUseCase(movement)) {
-                                is DataResult.Success -> movementItem = null
-                                is DataResult.Error -> {
-                                    val msg = (result.message as? UiText.Dynamic)?.value
-                                        ?: result.message.toString()
-                                    Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
-                                }
-                            }
-                        }
+                        mainViewModel.postMovement(
+                            movement = movement,
+                            onSuccess = { movementItem = null },
+                            onError = { errorMsg ->
+                                Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
+                            },
+                        )
                     },
                 )
             }
@@ -330,12 +333,8 @@ fun StockProApp(
             if (showNeedsAttention) {
                 NeedsAttentionDialog(
                     failedEntries = failedEntries,
-                    onRetry = { id ->
-                        coroutineScope.launch { repository.retryFailedOutbox(id) }
-                    },
-                    onDiscard = { id ->
-                        coroutineScope.launch { repository.discardFailedOutbox(id) }
-                    },
+                    onRetry = { id -> mainViewModel.retryFailedOutbox(id) },
+                    onDiscard = { id -> mainViewModel.discardFailedOutbox(id) },
                     onDismiss = { showNeedsAttention = false },
                 )
             }
@@ -346,50 +345,39 @@ fun StockProApp(
                     onDismissRequest = { showBarcodeScanner = false },
                     onBarcodeScanned = { barcode ->
                         showBarcodeScanner = false
-                        coroutineScope.launch {
-                            val result = repository.getItemByCode(barcode)
-                            if (result is DataResult.Success) {
-                                navController.navigate(StockProRoute.ItemDetail(result.data.id))
-                            } else {
+                        mainViewModel.resolveBarcode(
+                            barcode = barcode,
+                            onFound = { foundItem ->
+                                navController.navigate(StockProRoute.ItemDetail(foundItem.id))
+                            },
+                            onNotFound = {
                                 Toast.makeText(
                                     context,
                                     "No item found for barcode: $barcode",
                                     Toast.LENGTH_SHORT,
                                 ).show()
-                            }
-                        }
+                            },
+                        )
                     },
                 )
             }
 
             // Notification Center Modal
             if (showNotificationCenter) {
-                val notifications by repository.observeNotifications().collectAsState(initial = emptyList())
+                val notifications by mainViewModel.notifications.collectAsStateWithLifecycle()
                 NotificationCenterDialog(
                     notifications = notifications,
                     onDismissRequest = { showNotificationCenter = false },
                     onNotificationClick = { entityRef ->
                         showNotificationCenter = false
                         entityRef?.let { codeOrId ->
-                            coroutineScope.launch {
-                                val res = repository.getItem(codeOrId)
-                                if (res is DataResult.Success) {
-                                    navController.navigate(StockProRoute.ItemDetail(res.data.id))
-                                } else {
-                                    val codeRes = repository.getItemByCode(codeOrId)
-                                    if (codeRes is DataResult.Success) {
-                                        navController.navigate(StockProRoute.ItemDetail(codeRes.data.id))
-                                    }
-                                }
+                            mainViewModel.resolveNotificationEntity(codeOrId) { foundItem ->
+                                navController.navigate(StockProRoute.ItemDetail(foundItem.id))
                             }
                         }
                     },
-                    onMarkAllAsRead = {
-                        coroutineScope.launch { repository.markAllNotificationsAsRead() }
-                    },
-                    onClearAll = {
-                        coroutineScope.launch { repository.clearNotifications() }
-                    },
+                    onMarkAllAsRead = { mainViewModel.markAllNotificationsAsRead() },
+                    onClearAll = { mainViewModel.clearNotifications() },
                 )
             }
 
@@ -398,16 +386,16 @@ fun StockProApp(
                 com.company.stockpro.feature.inventory.AddItemDialog(
                     onDismiss = { showAddItemDialog = false },
                     onConfirm = { newItem ->
-                        coroutineScope.launch {
-                            val result = repository.createItem(newItem)
-                            if (result is DataResult.Success) {
+                        mainViewModel.createItem(
+                            item = newItem,
+                            onSuccess = { created ->
                                 showAddItemDialog = false
-                                Toast.makeText(context, "Item '${newItem.name}' created.", Toast.LENGTH_SHORT).show()
-                            } else if (result is DataResult.Error) {
-                                val msg = (result.message as? UiText.Dynamic)?.value ?: result.message.toString()
-                                Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
-                            }
-                        }
+                                Toast.makeText(context, "Item '${created.name}' created.", Toast.LENGTH_SHORT).show()
+                            },
+                            onError = { errorMsg ->
+                                Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
+                            },
+                        )
                     },
                 )
             }

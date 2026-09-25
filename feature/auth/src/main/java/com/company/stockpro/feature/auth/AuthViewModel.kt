@@ -63,6 +63,7 @@ class AuthViewModel @Inject constructor(
                 auth.sendPasswordResetEmail(email).await()
                 onSuccess("Password reset link sent to $email")
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 val msg = e.localizedMessage ?: "Failed to send reset email."
                 _uiState.update { it.copy(errorMessage = msg) }
                 onError(msg)
@@ -115,6 +116,7 @@ class AuthViewModel @Inject constructor(
                     .await()
                 _uiState.update { it.copy(isLoading = false, isAuthenticated = true) }
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -162,17 +164,33 @@ class AuthViewModel @Inject constructor(
                             .build()
                         user.updateProfile(profileUpdates).await()
                     } catch (e: Exception) {
+                        if (e is kotlinx.coroutines.CancellationException) throw e
                         // Profile display name fallback
                     }
                 }
                 _uiState.update { it.copy(isLoading = false, isAuthenticated = true) }
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         errorMessage = e.localizedMessage ?: "Account creation failed.",
                     )
                 }
+            }
+        }
+    }
+
+    fun deleteAccount(onSuccess: () -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val user = auth.currentUser
+                user?.delete()?.await()
+                _uiState.update { AuthUiState() }
+                onSuccess()
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                onError(e.localizedMessage ?: "Failed to delete account.")
             }
         }
     }

@@ -77,16 +77,17 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.company.stockpro.core.designsystem.theme.StockProColors
 
 private val BrandGreen = Color(0xFF00875A)
 private val BrandDarkGreen = Color(0xFF006D44)
-private val BrandNavy = Color(0xFF0F172A)
-private val TextSecondary = Color(0xFF475569)
-private val TextMuted = Color(0xFF64748B)
-private val FieldBorder = Color(0xFFE2E8F0)
-private val FieldBg = Color(0xFFF8FAFC)
-private val CanvasMint = Color(0xFFF7FAF8)
-private val ErrorRed = Color(0xFFDC2626)
+private val BrandNavy = StockProColors.TextPrimary
+private val TextSecondary = StockProColors.TextSecondary
+private val TextMuted = StockProColors.TextTertiary
+private val FieldBorder = StockProColors.Outline
+private val FieldBg = StockProColors.SurfaceAlt
+private val CanvasMint = StockProColors.Canvas
+private val ErrorRed = StockProColors.Danger
 
 @Composable
 fun AuthRoute(
