@@ -42,12 +42,28 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun signInAsDemo() {
-        _uiState.update { it.copy(isAuthenticated = true) }
-    }
-
     fun toggleAuthMode() {
         _uiState.update { it.copy(isSignUpMode = !it.isSignUpMode, errorMessage = null) }
+    }
+
+    fun sendPasswordReset(onSuccess: (String) -> Unit, onError: (String) -> Unit) {
+        val email = _uiState.value.email.trim()
+        if (email.isBlank()) {
+            val msg = "Please enter your email to reset password."
+            _uiState.update { it.copy(errorMessage = msg) }
+            onError(msg)
+            return
+        }
+        viewModelScope.launch {
+            try {
+                auth.sendPasswordResetEmail(email).await()
+                onSuccess("Password reset link sent to $email")
+            } catch (e: Exception) {
+                val msg = e.localizedMessage ?: "Failed to send reset email."
+                _uiState.update { it.copy(errorMessage = msg) }
+                onError(msg)
+            }
+        }
     }
 
     fun onEmailChanged(email: String) {
