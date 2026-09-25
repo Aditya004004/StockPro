@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1021216414834",
+    "project_id": "door-a9b6f",
+    "storage_bucket": "door-a9b6f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1021216414834:android:1be0a37cd5bf8fadeff6eb",
+        "android_client_info": {
+          "package_name": "com.company.stockpro"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCuUBLyShmPm6rN0TNz8NbbeSSeTxLW1NQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

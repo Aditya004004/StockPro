@@ -25,11 +25,7 @@ object AppModule {
     @Singleton
     fun provideDatabase(
         @ApplicationContext context: Context,
-    ): StockProDatabase = Room.databaseBuilder(
-        context,
-        StockProDatabase::class.java,
-        "stockpro.db",
-    ).fallbackToDestructiveMigration().build()
+    ): StockProDatabase = StockProDatabase.getInstance(context)
 
     @Provides
     @Singleton
@@ -51,11 +47,13 @@ object AppModule {
     @Provides
     @Singleton
     fun provideInventoryRepository(
+        @ApplicationContext context: Context,
         database: StockProDatabase,
         syncManager: InventorySyncManager?,
     ): InventoryRepository = InventoryRepositoryImpl(
         database = database,
         syncManager = syncManager,
+        context = context,
     )
 
     @Provides

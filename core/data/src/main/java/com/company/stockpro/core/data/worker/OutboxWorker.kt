@@ -30,6 +30,13 @@ class OutboxWorker(
     private val functions: FirebaseFunctions,
 ) : CoroutineWorker(appContext, params) {
 
+    constructor(appContext: Context, params: WorkerParameters) : this(
+        appContext,
+        params,
+        StockProDatabase.getInstance(appContext),
+        FirebaseFunctions.getInstance(),
+    )
+
     companion object {
         const val TAG = "OutboxWorker"
         private const val MAX_RETRIES = 10
@@ -54,9 +61,23 @@ class OutboxWorker(
                 outboxDao.updateStatus(entry.id, OutboxEntity.STATUS_POSTING, now)
 
                 try {
+                    val callData = mutableMapOf<String, Any>()
+                    try {
+                        val json = org.json.JSONObject(entry.payload)
+                        val keys = json.keys()
+                        while (keys.hasNext()) {
+                            val key = keys.next()
+                            callData[key] = json.get(key)
+                        }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Payload is not valid JSON, passing raw string: ${entry.payload}")
+                    }
+                    callData["idempotencyKey"] = entry.idempotencyKey
+                    callData["payload"] = entry.payload
+
                     val result = functions
                         .getHttpsCallable("postMovement")
-                        .call(mapOf("payload" to entry.payload, "idempotencyKey" to entry.idempotencyKey))
+                        .call(callData)
                         .await()
 
                     // ── 2xx: reconcile ──

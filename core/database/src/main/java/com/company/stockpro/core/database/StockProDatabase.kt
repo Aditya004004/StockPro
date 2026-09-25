@@ -36,5 +36,20 @@ abstract class StockProDatabase : RoomDatabase() {
     abstract fun notificationDao(): NotificationDao
     abstract fun toolCustodyDao(): ToolCustodyDao
     abstract fun teamMemberDao(): TeamMemberDao
+
+    companion object {
+        @Volatile
+        private var INSTANCE: StockProDatabase? = null
+
+        fun getInstance(context: android.content.Context): StockProDatabase {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: androidx.room.Room.databaseBuilder(
+                    context.applicationContext,
+                    StockProDatabase::class.java,
+                    "stockpro.db",
+                ).fallbackToDestructiveMigration().build().also { INSTANCE = it }
+            }
+        }
+    }
 }
 

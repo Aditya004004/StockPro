@@ -17,6 +17,7 @@ import javax.inject.Inject
 data class AuthUiState(
     val email: String = "",
     val password: String = "",
+    val isSignUpMode: Boolean = false,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val isAuthenticated: Boolean = false,
@@ -45,12 +46,24 @@ class AuthViewModel @Inject constructor(
         _uiState.update { it.copy(isAuthenticated = true) }
     }
 
+    fun toggleAuthMode() {
+        _uiState.update { it.copy(isSignUpMode = !it.isSignUpMode, errorMessage = null) }
+    }
+
     fun onEmailChanged(email: String) {
         _uiState.update { it.copy(email = email, errorMessage = null) }
     }
 
     fun onPasswordChanged(password: String) {
         _uiState.update { it.copy(password = password, errorMessage = null) }
+    }
+
+    fun submit() {
+        if (_uiState.value.isSignUpMode) {
+            signUp()
+        } else {
+            signIn()
+        }
     }
 
     fun signIn() {
@@ -70,6 +83,33 @@ class AuthViewModel @Inject constructor(
                     it.copy(
                         isLoading = false,
                         errorMessage = e.localizedMessage ?: "Authentication failed.",
+                    )
+                }
+            }
+        }
+    }
+
+    fun signUp() {
+        val state = _uiState.value
+        if (state.email.isBlank() || state.password.isBlank()) {
+            _uiState.update { it.copy(errorMessage = "Email and password are required.") }
+            return
+        }
+        if (state.password.length < 6) {
+            _uiState.update { it.copy(errorMessage = "Password must be at least 6 characters.") }
+            return
+        }
+        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+        viewModelScope.launch {
+            try {
+                auth.createUserWithEmailAndPassword(state.email.trim(), state.password)
+                    .await()
+                _uiState.update { it.copy(isLoading = false, isAuthenticated = true) }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = e.localizedMessage ?: "Account creation failed.",
                     )
                 }
             }

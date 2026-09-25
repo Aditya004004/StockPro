@@ -32,7 +32,7 @@ class InventorySyncManager(
     private val outboxDao get() = database.outboxDao()
 
     private val isSyncing = MutableStateFlow(false)
-    private val lastSyncedTime = AtomicLong(System.currentTimeMillis())
+    private val lastSyncedTime = AtomicLong(0L)
 
     /**
      * Combined reactive sync status stream (architecture.md §7.2).
@@ -53,7 +53,7 @@ class InventorySyncManager(
                 failedCount > 0 -> SyncStatus.NeedsAttention(failedCount)
                 syncing -> SyncStatus.Syncing
                 pendingCount > 0 -> SyncStatus.Pending(pendingCount)
-                else -> SyncStatus.Synced(lastSyncedTime.get())
+                else -> SyncStatus.Synced(if (lastSyncedTime.get() == 0L) System.currentTimeMillis() else lastSyncedTime.get())
             }
         }
 
@@ -178,6 +178,47 @@ class InventorySyncManager(
             Result.failure(e)
         } finally {
             isSyncing.value = false
+        }
+    }
+
+    /**
+     * Pushes a locally created/updated item to Firestore (architecture.md §7.1).
+     */
+    suspend fun pushItem(orgId: String, plantId: String, item: ItemEntity): Result<Unit> {
+        return try {
+            val itemMap = mapOf(
+                "code" to item.code,
+                "codeLower" to item.codeLower,
+                "name" to item.name,
+                "nameLower" to item.nameLower,
+                "itemClass" to item.itemClass,
+                "categoryId" to item.categoryId,
+                "categoryName" to item.categoryName,
+                "unitOfMeasure" to item.unitOfMeasure,
+                "onHandMilli" to item.onHandMilli,
+                "reservedMilli" to item.reservedMilli,
+                "inProductionMilli" to item.inProductionMilli,
+                "reorderLevelMilli" to item.reorderLevelMilli,
+                "parLevelMilli" to item.parLevelMilli,
+                "unitCostPaise" to item.unitCostPaise,
+                "locationId" to item.locationId,
+                "locationCode" to item.locationCode,
+                "barcode" to item.barcode,
+                "imagePath" to item.imagePath,
+                "isActive" to item.isActive,
+                "createdAt" to item.createdAt,
+                "updatedAt" to item.updatedAt,
+                "lastMovementAt" to item.lastMovementAt,
+            )
+            firestore.collection("organizations").document(orgId)
+                .collection("plants").document(plantId)
+                .collection("items").document(item.id)
+                .set(itemMap)
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to push item to Firestore: ${e.message}", e)
+            Result.failure(e)
         }
     }
 }

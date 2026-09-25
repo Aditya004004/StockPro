@@ -54,7 +54,8 @@ fun AuthRoute(
         uiState = uiState,
         onEmailChanged = viewModel::onEmailChanged,
         onPasswordChanged = viewModel::onPasswordChanged,
-        onSignInClick = viewModel::signIn,
+        onSubmitClick = viewModel::submit,
+        onToggleModeClick = viewModel::toggleAuthMode,
         onDemoSignInClick = viewModel::signInAsDemo,
         modifier = modifier,
     )
@@ -65,7 +66,8 @@ private fun AuthScreen(
     uiState: AuthUiState,
     onEmailChanged: (String) -> Unit,
     onPasswordChanged: (String) -> Unit,
-    onSignInClick: () -> Unit,
+    onSubmitClick: () -> Unit,
+    onToggleModeClick: () -> Unit,
     onDemoSignInClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -146,16 +148,35 @@ private fun AuthScreen(
 
         Spacer(modifier = Modifier.height(Spacing.x4))
 
-        // Sign In Button
+        // Submit Button (Sign In / Create Account)
         StockProButton(
-            text = if (uiState.isLoading) "Signing in…" else "Sign In",
-            onClick = onSignInClick,
+            text = when {
+                uiState.isLoading && uiState.isSignUpMode -> "Creating account…"
+                uiState.isLoading -> "Signing in…"
+                uiState.isSignUpMode -> "Create Account"
+                else -> "Sign In"
+            },
+            onClick = onSubmitClick,
             variant = ButtonVariant.PRIMARY,
             enabled = !uiState.isLoading,
             modifier = Modifier.fillMaxWidth(),
         )
 
         Spacer(modifier = Modifier.height(Spacing.x2))
+
+        // Toggle Sign In / Create Account
+        androidx.compose.material3.TextButton(
+            onClick = onToggleModeClick,
+            enabled = !uiState.isLoading,
+        ) {
+            Text(
+                text = if (uiState.isSignUpMode) "Already have an account? Sign In" else "Don't have an account? Create one",
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                color = StockProColors.BrandMark,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(Spacing.x1))
 
         // Demo / Offline Mode Button
         StockProButton(

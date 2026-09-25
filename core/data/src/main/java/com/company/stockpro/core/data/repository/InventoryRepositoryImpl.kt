@@ -48,7 +48,8 @@ import java.util.UUID
 class InventoryRepositoryImpl(
     private val database: StockProDatabase,
     private val syncManager: com.company.stockpro.core.data.sync.InventorySyncManager? = null,
-    appScope: CoroutineScope = CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.IO),
+    private val context: android.content.Context? = null,
+    private val appScope: CoroutineScope = CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.IO),
 ) : InventoryRepository {
 
     private val itemDao get() = database.itemDao()
@@ -81,6 +82,35 @@ class InventoryRepositoryImpl(
     init {
         appScope.launch {
             seedDefaultsIfEmpty()
+        }
+        appScope.launch {
+            try {
+                com.google.firebase.auth.FirebaseAuth.getInstance().addAuthStateListener { auth ->
+                    val user = auth.currentUser
+                    if (user != null) {
+                        userSettingsFlow.update { current ->
+                            current.copy(
+                                profile = current.profile.copy(
+                                    uid = user.uid,
+                                    displayName = user.displayName?.ifBlank { null }
+                                        ?: user.email?.substringBefore('@')?.replaceFirstChar { it.uppercase() }
+                                        ?: current.profile.displayName,
+                                    email = user.email ?: current.profile.email,
+                                )
+                            )
+                        }
+                        appScope.launch {
+                            try {
+                                syncManager?.pullDelta("org_01", currentPlantId)
+                            } catch (e: Exception) {
+                                android.util.Log.w("InventoryRepo", "Delta pull failed: ${e.message}")
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                // Firebase Auth not initialized or offline
+            }
         }
     }
 
@@ -195,6 +225,13 @@ class InventoryRepositoryImpl(
                 lastMovementAt = now,
             )
             itemDao.upsert(entity)
+            appScope.launch {
+                try {
+                    syncManager?.pushItem("org_01", currentPlantId, entity)
+                } catch (e: Exception) {
+                    android.util.Log.w("InventoryRepo", "Background pushItem failed: ${e.message}")
+                }
+            }
             DataResult.Success(entity.toDomain())
         } catch (e: Exception) {
             DataResult.Error(UiText.Dynamic(e.message ?: "Failed to create item."))
@@ -250,6 +287,25 @@ class InventoryRepositoryImpl(
                     updatedAt = now,
                 )
             )
+        }
+
+        context?.let { ctx ->
+            try {
+                val workRequest = androidx.work.OneTimeWorkRequestBuilder<com.company.stockpro.core.data.worker.OutboxWorker>()
+                    .setConstraints(
+                        androidx.work.Constraints.Builder()
+                            .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+                            .build()
+                    )
+                    .build()
+                androidx.work.WorkManager.getInstance(ctx).enqueueUniqueWork(
+                    "OutboxWorker_${movement.itemId}",
+                    androidx.work.ExistingWorkPolicy.APPEND_OR_REPLACE,
+                    workRequest,
+                )
+            } catch (e: Exception) {
+                android.util.Log.w("InventoryRepo", "Failed to enqueue OutboxWorker: ${e.message}")
+            }
         }
 
         return DataResult.Success(
@@ -479,6 +535,8 @@ class InventoryRepositoryImpl(
     private fun buildPayloadJson(movement: StockMovement, signedDelta: Long): String {
         return buildString {
             append("{")
+            append("\"orgId\":\"org_01\",")
+            append("\"plantId\":\"${escapeJson(currentPlantId)}\",")
             append("\"itemId\":\"${escapeJson(movement.itemId)}\",")
             append("\"type\":\"${escapeJson(movement.type.name)}\",")
             append("\"deltaMilli\":$signedDelta,")

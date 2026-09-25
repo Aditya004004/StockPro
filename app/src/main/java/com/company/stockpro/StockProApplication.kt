@@ -27,17 +27,23 @@ class StockProApplication : Application() {
             if (FirebaseApp.getApps(this).isEmpty()) {
                 try {
                     val options = FirebaseOptions.Builder()
-                        .setApplicationId(packageName)
-                        .setProjectId("stockpro-production")
-                        .setApiKey("AIzaSyB-dummyKeyForOfflineLocalExecution")
-                        .setDatabaseUrl("https://stockpro-production.firebaseio.com")
-                        .setStorageBucket("stockpro-production.appspot.com")
+                        .setApplicationId("1:1021216414834:android:1be0a37cd5bf8fadeff6eb")
+                        .setProjectId("door-a9b6f")
+                        .setApiKey("AIzaSyCuUBLyShmPm6rN0TNz8NbbeSSeTxLW1NQ")
+                        .setStorageBucket("door-a9b6f.firebasestorage.app")
                         .build()
                     FirebaseApp.initializeApp(this, options)
-                    Log.i("StockProApp", "FirebaseApp initialized with fallback options for offline mode.")
+                    Log.i("StockProApp", "FirebaseApp initialized with fallback options for door-a9b6f.")
                 } catch (e: Exception) {
                     Log.e("StockProApp", "Failed to initialize fallback FirebaseApp", e)
                 }
+            }
+
+            // Subscribe to FCM topic for plant notifications
+            try {
+                com.google.firebase.messaging.FirebaseMessaging.getInstance().subscribeToTopic("plant_plant_01")
+            } catch (e: Exception) {
+                Log.w("StockProApp", "Failed to subscribe to FCM topic plant_plant_01: ${e.message}")
             }
         }
     }
