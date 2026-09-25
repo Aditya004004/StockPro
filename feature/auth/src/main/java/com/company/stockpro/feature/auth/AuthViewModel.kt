@@ -17,6 +17,10 @@ import javax.inject.Inject
 data class AuthUiState(
     val email: String = "",
     val password: String = "",
+    val fullName: String = "",
+    val confirmPassword: String = "",
+    val plantName: String = "",
+    val agreedToTerms: Boolean = true,
     val isSignUpMode: Boolean = false,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
@@ -66,12 +70,28 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    fun onFullNameChanged(name: String) {
+        _uiState.update { it.copy(fullName = name, errorMessage = null) }
+    }
+
     fun onEmailChanged(email: String) {
         _uiState.update { it.copy(email = email, errorMessage = null) }
     }
 
     fun onPasswordChanged(password: String) {
         _uiState.update { it.copy(password = password, errorMessage = null) }
+    }
+
+    fun onConfirmPasswordChanged(password: String) {
+        _uiState.update { it.copy(confirmPassword = password, errorMessage = null) }
+    }
+
+    fun onPlantNameChanged(plant: String) {
+        _uiState.update { it.copy(plantName = plant, errorMessage = null) }
+    }
+
+    fun onAgreedToTermsChanged(agreed: Boolean) {
+        _uiState.update { it.copy(agreedToTerms = agreed, errorMessage = null) }
     }
 
     fun submit() {
@@ -107,19 +127,44 @@ class AuthViewModel @Inject constructor(
 
     fun signUp() {
         val state = _uiState.value
-        if (state.email.isBlank() || state.password.isBlank()) {
-            _uiState.update { it.copy(errorMessage = "Email and password are required.") }
+        if (state.fullName.isBlank()) {
+            _uiState.update { it.copy(errorMessage = "Please enter your full name.") }
+            return
+        }
+        if (state.email.isBlank()) {
+            _uiState.update { it.copy(errorMessage = "Email address is required.") }
             return
         }
         if (state.password.length < 6) {
             _uiState.update { it.copy(errorMessage = "Password must be at least 6 characters.") }
             return
         }
+        if (state.password != state.confirmPassword) {
+            _uiState.update { it.copy(errorMessage = "Passwords do not match.") }
+            return
+        }
+        if (state.plantName.isBlank()) {
+            _uiState.update { it.copy(errorMessage = "Plant or company name is required.") }
+            return
+        }
+        if (!state.agreedToTerms) {
+            _uiState.update { it.copy(errorMessage = "Please accept the Terms of Service to continue.") }
+            return
+        }
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }
         viewModelScope.launch {
             try {
-                auth.createUserWithEmailAndPassword(state.email.trim(), state.password)
-                    .await()
+                val result = auth.createUserWithEmailAndPassword(state.email.trim(), state.password).await()
+                result.user?.let { user ->
+                    try {
+                        val profileUpdates = com.google.firebase.auth.UserProfileChangeRequest.Builder()
+                            .setDisplayName(state.fullName.trim())
+                            .build()
+                        user.updateProfile(profileUpdates).await()
+                    } catch (e: Exception) {
+                        // Profile display name fallback
+                    }
+                }
                 _uiState.update { it.copy(isLoading = false, isAuthenticated = true) }
             } catch (e: Exception) {
                 _uiState.update {

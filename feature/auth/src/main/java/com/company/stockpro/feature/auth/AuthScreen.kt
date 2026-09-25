@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -30,8 +31,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Factory
+import androidx.compose.material.icons.outlined.Apartment
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.Button
@@ -56,7 +60,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -102,8 +105,12 @@ fun AuthRoute(
 
     AuthScreen(
         uiState = uiState,
+        onFullNameChanged = viewModel::onFullNameChanged,
         onEmailChanged = viewModel::onEmailChanged,
         onPasswordChanged = viewModel::onPasswordChanged,
+        onConfirmPasswordChanged = viewModel::onConfirmPasswordChanged,
+        onPlantNameChanged = viewModel::onPlantNameChanged,
+        onAgreedToTermsChanged = viewModel::onAgreedToTermsChanged,
         onSubmitClick = viewModel::submit,
         onToggleModeClick = viewModel::toggleAuthMode,
         onForgotPasswordClick = {
@@ -123,8 +130,12 @@ fun AuthRoute(
 @Composable
 private fun AuthScreen(
     uiState: AuthUiState,
+    onFullNameChanged: (String) -> Unit,
     onEmailChanged: (String) -> Unit,
     onPasswordChanged: (String) -> Unit,
+    onConfirmPasswordChanged: (String) -> Unit,
+    onPlantNameChanged: (String) -> Unit,
+    onAgreedToTermsChanged: (Boolean) -> Unit,
     onSubmitClick: () -> Unit,
     onToggleModeClick: () -> Unit,
     onForgotPasswordClick: () -> Unit,
@@ -132,6 +143,7 @@ private fun AuthScreen(
 ) {
     val focusManager = LocalFocusManager.current
     var passwordVisible by remember { mutableStateOf(false) }
+    var confirmPasswordVisible by remember { mutableStateOf(false) }
 
     Box(
         modifier = modifier
@@ -175,12 +187,12 @@ private fun AuthScreen(
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             // App Icon Container
             Box(
                 modifier = Modifier
-                    .size(60.dp)
+                    .size(56.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(BrandDarkGreen),
                 contentAlignment = Alignment.Center,
@@ -189,24 +201,24 @@ private fun AuthScreen(
                     imageVector = Icons.Default.Factory,
                     contentDescription = null,
                     tint = Color.White,
-                    modifier = Modifier.size(32.dp),
+                    modifier = Modifier.size(30.dp),
                 )
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // StockPro Brand Title
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = "Stock",
-                    fontSize = 26.sp,
+                    fontSize = 25.sp,
                     fontWeight = FontWeight.Bold,
                     color = BrandNavy,
                     letterSpacing = (-0.5).sp,
                 )
                 Text(
                     text = "Pro",
-                    fontSize = 26.sp,
+                    fontSize = 25.sp,
                     fontWeight = FontWeight.Bold,
                     color = BrandGreen,
                     letterSpacing = (-0.5).sp,
@@ -217,17 +229,17 @@ private fun AuthScreen(
 
             Text(
                 text = "Manufacturing Inventory Management",
-                fontSize = 12.5.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Normal,
                 color = TextMuted,
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             // Heading & Subtitle
             Text(
-                text = if (uiState.isSignUpMode) "Create Account" else "Welcome Back!",
-                fontSize = 25.sp,
+                text = if (uiState.isSignUpMode) "Create Your Account" else "Welcome Back!",
+                fontSize = 24.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = BrandNavy,
                 letterSpacing = (-0.5).sp,
@@ -237,15 +249,15 @@ private fun AuthScreen(
 
             Text(
                 text = if (uiState.isSignUpMode) {
-                    "Join StockPro to streamline your plant floor operations and inventory."
+                    "Get started and take control of your\ninventory and operations."
                 } else {
                     "Sign in to manage your inventory and keep your operations running smoothly."
                 },
-                fontSize = 13.5.sp,
+                fontSize = 13.sp,
                 fontWeight = FontWeight.Normal,
                 color = TextSecondary,
                 textAlign = TextAlign.Center,
-                lineHeight = 18.sp,
+                lineHeight = 17.sp,
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
 
@@ -264,102 +276,394 @@ private fun AuthScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 18.dp, vertical = 16.dp)
                 ) {
-                    // Email Field
-                    OutlinedTextField(
-                        value = uiState.email,
-                        onValueChange = onEmailChanged,
-                        placeholder = {
-                            Text(
-                                text = "Enter your email",
-                                color = Color(0xFF94A3B8),
-                                fontSize = 14.sp,
-                            )
-                        },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Outlined.Email,
-                                contentDescription = null,
-                                tint = Color(0xFF64748B),
-                                modifier = Modifier.size(20.dp),
-                            )
-                        },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Email,
-                            imeAction = ImeAction.Next,
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = FieldBg,
-                            unfocusedContainerColor = FieldBg,
-                            focusedBorderColor = BrandGreen,
-                            unfocusedBorderColor = FieldBorder,
-                            focusedTextColor = BrandNavy,
-                            unfocusedTextColor = BrandNavy,
-                        ),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                    if (uiState.isSignUpMode) {
+                        // ─── Sign Up Fields ───
 
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    // Password Field
-                    OutlinedTextField(
-                        value = uiState.password,
-                        onValueChange = onPasswordChanged,
-                        placeholder = {
-                            Text(
-                                text = "Enter your password",
-                                color = Color(0xFF94A3B8),
-                                fontSize = 14.sp,
-                            )
-                        },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Outlined.Lock,
-                                contentDescription = null,
-                                tint = Color(0xFF64748B),
-                                modifier = Modifier.size(20.dp),
-                            )
-                        },
-                        trailingIcon = {
-                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        // Full Name
+                        OutlinedTextField(
+                            value = uiState.fullName,
+                            onValueChange = onFullNameChanged,
+                            placeholder = {
+                                Text(
+                                    text = "Full Name",
+                                    color = Color(0xFF94A3B8),
+                                    fontSize = 14.sp,
+                                )
+                            },
+                            leadingIcon = {
                                 Icon(
-                                    imageVector = if (passwordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
-                                    contentDescription = if (passwordVisible) "Hide password" else "Show password",
+                                    imageVector = Icons.Outlined.Person,
+                                    contentDescription = null,
                                     tint = Color(0xFF64748B),
                                     modifier = Modifier.size(20.dp),
                                 )
-                            }
-                        },
-                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Password,
-                            imeAction = ImeAction.Done,
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onDone = {
-                                focusManager.clearFocus()
-                                onSubmitClick()
-                            }
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = FieldBg,
-                            unfocusedContainerColor = FieldBg,
-                            focusedBorderColor = BrandGreen,
-                            unfocusedBorderColor = FieldBorder,
-                            focusedTextColor = BrandNavy,
-                            unfocusedTextColor = BrandNavy,
-                        ),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                            },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Text,
+                                imeAction = ImeAction.Next,
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = FieldBg,
+                                unfocusedContainerColor = FieldBg,
+                                focusedBorderColor = BrandGreen,
+                                unfocusedBorderColor = FieldBorder,
+                                focusedTextColor = BrandNavy,
+                                unfocusedTextColor = BrandNavy,
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
 
-                    // Forgot Password (in sign-in mode)
-                    if (!uiState.isSignUpMode) {
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Email Address
+                        OutlinedTextField(
+                            value = uiState.email,
+                            onValueChange = onEmailChanged,
+                            placeholder = {
+                                Text(
+                                    text = "Email Address",
+                                    color = Color(0xFF94A3B8),
+                                    fontSize = 14.sp,
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Outlined.Email,
+                                    contentDescription = null,
+                                    tint = Color(0xFF64748B),
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Email,
+                                imeAction = ImeAction.Next,
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = FieldBg,
+                                unfocusedContainerColor = FieldBg,
+                                focusedBorderColor = BrandGreen,
+                                unfocusedBorderColor = FieldBorder,
+                                focusedTextColor = BrandNavy,
+                                unfocusedTextColor = BrandNavy,
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Password
+                        OutlinedTextField(
+                            value = uiState.password,
+                            onValueChange = onPasswordChanged,
+                            placeholder = {
+                                Text(
+                                    text = "Password",
+                                    color = Color(0xFF94A3B8),
+                                    fontSize = 14.sp,
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Outlined.Lock,
+                                    contentDescription = null,
+                                    tint = Color(0xFF64748B),
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            },
+                            trailingIcon = {
+                                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                    Icon(
+                                        imageVector = if (passwordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                                        contentDescription = if (passwordVisible) "Hide password" else "Show password",
+                                        tint = Color(0xFF64748B),
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                }
+                            },
+                            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Password,
+                                imeAction = ImeAction.Next,
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = FieldBg,
+                                unfocusedContainerColor = FieldBg,
+                                focusedBorderColor = BrandGreen,
+                                unfocusedBorderColor = FieldBorder,
+                                focusedTextColor = BrandNavy,
+                                unfocusedTextColor = BrandNavy,
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Confirm Password
+                        OutlinedTextField(
+                            value = uiState.confirmPassword,
+                            onValueChange = onConfirmPasswordChanged,
+                            placeholder = {
+                                Text(
+                                    text = "Confirm Password",
+                                    color = Color(0xFF94A3B8),
+                                    fontSize = 14.sp,
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Outlined.Lock,
+                                    contentDescription = null,
+                                    tint = Color(0xFF64748B),
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            },
+                            trailingIcon = {
+                                IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
+                                    Icon(
+                                        imageVector = if (confirmPasswordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                                        contentDescription = if (confirmPasswordVisible) "Hide password" else "Show password",
+                                        tint = Color(0xFF64748B),
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                }
+                            },
+                            visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Password,
+                                imeAction = ImeAction.Next,
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = FieldBg,
+                                unfocusedContainerColor = FieldBg,
+                                focusedBorderColor = BrandGreen,
+                                unfocusedBorderColor = FieldBorder,
+                                focusedTextColor = BrandNavy,
+                                unfocusedTextColor = BrandNavy,
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Plant / Company Name
+                        OutlinedTextField(
+                            value = uiState.plantName,
+                            onValueChange = onPlantNameChanged,
+                            placeholder = {
+                                Text(
+                                    text = "Plant / Company Name",
+                                    color = Color(0xFF94A3B8),
+                                    fontSize = 14.sp,
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Outlined.Apartment,
+                                    contentDescription = null,
+                                    tint = Color(0xFF64748B),
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Text,
+                                imeAction = ImeAction.Done,
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onDone = {
+                                    focusManager.clearFocus()
+                                    onSubmitClick()
+                                }
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = FieldBg,
+                                unfocusedContainerColor = FieldBg,
+                                focusedBorderColor = BrandGreen,
+                                unfocusedBorderColor = FieldBorder,
+                                focusedTextColor = BrandNavy,
+                                unfocusedTextColor = BrandNavy,
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Checkbox for Terms of Service & Privacy Policy
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                    onClick = { onAgreedToTermsChanged(!uiState.agreedToTerms) },
+                                )
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .clip(RoundedCornerShape(5.dp))
+                                    .background(if (uiState.agreedToTerms) BrandGreen else Color.White)
+                                    .border(
+                                        BorderStroke(
+                                            1.5.dp,
+                                            if (uiState.agreedToTerms) BrandGreen else Color(0xFFCBD5E1)
+                                        ),
+                                        RoundedCornerShape(5.dp)
+                                    ),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                if (uiState.agreedToTerms) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Check,
+                                        contentDescription = "Agreed",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(15.dp),
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.width(10.dp))
+
+                            val termsAnnotated = buildAnnotatedString {
+                                append("I agree to the ")
+                                withStyle(style = SpanStyle(color = BrandGreen, fontWeight = FontWeight.SemiBold)) {
+                                    append("Terms of Service")
+                                }
+                                append(" and ")
+                                withStyle(style = SpanStyle(color = BrandGreen, fontWeight = FontWeight.SemiBold)) {
+                                    append("Privacy Policy")
+                                }
+                            }
+
+                            Text(
+                                text = termsAnnotated,
+                                fontSize = 12.sp,
+                                color = TextSecondary,
+                                lineHeight = 16.sp,
+                            )
+                        }
+
+                    } else {
+                        // ─── Sign In Fields ───
+
+                        // Email Field
+                        OutlinedTextField(
+                            value = uiState.email,
+                            onValueChange = onEmailChanged,
+                            placeholder = {
+                                Text(
+                                    text = "Enter your email",
+                                    color = Color(0xFF94A3B8),
+                                    fontSize = 14.sp,
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Outlined.Email,
+                                    contentDescription = null,
+                                    tint = Color(0xFF64748B),
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Email,
+                                imeAction = ImeAction.Next,
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = FieldBg,
+                                unfocusedContainerColor = FieldBg,
+                                focusedBorderColor = BrandGreen,
+                                unfocusedBorderColor = FieldBorder,
+                                focusedTextColor = BrandNavy,
+                                unfocusedTextColor = BrandNavy,
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Password Field
+                        OutlinedTextField(
+                            value = uiState.password,
+                            onValueChange = onPasswordChanged,
+                            placeholder = {
+                                Text(
+                                    text = "Enter your password",
+                                    color = Color(0xFF94A3B8),
+                                    fontSize = 14.sp,
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Outlined.Lock,
+                                    contentDescription = null,
+                                    tint = Color(0xFF64748B),
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            },
+                            trailingIcon = {
+                                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                    Icon(
+                                        imageVector = if (passwordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                                        contentDescription = if (passwordVisible) "Hide password" else "Show password",
+                                        tint = Color(0xFF64748B),
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                }
+                            },
+                            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Password,
+                                imeAction = ImeAction.Done,
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onDone = {
+                                    focusManager.clearFocus()
+                                    onSubmitClick()
+                                }
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = FieldBg,
+                                unfocusedContainerColor = FieldBg,
+                                focusedBorderColor = BrandGreen,
+                                unfocusedBorderColor = FieldBorder,
+                                focusedTextColor = BrandNavy,
+                                unfocusedTextColor = BrandNavy,
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+
+                        // Forgot Password
                         Spacer(modifier = Modifier.height(10.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -450,81 +754,82 @@ private fun AuthScreen(
                             }
                         }
                     }
-                }
-            }
 
-            Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
-            // OR Divider
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                HorizontalDivider(
-                    modifier = Modifier.weight(1f),
-                    color = Color(0xFFCBD5E1),
-                    thickness = 1.dp,
-                )
-                Text(
-                    text = "OR",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF94A3B8),
-                    modifier = Modifier.padding(horizontal = 14.dp),
-                )
-                HorizontalDivider(
-                    modifier = Modifier.weight(1f),
-                    color = Color(0xFFCBD5E1),
-                    thickness = 1.dp,
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Toggle Mode (Sign In <-> Create Account)
-            val annotatedText = buildAnnotatedString {
-                if (uiState.isSignUpMode) {
-                    append("Already have an account? ")
-                    pushStringAnnotation(tag = "TOGGLE", annotation = "TOGGLE")
-                    withStyle(
-                        style = SpanStyle(
-                            color = BrandGreen,
-                            fontWeight = FontWeight.Bold,
-                        )
+                    // OR Divider
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        append("Sign In")
-                    }
-                    pop()
-                } else {
-                    append("Don't have an account? ")
-                    pushStringAnnotation(tag = "TOGGLE", annotation = "TOGGLE")
-                    withStyle(
-                        style = SpanStyle(
-                            color = BrandGreen,
-                            fontWeight = FontWeight.Bold,
+                        HorizontalDivider(
+                            modifier = Modifier.weight(1f),
+                            color = Color(0xFFCBD5E1),
+                            thickness = 1.dp,
                         )
-                    ) {
-                        append("Create one")
+                        Text(
+                            text = "OR",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF94A3B8),
+                            modifier = Modifier.padding(horizontal = 14.dp),
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.weight(1f),
+                            color = Color(0xFFCBD5E1),
+                            thickness = 1.dp,
+                        )
                     }
-                    pop()
-                }
-            }
 
-            Text(
-                text = annotatedText,
-                fontSize = 14.sp,
-                color = TextSecondary,
-                modifier = Modifier
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = onToggleModeClick,
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Toggle Mode (Sign In <-> Create Account)
+                    val annotatedText = buildAnnotatedString {
+                        if (uiState.isSignUpMode) {
+                            append("Already have an account? ")
+                            pushStringAnnotation(tag = "TOGGLE", annotation = "TOGGLE")
+                            withStyle(
+                                style = SpanStyle(
+                                    color = BrandGreen,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                            ) {
+                                append("Sign In")
+                            }
+                            pop()
+                        } else {
+                            append("Don't have an account? ")
+                            pushStringAnnotation(tag = "TOGGLE", annotation = "TOGGLE")
+                            withStyle(
+                                style = SpanStyle(
+                                    color = BrandGreen,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                            ) {
+                                append("Create one")
+                            }
+                            pop()
+                        }
+                    }
+
+                    Text(
+                        text = annotatedText,
+                        fontSize = 13.5.sp,
+                        color = TextSecondary,
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = onToggleModeClick,
+                            )
+                            .padding(vertical = 4.dp),
                     )
-                    .padding(vertical = 8.dp),
-            )
+                }
+            }
 
             // Padding at bottom so scrollable content sits nicely above illustration
-            Spacer(modifier = Modifier.height(180.dp))
+            Spacer(modifier = Modifier.height(48.dp))
         }
     }
 }
