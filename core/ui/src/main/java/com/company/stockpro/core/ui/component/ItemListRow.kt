@@ -14,13 +14,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Archive
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -42,8 +46,9 @@ import com.company.stockpro.core.domain.model.Item
 import com.company.stockpro.core.domain.model.StockLevel
 
 /**
- * Production ItemListRow matching the approved design screenshot.
- * Displays item thumbnail, code, category, par level, location, status badge, and quantity.
+ * Precision Industrial Item Card matching Stitch Design System (screenshot_stitch_inventory.png).
+ * Displays SKU badge, location coordinate, par level buffer progress bar, on-hand quantity,
+ * and quick floor movement action triggers.
  */
 @Composable
 fun ItemListRow(
@@ -51,161 +56,281 @@ fun ItemListRow(
     onClick: () -> Unit,
     onOverflowClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onReceiveClick: (() -> Unit)? = null,
+    onIssueClick: (() -> Unit)? = null,
 ) {
+    val currentUnits = item.onHand.toUnitsDouble
+    val parUnits = item.parLevel.toUnitsDouble
+    val ratio = if (parUnits > 0) (currentUnits / (parUnits * 1.5)).toFloat().coerceIn(0f, 1f) else 0.5f
+
+    val progressColor = when (item.stockLevel) {
+        StockLevel.OUT_OF_STOCK -> StockProColors.Danger
+        StockLevel.LOW_STOCK -> StockProColors.Warning
+        else -> StockProColors.Success
+    }
+
     Surface(
-        shape = Radius.md,
+        shape = Radius.lg,
         color = StockProColors.Surface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
-        shadowElevation = 1.dp,
+        border = androidx.compose.foundation.BorderStroke(1.dp, StockProColors.OutlineSubtle),
+        shadowElevation = 0.5.dp,
         modifier = modifier
             .fillMaxWidth()
+            .clip(Radius.lg)
             .clickable(onClick = onClick),
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(Spacing.cardPadding),
         ) {
-            // 1. Thumbnail Placeholder
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(Radius.md)
-                    .background(StockProColors.SurfaceAlt)
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), Radius.md),
+            // 1. Top Line: SKU Monospace Badge, Item Name & Status Badge
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth(),
             ) {
-                Icon(
-                    imageVector = Icons.Default.Category,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.outlineVariant,
-                    modifier = Modifier.size(28.dp),
-                )
-            }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Surface(
+                        shape = Radius.xs,
+                        color = StockProColors.SurfaceAlt,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, StockProColors.Outline),
+                    ) {
+                        Text(
+                            text = item.code,
+                            style = StockProCodeTextStyle.copy(
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = StockProColors.TextPrimary,
+                            ),
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        )
+                    }
 
-            Spacer(modifier = Modifier.width(Spacing.x3))
+                    Spacer(modifier = Modifier.width(Spacing.x2))
 
-            // 2. Middle Information Column
-            Column(
-                modifier = Modifier.weight(1f),
-            ) {
-                Text(
-                    text = item.name,
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-
-                Spacer(modifier = Modifier.height(2.dp))
-
-                // Code + Category
-                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = item.code,
-                        style = StockProCodeTextStyle.copy(fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant),
+                        text = item.name,
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                        color = StockProColors.TextPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
                     )
-                    if (item.categoryName.isNotBlank()) {
-                        Text(
-                            text = " | ${item.categoryName}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
                 }
 
-                Spacer(modifier = Modifier.height(Spacing.x1))
+                Spacer(modifier = Modifier.width(Spacing.x1))
 
-                // Par level + Location
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.x2),
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Archive,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.outlineVariant,
-                            modifier = Modifier.size(13.dp),
-                        )
-                        Spacer(modifier = Modifier.width(2.dp))
-                        Text(
-                            text = "${item.parLevel.toUnitsDouble.toLong()} ${item.unitOfMeasure.lowercase()}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-
-                    if (item.locationCode.isNotBlank()) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.LocationOn,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.outlineVariant,
-                                modifier = Modifier.size(13.dp),
-                            )
-                            Spacer(modifier = Modifier.width(2.dp))
-                            Text(
-                                text = item.locationCode,
-                                style = StockProCodeTextStyle.copy(fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant),
-                            )
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.width(Spacing.x2))
-
-            // 3. Right Status & Quantity Column
-            Column(
-                horizontalAlignment = Alignment.End,
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     StatusBadge(level = item.stockLevel)
+
                     IconButton(
                         onClick = onOverflowClick,
-                        modifier = Modifier.size(48.dp),
+                        modifier = Modifier.size(32.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Default.MoreVert,
                             contentDescription = "Options for ${item.name}",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(20.dp),
+                            tint = StockProColors.TextSecondary,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.x1))
+
+            // 2. Metadata Line: Category pill, Location coordinate, Par level
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.x2),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                if (item.categoryName.isNotBlank()) {
+                    Surface(
+                        shape = Radius.xs,
+                        color = StockProColors.PrimaryContainer.copy(alpha = 0.5f),
+                    ) {
+                        Text(
+                            text = item.categoryName,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontSize = 10.sp,
+                                color = StockProColors.Primary,
+                                fontWeight = FontWeight.SemiBold,
+                            ),
+                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
+                            maxLines = 1,
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(Spacing.x2))
+                if (item.locationCode.isNotBlank()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.LocationOn,
+                            contentDescription = null,
+                            tint = StockProColors.TextSecondary,
+                            modifier = Modifier.size(13.dp),
+                        )
+                        Spacer(modifier = Modifier.width(2.dp))
+                        Text(
+                            text = item.locationCode,
+                            style = StockProCodeTextStyle.copy(
+                                fontSize = 11.sp,
+                                color = StockProColors.TextSecondary,
+                                fontWeight = FontWeight.Medium,
+                            ),
+                        )
+                    }
+                }
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Archive,
+                        contentDescription = null,
+                        tint = StockProColors.TextTertiary,
+                        modifier = Modifier.size(12.dp),
+                    )
+                    Spacer(modifier = Modifier.width(2.dp))
+                    Text(
+                        text = "Par: ${parUnits.toLong()} ${item.unitOfMeasure.lowercase()}",
+                        style = StockProCodeTextStyle.copy(
+                            fontSize = 10.sp,
+                            color = StockProColors.TextSecondary,
+                        ),
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.x2))
+
+            // 3. Buffer Capacity Gauge
+            LinearProgressIndicator(
+                progress = { ratio },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(4.dp)
+                    .clip(Radius.pill),
+                color = progressColor,
+                trackColor = StockProColors.OutlineSubtle,
+            )
+
+            Spacer(modifier = Modifier.height(Spacing.x2))
+
+            // 4. Bottom Line: Large On Hand Qty + Unit Cost + Quick Movement CTAs
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row(verticalAlignment = Alignment.Bottom) {
                     val qtyColor = when (item.stockLevel) {
                         StockLevel.OUT_OF_STOCK -> StockProColors.Danger
                         StockLevel.LOW_STOCK -> StockProColors.Warning
-                        else -> MaterialTheme.colorScheme.onSurface
+                        else -> StockProColors.TextPrimary
                     }
 
                     Text(
-                        text = "${item.onHand.toUnitsDouble.toLong()} ${item.unitOfMeasure.lowercase()}",
+                        text = "${currentUnits.toLong()}",
                         style = StockProCodeTextStyle.copy(
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.ExtraBold,
                             color = qtyColor,
                         ),
                     )
-                    Spacer(modifier = Modifier.width(2.dp))
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = "View detail",
-                        tint = MaterialTheme.colorScheme.outlineVariant,
-                        modifier = Modifier.size(16.dp),
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = item.unitOfMeasure.lowercase(),
+                        style = StockProCodeTextStyle.copy(
+                            fontSize = 12.sp,
+                            color = StockProColors.TextSecondary,
+                            fontWeight = FontWeight.Medium,
+                        ),
+                        modifier = Modifier.padding(bottom = 1.dp),
                     )
+
+                    if (item.unitCost.paise > 0L) {
+                        Spacer(modifier = Modifier.width(Spacing.x2))
+                        Text(
+                            text = "•  ₹ %.2f / unit".format(item.unitCost.toRupeesDouble),
+                            style = StockProCodeTextStyle.copy(
+                                fontSize = 11.sp,
+                                color = StockProColors.TextTertiary,
+                            ),
+                            modifier = Modifier.padding(bottom = 1.dp),
+                        )
+                    }
+                }
+
+                // Quick Floor Movement Action Buttons
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.x1),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (onReceiveClick != null) {
+                        Surface(
+                            shape = Radius.xs,
+                            color = StockProColors.SuccessContainer,
+                            modifier = Modifier
+                                .clip(Radius.xs)
+                                .clickable(onClick = onReceiveClick),
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "Receive",
+                                    tint = StockProColors.Success,
+                                    modifier = Modifier.size(12.dp),
+                                )
+                                Spacer(modifier = Modifier.width(2.dp))
+                                Text(
+                                    text = "Recv",
+                                    style = StockProCodeTextStyle.copy(
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = StockProColors.Success,
+                                    ),
+                                )
+                            }
+                        }
+                    }
+
+                    if (onIssueClick != null) {
+                        Surface(
+                            shape = Radius.xs,
+                            color = StockProColors.PrimaryContainer,
+                            modifier = Modifier
+                                .clip(Radius.xs)
+                                .clickable(onClick = onIssueClick),
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Remove,
+                                    contentDescription = "Issue",
+                                    tint = StockProColors.Primary,
+                                    modifier = Modifier.size(12.dp),
+                                )
+                                Spacer(modifier = Modifier.width(2.dp))
+                                Text(
+                                    text = "Issue",
+                                    style = StockProCodeTextStyle.copy(
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = StockProColors.Primary,
+                                    ),
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -213,38 +338,43 @@ fun ItemListRow(
 }
 
 /**
- * 72dp shimmer row for inventory loading skeleton (rules.md §6.3).
+ * Modern industrial shimmer row for inventory loading skeleton.
  */
 @Composable
 fun ItemListRowSkeleton(
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        shape = Radius.md,
+        shape = Radius.lg,
         color = StockProColors.Surface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, StockProColors.OutlineSubtle),
         modifier = modifier
             .fillMaxWidth()
-            .height(Spacing.rowMinHeight),
+            .height(108.dp),
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(Spacing.cardPadding),
+            verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            SkeletonBox(modifier = Modifier.size(48.dp), shape = Radius.md)
-            Spacer(modifier = Modifier.width(Spacing.x3))
-            Column(modifier = Modifier.weight(1f)) {
-                SkeletonBox(modifier = Modifier.fillMaxWidth(0.6f).height(16.dp))
-                Spacer(modifier = Modifier.height(Spacing.x1))
-                SkeletonBox(modifier = Modifier.fillMaxWidth(0.4f).height(12.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                SkeletonBox(modifier = Modifier.width(80.dp).height(18.dp), shape = Radius.xs)
+                SkeletonBox(modifier = Modifier.width(60.dp).height(18.dp), shape = Radius.pill)
             }
-            Spacer(modifier = Modifier.width(Spacing.x3))
-            Column(horizontalAlignment = Alignment.End) {
-                SkeletonBox(modifier = Modifier.width(64.dp).height(20.dp), shape = Radius.pill)
-                Spacer(modifier = Modifier.height(Spacing.x1))
-                SkeletonBox(modifier = Modifier.width(48.dp).height(16.dp))
+            SkeletonBox(modifier = Modifier.fillMaxWidth(0.7f).height(16.dp))
+            SkeletonBox(modifier = Modifier.fillMaxWidth().height(4.dp), shape = Radius.pill)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                SkeletonBox(modifier = Modifier.width(90.dp).height(20.dp))
+                SkeletonBox(modifier = Modifier.width(70.dp).height(24.dp), shape = Radius.xs)
             }
         }
     }

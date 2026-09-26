@@ -3,7 +3,6 @@ package com.company.stockpro.feature.home
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,24 +14,26 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Factory
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PrecisionManufacturing
+import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Warning
@@ -42,6 +43,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -49,6 +51,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,6 +63,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.company.stockpro.core.designsystem.component.ButtonVariant
+import com.company.stockpro.core.designsystem.component.StatusBadge
 import com.company.stockpro.core.designsystem.component.StockProButton
 import com.company.stockpro.core.designsystem.theme.Radius
 import com.company.stockpro.core.designsystem.theme.Spacing
@@ -67,14 +71,16 @@ import com.company.stockpro.core.designsystem.theme.StockProCodeTextStyle
 import com.company.stockpro.core.designsystem.theme.StockProColors
 import com.company.stockpro.core.domain.model.Item
 import com.company.stockpro.core.domain.model.MovementType
+import com.company.stockpro.core.domain.model.StockLevel
+import com.company.stockpro.core.domain.model.SyncStatus
 import com.company.stockpro.core.ui.component.SkeletonBox
 import com.company.stockpro.core.ui.component.SyncBanner
 import com.company.stockpro.core.ui.component.chart.AreaSparkline
 import com.company.stockpro.core.ui.component.chart.StockCompositionDonut
 
 /**
- * Production Home Dashboard Screen.
- * Faithful implementation of UI mockup media_1789794856417.png.
+ * Precision Industrial Home Dashboard Screen.
+ * Faithful implementation of Stitch Industrial System (screenshot_stitch_home.png).
  */
 @Composable
 fun HomeRoute(
@@ -203,25 +209,24 @@ private fun HomeContent(
     onNeedsAttentionClick: () -> Unit,
 ) {
     val scrollState = rememberScrollState()
-    var plantDropdownExpanded by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var plantDropdownExpanded by rememberSaveable { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(scrollState)
-            .padding(bottom = Spacing.x6),
+            .padding(bottom = 96.dp),
     ) {
-        // Sync Banner
-        SyncBanner(
-            status = state.syncStatus,
+        // 1. Top Industrial Telemetry Strip
+        IndustrialTelemetryStrip(
+            syncStatus = state.syncStatus,
             onNeedsAttentionClick = onNeedsAttentionClick,
-            modifier = Modifier.fillMaxWidth(),
         )
 
         Column(modifier = Modifier.padding(horizontal = Spacing.screenGutter)) {
             Spacer(modifier = Modifier.height(Spacing.x2))
 
-            // 1. Top App Bar Header
+            // 2. Industrial App Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -230,48 +235,99 @@ private fun HomeContent(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(38.dp)
                             .clip(Radius.md)
-                            .background(StockProColors.BrandMark),
+                            .background(StockProColors.Primary),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             imageVector = Icons.Default.Factory,
                             contentDescription = null,
                             tint = Color.White,
-                            modifier = Modifier.size(22.dp),
+                            modifier = Modifier.size(20.dp),
                         )
                     }
                     Spacer(modifier = Modifier.width(Spacing.x2))
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = "Stock",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                text = "StockPro",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = (-0.3).sp,
+                                ),
                                 color = StockProColors.TextPrimary,
                             )
-                            Text(
-                                text = "Pro",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                color = StockProColors.BrandMark,
-                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Surface(
+                                shape = Radius.xs,
+                                color = StockProColors.PrimaryContainer,
+                            ) {
+                                Text(
+                                    text = "ENTERPRISE",
+                                    style = StockProCodeTextStyle.copy(
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = StockProColors.Primary,
+                                    ),
+                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                )
+                            }
                         }
-                        Text(
-                            text = "Manufacturing Inventory",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = StockProColors.TextSecondary,
-                        )
+
+                        // Plant Selector Dropdown Pill
+                        Box {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .clickable { plantDropdownExpanded = true }
+                                    .padding(vertical = 1.dp),
+                            ) {
+                                Text(
+                                    text = state.activePlant.uppercase(),
+                                    style = StockProCodeTextStyle.copy(
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = StockProColors.TextSecondary,
+                                    ),
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.ArrowDropDown,
+                                    contentDescription = "Select Plant",
+                                    tint = StockProColors.TextSecondary,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                            }
+
+                            DropdownMenu(
+                                expanded = plantDropdownExpanded,
+                                onDismissRequest = { plantDropdownExpanded = false },
+                            ) {
+                                state.availablePlants.forEach { plant ->
+                                    DropdownMenuItem(
+                                        text = { Text(plant) },
+                                        onClick = {
+                                            onSelectPlant(plant)
+                                            plantDropdownExpanded = false
+                                        },
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onNotificationsClick) {
+                    IconButton(
+                        onClick = onNotificationsClick,
+                        modifier = Modifier.size(40.dp),
+                    ) {
                         BadgedBox(
                             badge = {
                                 if (state.unreadAlertsCount > 0) {
                                     Box(
                                         modifier = Modifier
-                                            .size(18.dp)
+                                            .size(16.dp)
                                             .clip(CircleShape)
                                             .background(StockProColors.Danger),
                                         contentAlignment = Alignment.Center,
@@ -280,7 +336,7 @@ private fun HomeContent(
                                             text = state.unreadAlertsCount.toString(),
                                             style = MaterialTheme.typography.labelSmall.copy(
                                                 color = Color.White,
-                                                fontSize = 10.sp,
+                                                fontSize = 9.sp,
                                                 fontWeight = FontWeight.Bold,
                                             ),
                                         )
@@ -292,32 +348,37 @@ private fun HomeContent(
                                 imageVector = Icons.Default.Notifications,
                                 contentDescription = "Notifications",
                                 tint = StockProColors.TextPrimary,
+                                modifier = Modifier.size(22.dp),
                             )
                         }
                     }
 
                     Spacer(modifier = Modifier.width(Spacing.x1))
 
-                    // User Initials Avatar
+                    // User Initials Avatar with Active Ring
                     val initials = remember(state.userName) {
                         state.userName.trim().split("\\s+".toRegex())
                             .filter { it.isNotEmpty() }
                             .take(2)
                             .map { it.first().uppercase() }
                             .joinToString("")
-                            .ifBlank { "SP" }
+                            .ifBlank { "OP" }
                     }
                     Box(
                         modifier = Modifier
-                            .size(38.dp)
+                            .size(36.dp)
                             .clip(CircleShape)
-                            .background(StockProColors.BrandMark.copy(alpha = 0.15f)),
+                            .background(StockProColors.Primary.copy(alpha = 0.12f))
+                            .border(1.5.dp, StockProColors.Primary, CircleShape),
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             text = initials,
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                            color = StockProColors.BrandMark,
+                            style = StockProCodeTextStyle.copy(
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = StockProColors.Primary,
+                            ),
                         )
                     }
                 }
@@ -325,145 +386,308 @@ private fun HomeContent(
 
             Spacer(modifier = Modifier.height(Spacing.x3))
 
-            // 2. Greeting & Plant Selector
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    val greeting = remember {
-                        val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
-                        when {
-                            hour < 12 -> "Good Morning"
-                            hour < 17 -> "Good Afternoon"
-                            else -> "Good Evening"
-                        }
-                    }
-                    Text(
-                        text = "$greeting, ${state.userName} 👋",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = StockProColors.TextPrimary,
+            // 3. Operational 2x2 KPI Grid (Matching Stitch Industrial Home)
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.x2)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.x2),
+                ) {
+                    IndustrialKpiCard(
+                        title = "TOTAL ITEMS",
+                        value = String.format("%,d", state.totalItems),
+                        deltaText = "+${state.totalItemsDeltaPercent}%",
+                        subText = "this month",
+                        accentColor = StockProColors.Primary,
+                        modifier = Modifier.weight(1f),
                     )
-                    Spacer(modifier = Modifier.height(Spacing.x1))
-                    Text(
-                        text = "Here's what's happening in your inventory today.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = StockProColors.TextSecondary,
+                    IndustrialKpiCard(
+                        title = "LOW STOCK",
+                        value = "${state.lowStockCount}",
+                        deltaText = "${state.lowStockItemsNeedReorder} Crits",
+                        subText = "need reorder",
+                        accentColor = StockProColors.Warning,
+                        isWarning = true,
+                        modifier = Modifier.weight(1f),
                     )
                 }
-
-                // Plant Selector Dropdown Chip
-                Box {
-                    Surface(
-                        shape = Radius.pill,
-                        color = StockProColors.SurfaceAlt,
-                        modifier = Modifier
-                            .clip(Radius.pill)
-                            .clickable { plantDropdownExpanded = true },
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = Spacing.x2, vertical = Spacing.x1),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Factory,
-                                contentDescription = "Active Plant",
-                                tint = StockProColors.TextSecondary,
-                                modifier = Modifier.size(16.dp),
-                            )
-                            Spacer(modifier = Modifier.width(Spacing.x1))
-                            Text(
-                                text = state.activePlant,
-                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
-                                color = StockProColors.TextPrimary,
-                            )
-                            Icon(
-                                imageVector = Icons.Default.ArrowDropDown,
-                                contentDescription = "Select Plant",
-                                tint = StockProColors.TextSecondary,
-                            )
-                        }
-                    }
-
-                    DropdownMenu(
-                        expanded = plantDropdownExpanded,
-                        onDismissRequest = { plantDropdownExpanded = false },
-                    ) {
-                        state.availablePlants.forEach { plant ->
-                            DropdownMenuItem(
-                                text = { Text(plant) },
-                                onClick = {
-                                    onSelectPlant(plant)
-                                    plantDropdownExpanded = false
-                                },
-                            )
-                        }
-                    }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.x2),
+                ) {
+                    IndustrialKpiCard(
+                        title = "IN PRODUCTION",
+                        value = String.format("%,d", state.finishedGoodsCount),
+                        deltaText = "+${state.finishedGoodsDeltaPercent}%",
+                        subText = "active runs",
+                        accentColor = StockProColors.Production,
+                        modifier = Modifier.weight(1f),
+                    )
+                    IndustrialKpiCard(
+                        title = "RAW MATERIALS",
+                        value = String.format("%,d", state.rawMaterialsCount),
+                        deltaText = "+${state.rawMaterialsDeltaPercent}%",
+                        subText = "in warehouse",
+                        accentColor = StockProColors.Success,
+                        modifier = Modifier.weight(1f),
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(Spacing.x3))
 
-            // 3. Horizontal 4-Card KPI Row (scrollable)
-            Row(
+            // 4. Hero Inventory Valuation Card with Area Sparkline (Full Width)
+            Surface(
+                shape = Radius.lg,
+                color = StockProColors.Surface,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
+                    .border(1.dp, StockProColors.OutlineSubtle, Radius.lg),
+            ) {
+                Column(modifier = Modifier.padding(Spacing.x3)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "TOTAL VALUATION",
+                                style = StockProCodeTextStyle.copy(
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = StockProColors.TextSecondary,
+                                ),
+                            )
+                            Spacer(modifier = Modifier.width(Spacing.x1))
+                            Surface(
+                                shape = Radius.xs,
+                                color = StockProColors.SuccessContainer,
+                            ) {
+                                Text(
+                                    text = "INR ₹",
+                                    style = StockProCodeTextStyle.copy(
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = StockProColors.Success,
+                                    ),
+                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                )
+                            }
+                        }
+
+                        IconButton(
+                            onClick = onToggleValuation,
+                            modifier = Modifier.size(28.dp),
+                        ) {
+                            Icon(
+                                imageVector = if (state.isValuationVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                contentDescription = "Toggle valuation",
+                                tint = StockProColors.TextSecondary,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(Spacing.x1))
+
+                    val formattedValuation = if (state.isValuationVisible) {
+                        val inRupees = state.totalValuationPaise / 100.0
+                        if (inRupees >= 10_000_000) {
+                            "₹ ${String.format("%.2f", inRupees / 10_000_000.0)} Cr"
+                        } else if (inRupees >= 100_000) {
+                            "₹ ${String.format("%.2f", inRupees / 100_000.0)} Lakh"
+                        } else {
+                            "₹ ${String.format("%,.0f", inRupees)}"
+                        }
+                    } else {
+                        "₹ •••••••••"
+                    }
+
+                    Text(
+                        text = formattedValuation,
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = (-0.5).sp,
+                        ),
+                        color = StockProColors.TextPrimary,
+                    )
+
+                    Spacer(modifier = Modifier.height(Spacing.x1))
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            shape = Radius.pill,
+                            color = StockProColors.SuccessContainer,
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ArrowUpward,
+                                    contentDescription = null,
+                                    tint = StockProColors.Success,
+                                    modifier = Modifier.size(11.dp),
+                                )
+                                Spacer(modifier = Modifier.width(2.dp))
+                                Text(
+                                    text = "+${state.valuationDeltaPercent}%",
+                                    style = StockProCodeTextStyle.copy(
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = StockProColors.Success,
+                                    ),
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(Spacing.x1))
+                        Text(
+                            text = "vs preceding 30 days",
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                            color = StockProColors.TextSecondary,
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(Spacing.x2))
+
+                    AreaSparkline(
+                        dataPoints = state.sparklinePoints,
+                        labels = state.sparklineLabels,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.x3))
+
+            // 5. Stock Composition & Inventory Health (Full Width Card)
+            Surface(
+                shape = Radius.lg,
+                color = StockProColors.Surface,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, StockProColors.OutlineSubtle, Radius.lg),
+            ) {
+                Column(modifier = Modifier.padding(Spacing.x3)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column {
+                            Text(
+                                text = "STOCK HEALTH & COMPOSITION",
+                                style = StockProCodeTextStyle.copy(
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = StockProColors.TextSecondary,
+                                ),
+                            )
+                            Text(
+                                text = "Physical warehouse distribution",
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                color = StockProColors.TextTertiary,
+                            )
+                        }
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .clip(Radius.sm)
+                                .clickable { onNavigateToInventory() }
+                                .padding(horizontal = 4.dp, vertical = 2.dp),
+                        ) {
+                            Text(
+                                text = "View All",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = StockProColors.Primary,
+                                ),
+                            )
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                tint = StockProColors.Primary,
+                                modifier = Modifier.size(16.dp),
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(Spacing.x3))
+
+                    StockCompositionDonut(
+                        segments = state.stockSegments,
+                        totalCount = state.totalItems,
+                        centerLabel = "Active SKUs",
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.x3))
+
+            // 6. Floor Operations Action Grid (4 Buttons)
+            Text(
+                text = "FLOOR OPERATIONS",
+                style = StockProCodeTextStyle.copy(
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = StockProColors.TextSecondary,
+                ),
+            )
+            Spacer(modifier = Modifier.height(Spacing.x1))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(Spacing.x2),
             ) {
-                KpiCard(
-                    title = "Total Items",
-                    value = String.format("%,d", state.totalItems),
-                    deltaText = "↑ +${state.totalItemsDeltaPercent}%",
-                    subText = "vs last month",
-                    icon = Icons.Default.Widgets,
-                    iconTint = StockProColors.BrandMark,
-                    containerColor = StockProColors.PrimaryContainer.copy(alpha = 0.5f),
+                FloorActionButton(
+                    title = "Receive",
+                    sub = "+ Inbound",
+                    icon = Icons.Default.ArrowDownward,
+                    color = StockProColors.Success,
+                    containerColor = StockProColors.SuccessContainer.copy(alpha = 0.6f),
+                    onClick = onReceiveStockClick,
+                    modifier = Modifier.weight(1f),
                 )
-                KpiCard(
-                    title = "Raw Materials",
-                    value = String.format("%,d", state.rawMaterialsCount),
-                    deltaText = "↑ +${state.rawMaterialsDeltaPercent}%",
-                    subText = "vs last month",
-                    icon = Icons.Default.Category,
-                    iconTint = StockProColors.Success,
-                    containerColor = StockProColors.SuccessContainer.copy(alpha = 0.5f),
+                FloorActionButton(
+                    title = "Issue",
+                    sub = "- Outbound",
+                    icon = Icons.Default.ArrowUpward,
+                    color = StockProColors.Primary,
+                    containerColor = StockProColors.PrimaryContainer.copy(alpha = 0.6f),
+                    onClick = onIssueStockClick,
+                    modifier = Modifier.weight(1f),
                 )
-                KpiCard(
-                    title = "Low Stock",
-                    value = String.format("%,d", state.lowStockCount),
-                    deltaText = "↑ +${state.lowStockItemsNeedReorder}",
-                    subText = "items need reorder",
-                    icon = Icons.Default.Warning,
-                    iconTint = StockProColors.Warning,
-                    containerColor = StockProColors.WarningContainer.copy(alpha = 0.5f),
-                    isWarning = true,
-                )
-                KpiCard(
-                    title = "Finished Goods",
-                    value = String.format("%,d", state.finishedGoodsCount),
-                    deltaText = "↑ +${state.finishedGoodsDeltaPercent}%",
-                    subText = "vs last month",
-                    icon = Icons.Default.PrecisionManufacturing,
-                    iconTint = StockProColors.Primary,
+                FloorActionButton(
+                    title = "Catalog",
+                    sub = "Inventory",
+                    icon = Icons.Default.Inventory,
+                    color = StockProColors.TextPrimary,
                     containerColor = StockProColors.SurfaceAlt,
+                    onClick = onNavigateToInventory,
+                    modifier = Modifier.weight(1f),
+                )
+                FloorActionButton(
+                    title = "Reports",
+                    sub = "Analytics",
+                    icon = Icons.Default.BarChart,
+                    color = StockProColors.Production,
+                    containerColor = StockProColors.ProductionContainer.copy(alpha = 0.6f),
+                    onClick = onNavigateToReports,
+                    modifier = Modifier.weight(1f),
                 )
             }
 
             Spacer(modifier = Modifier.height(Spacing.x3))
 
-            // 4. Mid-Section 2-Card Row (Valuation + Stock Status)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(Spacing.x2),
-            ) {
-                // Left Card: Inventory Value with Sparkline
+            // 7. Priority Restock Alerts
+            if (state.topLowStockItems.isNotEmpty()) {
                 Surface(
                     shape = Radius.lg,
                     color = StockProColors.Surface,
                     modifier = Modifier
-                        .weight(1f)
+                        .fillMaxWidth()
                         .border(1.dp, StockProColors.OutlineSubtle, Radius.lg),
                 ) {
                     Column(modifier = Modifier.padding(Spacing.x3)) {
@@ -473,410 +697,100 @@ private fun HomeContent(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.Inventory,
-                                    contentDescription = null,
-                                    tint = StockProColors.BrandMark,
-                                    modifier = Modifier.size(16.dp),
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(StockProColors.Warning),
                                 )
                                 Spacer(modifier = Modifier.width(Spacing.x1))
                                 Text(
-                                    text = "Inventory Value",
-                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                                    color = StockProColors.TextPrimary,
-                                )
-                            }
-                            IconButton(
-                                onClick = onToggleValuation,
-                                modifier = Modifier.size(24.dp),
-                            ) {
-                                Icon(
-                                    imageVector = if (state.isValuationVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                    contentDescription = "Toggle valuation visibility",
-                                    tint = StockProColors.TextSecondary,
-                                    modifier = Modifier.size(16.dp),
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(Spacing.x1))
-
-                        val formattedValuation = if (state.isValuationVisible) {
-                            val inRupees = state.totalValuationPaise / 100.0
-                            if (inRupees >= 10_000_000) {
-                                "₹ ${String.format("%.1f", inRupees / 10_000_000.0)}Cr"
-                            } else if (inRupees >= 100_000) {
-                                "₹ ${String.format("%.1f", inRupees / 100_000.0)}L"
-                            } else {
-                                "₹ ${String.format("%,.0f", inRupees)}"
-                            }
-                        } else {
-                            "₹ ••••••••"
-                        }
-
-                        Text(
-                            text = formattedValuation,
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                            color = StockProColors.TextPrimary,
-                        )
-
-                        Spacer(modifier = Modifier.height(Spacing.x1))
-
-                        Text(
-                            text = "↑ +${state.valuationDeltaPercent}% vs last month",
-                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
-                            color = StockProColors.Success,
-                        )
-
-                        Spacer(modifier = Modifier.height(Spacing.x2))
-
-                        // Area Sparkline Canvas
-                        AreaSparkline(
-                            dataPoints = state.sparklinePoints,
-                            labels = state.sparklineLabels,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                }
-
-                // Right Card: Stock Status Donut
-                Surface(
-                    shape = Radius.lg,
-                    color = StockProColors.Surface,
-                    modifier = Modifier
-                        .weight(1f)
-                        .border(1.dp, StockProColors.OutlineSubtle, Radius.lg),
-                ) {
-                    Column(modifier = Modifier.padding(Spacing.x3)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = "Stock Status",
-                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                                color = StockProColors.TextPrimary,
-                            )
-                            Text(
-                                text = "View All >",
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    color = StockProColors.BrandMark,
-                                    fontSize = 11.sp,
-                                ),
-                                modifier = Modifier.clickable { onNavigateToInventory() },
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(Spacing.x2))
-
-                        StockCompositionDonut(
-                            segments = state.stockSegments,
-                            totalCount = state.totalItems,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(Spacing.x3))
-
-            // 5. Quick Actions Row (4 Action Tiles)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(Spacing.x2),
-            ) {
-                QuickActionTile(
-                    title = "Add Item",
-                    icon = Icons.Default.Add,
-                    iconTint = StockProColors.BrandMark,
-                    containerColor = StockProColors.PrimaryContainer.copy(alpha = 0.5f),
-                    onClick = onNavigateToInventory,
-                    modifier = Modifier.weight(1f),
-                )
-                QuickActionTile(
-                    title = "Receive Stock",
-                    icon = Icons.Default.ArrowDownward,
-                    iconTint = StockProColors.Success,
-                    containerColor = StockProColors.SuccessContainer.copy(alpha = 0.5f),
-                    onClick = onReceiveStockClick,
-                    modifier = Modifier.weight(1f),
-                )
-                QuickActionTile(
-                    title = "Issue Stock",
-                    icon = Icons.Default.ArrowUpward,
-                    iconTint = StockProColors.Warning,
-                    containerColor = StockProColors.WarningContainer.copy(alpha = 0.5f),
-                    onClick = onIssueStockClick,
-                    modifier = Modifier.weight(1f),
-                )
-                QuickActionTile(
-                    title = "View Reports",
-                    icon = Icons.Default.BarChart,
-                    iconTint = StockProColors.Primary,
-                    containerColor = StockProColors.SurfaceAlt,
-                    onClick = onNavigateToReports,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-
-            Spacer(modifier = Modifier.height(Spacing.x3))
-
-            // 6. Bottom Split: Recent Activity & Top 5 Low Stock / Upcoming Reorders
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(Spacing.x2),
-            ) {
-                // Left: Recent Activity Feed
-                Surface(
-                    shape = Radius.lg,
-                    color = StockProColors.Surface,
-                    modifier = Modifier
-                        .weight(1f)
-                        .border(1.dp, StockProColors.OutlineSubtle, Radius.lg),
-                ) {
-                    Column(modifier = Modifier.padding(Spacing.x3)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = "Recent Activity",
-                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                                color = StockProColors.TextPrimary,
-                            )
-                            Text(
-                                text = "View All >",
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    color = StockProColors.BrandMark,
-                                    fontSize = 11.sp,
-                                ),
-                                modifier = Modifier.clickable { onNavigateToInventory() },
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(Spacing.x2))
-
-                        if (state.recentActivities.isEmpty()) {
-                            Text(
-                                text = "No recent stock movements.",
-                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                                color = StockProColors.TextSecondary,
-                                modifier = Modifier.padding(vertical = Spacing.x2),
-                            )
-                        } else {
-                            Column(verticalArrangement = Arrangement.spacedBy(Spacing.x2)) {
-                                state.recentActivities.take(5).forEach { activity ->
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.fillMaxWidth(),
-                                    ) {
-                                        val iconColor = when (activity.type) {
-                                            MovementType.RECEIPT -> StockProColors.Success
-                                            MovementType.ISSUE -> StockProColors.BrandMark
-                                            MovementType.ADJUSTMENT -> StockProColors.Warning
-                                            MovementType.PRODUCTION -> StockProColors.Primary
-                                            else -> StockProColors.TextSecondary
-                                        }
-                                        Box(
-                                            modifier = Modifier
-                                                .size(32.dp)
-                                                .clip(CircleShape)
-                                                .background(iconColor.copy(alpha = 0.15f)),
-                                            contentAlignment = Alignment.Center,
-                                        ) {
-                                            Icon(
-                                                imageVector = when (activity.type) {
-                                                    MovementType.RECEIPT -> Icons.Default.ArrowDownward
-                                                    MovementType.ISSUE -> Icons.Default.ArrowUpward
-                                                    MovementType.ADJUSTMENT -> Icons.Default.Warning
-                                                    MovementType.PRODUCTION -> Icons.Default.PrecisionManufacturing
-                                                    else -> Icons.Default.Inventory
-                                                },
-                                                contentDescription = null,
-                                                tint = iconColor,
-                                                modifier = Modifier.size(16.dp),
-                                            )
-                                        }
-                                        Spacer(modifier = Modifier.width(Spacing.x2))
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = activity.title,
-                                                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                                                color = StockProColors.TextPrimary,
-                                                maxLines = 1,
-                                            )
-                                            Text(
-                                                text = activity.subtitle,
-                                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
-                                                color = StockProColors.TextSecondary,
-                                                maxLines = 1,
-                                            )
-                                        }
-                                        Text(
-                                            text = activity.timeAgo,
-                                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
-                                            color = StockProColors.TextSecondary,
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Right Column: Top 5 Low Stock Items & Upcoming Reorders
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(Spacing.x2),
-                ) {
-                    // Top 5 Low Stock Card
-                    Surface(
-                        shape = Radius.lg,
-                        color = StockProColors.Surface,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .border(1.dp, StockProColors.OutlineSubtle, Radius.lg),
-                    ) {
-                        Column(modifier = Modifier.padding(Spacing.x3)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(
-                                    text = "Top 5 Low Stock Items",
-                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                                    color = StockProColors.TextPrimary,
-                                )
-                                Text(
-                                    text = "See All >",
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        color = StockProColors.BrandMark,
+                                    text = "PRIORITY RESTOCK ALERTS (${state.topLowStockItems.size})",
+                                    style = StockProCodeTextStyle.copy(
                                         fontSize = 11.sp,
-                                    ),
-                                    modifier = Modifier.clickable { onNavigateToInventory() },
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.height(Spacing.x2))
-
-                            Column(verticalArrangement = Arrangement.spacedBy(Spacing.x1)) {
-                                state.topLowStockItems.take(5).forEach { item ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clickable { onItemClick(item.id) }
-                                            .padding(vertical = Spacing.x1),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = item.name,
-                                                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                                                color = StockProColors.TextPrimary,
-                                                maxLines = 1,
-                                            )
-                                            Text(
-                                                text = item.code,
-                                                style = StockProCodeTextStyle.copy(
-                                                    fontSize = 10.sp,
-                                                    color = StockProColors.TextSecondary,
-                                                ),
-                                            )
-                                        }
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text(
-                                                text = item.onHand.toUnitsDouble.toLong().toString(),
-                                                style = StockProCodeTextStyle.copy(
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontSize = 12.sp,
-                                                    color = StockProColors.Danger,
-                                                ),
-                                            )
-                                            Icon(
-                                                imageVector = Icons.Default.ChevronRight,
-                                                contentDescription = null,
-                                                tint = StockProColors.TextSecondary,
-                                                modifier = Modifier.size(16.dp),
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Upcoming Reorders Card
-                    Surface(
-                        shape = Radius.lg,
-                        color = StockProColors.Surface,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .border(1.dp, StockProColors.OutlineSubtle, Radius.lg),
-                    ) {
-                        Column(modifier = Modifier.padding(Spacing.x3)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(
-                                    text = "Upcoming Reorders",
-                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                                    color = StockProColors.TextPrimary,
-                                )
-                                Text(
-                                    text = "See All >",
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        color = StockProColors.BrandMark,
-                                        fontSize = 11.sp,
-                                    ),
-                                    modifier = Modifier.clickable { onNavigateToInventory() },
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.height(Spacing.x2))
-
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(Radius.sm)
-                                        .background(StockProColors.SurfaceAlt),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.CalendarMonth,
-                                        contentDescription = null,
-                                        tint = StockProColors.TextSecondary,
-                                        modifier = Modifier.size(20.dp),
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(Spacing.x2))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = "${state.upcomingReordersCount} purchase orders",
-                                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                                        fontWeight = FontWeight.Bold,
                                         color = StockProColors.TextPrimary,
-                                    )
-                                    Text(
-                                        text = "due this week",
-                                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
-                                        color = StockProColors.TextSecondary,
-                                    )
-                                }
-                                Icon(
-                                    imageVector = Icons.Default.ChevronRight,
-                                    contentDescription = null,
-                                    tint = StockProColors.TextSecondary,
-                                    modifier = Modifier.size(16.dp),
+                                    ),
                                 )
+                            }
+                            Text(
+                                text = "See All",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    color = StockProColors.Primary,
+                                    fontWeight = FontWeight.SemiBold,
+                                ),
+                                modifier = Modifier.clickable { onNavigateToInventory() },
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(Spacing.x2))
+
+                        Column(verticalArrangement = Arrangement.spacedBy(Spacing.x2)) {
+                            state.topLowStockItems.take(4).forEach { item ->
+                                PriorityRestockRow(
+                                    item = item,
+                                    onClick = { onItemClick(item.id) },
+                                    onRestockClick = onReceiveStockClick,
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(Spacing.x3))
+            }
+
+            // 8. Recent Movements Ledger (Synchronized Activity)
+            Surface(
+                shape = Radius.lg,
+                color = StockProColors.Surface,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, StockProColors.OutlineSubtle, Radius.lg),
+            ) {
+                Column(modifier = Modifier.padding(Spacing.x3)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "RECENT MOVEMENTS LEDGER",
+                            style = StockProCodeTextStyle.copy(
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = StockProColors.TextSecondary,
+                            ),
+                        )
+                        Text(
+                            text = "History >",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = StockProColors.Primary,
+                                fontWeight = FontWeight.SemiBold,
+                            ),
+                            modifier = Modifier.clickable { onNavigateToReports() },
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(Spacing.x2))
+
+                    if (state.recentActivities.isEmpty()) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = Spacing.x4),
+                        ) {
+                            Text(
+                                text = "No stock movements recorded yet.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = StockProColors.TextSecondary,
+                            )
+                        }
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(Spacing.x2)) {
+                            state.recentActivities.take(5).forEach { activity ->
+                                RecentActivityRow(activity = activity)
                             }
                         }
                     }
@@ -886,117 +800,359 @@ private fun HomeContent(
     }
 }
 
+// ── Industrial Sub-Components ──
+
 @Composable
-private fun KpiCard(
+fun IndustrialTelemetryStrip(
+    syncStatus: SyncStatus,
+    onNeedsAttentionClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val isOnline = syncStatus is SyncStatus.Synced
+    val statusColor = if (isOnline) StockProColors.Success else StockProColors.Warning
+
+    Surface(
+        color = StockProColors.SurfaceAlt,
+        modifier = modifier
+            .fillMaxWidth()
+            .border(width = 0.5.dp, color = StockProColors.OutlineSubtle),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Spacing.screenGutter, vertical = 6.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.clickable {
+                    if (!isOnline) onNeedsAttentionClick()
+                },
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(7.dp)
+                        .clip(CircleShape)
+                        .background(statusColor),
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = if (isOnline) "SYNC ONLINE" else "OFFLINE CACHED",
+                    style = StockProCodeTextStyle.copy(
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = statusColor,
+                    ),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "•  LATENCY 18ms",
+                    style = StockProCodeTextStyle.copy(
+                        fontSize = 10.sp,
+                        color = StockProColors.TextTertiary,
+                    ),
+                )
+            }
+
+            Text(
+                text = "RF-ID MESH 5.8GHz",
+                style = StockProCodeTextStyle.copy(
+                    fontSize = 10.sp,
+                    color = StockProColors.TextTertiary,
+                ),
+            )
+        }
+    }
+}
+
+@Composable
+private fun IndustrialKpiCard(
     title: String,
     value: String,
     deltaText: String,
     subText: String,
-    icon: ImageVector,
-    iconTint: Color,
-    containerColor: Color,
+    accentColor: Color,
     modifier: Modifier = Modifier,
     isWarning: Boolean = false,
 ) {
     Surface(
         shape = Radius.lg,
-        color = containerColor,
+        color = StockProColors.Surface,
         modifier = modifier
-            .widthIn(min = 135.dp)
             .border(1.dp, StockProColors.OutlineSubtle, Radius.lg),
     ) {
-        Column(modifier = Modifier.padding(Spacing.x3)) {
+        Row(modifier = Modifier.fillMaxWidth()) {
+            // Left Accent Color Bar
             Box(
                 modifier = Modifier
-                    .size(32.dp)
-                    .clip(Radius.sm)
-                    .background(Color.White),
-                contentAlignment = Alignment.Center,
+                    .width(4.dp)
+                    .height(96.dp)
+                    .background(accentColor),
+            )
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = Spacing.x2, vertical = Spacing.x2),
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = iconTint,
-                    modifier = Modifier.size(18.dp),
-                )
-            }
-
-            Spacer(modifier = Modifier.height(Spacing.x2))
-
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                color = StockProColors.TextSecondary,
-                maxLines = 1,
-            )
-
-            Spacer(modifier = Modifier.height(Spacing.x1))
-
-            Text(
-                text = value,
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                color = StockProColors.TextPrimary,
-            )
-
-            Spacer(modifier = Modifier.height(Spacing.x1))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = deltaText,
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = if (isWarning) StockProColors.Warning else StockProColors.Success,
-                        fontWeight = FontWeight.Bold,
+                    text = title,
+                    style = StockProCodeTextStyle.copy(
                         fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = StockProColors.TextSecondary,
                     ),
-                )
-                Spacer(modifier = Modifier.width(Spacing.x1))
-                Text(
-                    text = subText,
-                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 9.sp),
-                    color = StockProColors.TextSecondary,
                     maxLines = 1,
                 )
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = (-0.3).sp,
+                    ),
+                    color = StockProColors.TextPrimary,
+                    maxLines = 1,
+                )
+
+                Spacer(modifier = Modifier.height(Spacing.x1))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Surface(
+                        shape = Radius.xs,
+                        color = if (isWarning) StockProColors.WarningContainer else StockProColors.SuccessContainer,
+                    ) {
+                        Text(
+                            text = deltaText,
+                            style = StockProCodeTextStyle.copy(
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isWarning) StockProColors.OnWarningContainer else StockProColors.Success,
+                            ),
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = subText,
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 9.sp),
+                        color = StockProColors.TextTertiary,
+                        maxLines = 1,
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun QuickActionTile(
+private fun FloorActionButton(
     title: String,
+    sub: String,
     icon: ImageVector,
-    iconTint: Color,
+    color: Color,
     containerColor: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(
         shape = Radius.md,
-        color = containerColor,
+        color = StockProColors.Surface,
         modifier = modifier
             .clip(Radius.md)
             .clickable(onClick = onClick)
             .border(1.dp, StockProColors.OutlineSubtle, Radius.md),
     ) {
         Column(
-            modifier = Modifier.padding(vertical = Spacing.x3, horizontal = Spacing.x2),
+            modifier = Modifier.padding(vertical = Spacing.x2, horizontal = 6.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = iconTint,
-                modifier = Modifier.size(24.dp),
-            )
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(Radius.sm)
+                    .background(containerColor),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = color,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
             Spacer(modifier = Modifier.height(Spacing.x1))
             Text(
                 text = title,
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                 color = StockProColors.TextPrimary,
                 maxLines = 1,
             )
+            Text(
+                text = sub,
+                style = StockProCodeTextStyle.copy(fontSize = 9.sp, color = StockProColors.TextSecondary),
+                maxLines = 1,
+            )
         }
+    }
+}
+
+@Composable
+private fun PriorityRestockRow(
+    item: Item,
+    onClick: () -> Unit,
+    onRestockClick: () -> Unit,
+) {
+    val currentUnits = item.onHand.toUnitsDouble
+    val reorderUnits = item.reorderLevel.toUnitsDouble
+    val ratio = if (reorderUnits > 0) (currentUnits / (reorderUnits * 1.5)).toFloat().coerceIn(0f, 1f) else 0f
+
+    Surface(
+        shape = Radius.sm,
+        color = StockProColors.SurfaceAlt,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+    ) {
+        Column(modifier = Modifier.padding(Spacing.x2)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        shape = Radius.xs,
+                        color = StockProColors.Surface,
+                        border = androidx.compose.foundation.BorderStroke(0.5.dp, StockProColors.Outline),
+                    ) {
+                        Text(
+                            text = item.code,
+                            style = StockProCodeTextStyle.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(Spacing.x1))
+                    Text(
+                        text = item.name,
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                        color = StockProColors.TextPrimary,
+                        maxLines = 1,
+                    )
+                }
+
+                StatusBadge(level = item.stockLevel)
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Capacity progress bar
+            LinearProgressIndicator(
+                progress = { ratio },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(5.dp)
+                    .clip(Radius.pill),
+                color = if (item.stockLevel == StockLevel.OUT_OF_STOCK) StockProColors.Danger else StockProColors.Warning,
+                trackColor = StockProColors.OutlineSubtle,
+            )
+
+            Spacer(modifier = Modifier.height(Spacing.x1))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Stock: ${currentUnits.toLong()} / Min: ${reorderUnits.toLong()} ${item.unitOfMeasure.lowercase()}",
+                    style = StockProCodeTextStyle.copy(fontSize = 10.sp, color = StockProColors.TextSecondary),
+                )
+
+                Surface(
+                    shape = Radius.pill,
+                    color = StockProColors.Primary,
+                    modifier = Modifier
+                        .clip(Radius.pill)
+                        .clickable(onClick = onRestockClick),
+                ) {
+                    Text(
+                        text = "+ Restock",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                        ),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecentActivityRow(
+    activity: HomeActivityItem,
+) {
+    val iconColor = when (activity.type) {
+        MovementType.RECEIPT -> StockProColors.Success
+        MovementType.ISSUE -> StockProColors.Primary
+        MovementType.ADJUSTMENT -> StockProColors.Warning
+        MovementType.PRODUCTION -> StockProColors.Production
+        else -> StockProColors.TextSecondary
+    }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(30.dp)
+                .clip(CircleShape)
+                .background(iconColor.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = when (activity.type) {
+                    MovementType.RECEIPT -> Icons.Default.ArrowDownward
+                    MovementType.ISSUE -> Icons.Default.ArrowUpward
+                    MovementType.ADJUSTMENT -> Icons.Default.Warning
+                    MovementType.PRODUCTION -> Icons.Default.PrecisionManufacturing
+                    else -> Icons.Default.Inventory
+                },
+                contentDescription = null,
+                tint = iconColor,
+                modifier = Modifier.size(15.dp),
+            )
+        }
+        Spacer(modifier = Modifier.width(Spacing.x2))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = activity.title,
+                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                color = StockProColors.TextPrimary,
+                maxLines = 1,
+            )
+            Text(
+                text = activity.subtitle,
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+                color = StockProColors.TextSecondary,
+                maxLines = 1,
+            )
+        }
+        Text(
+            text = activity.timeAgo,
+            style = StockProCodeTextStyle.copy(fontSize = 10.sp, color = StockProColors.TextTertiary),
+        )
     }
 }
 
@@ -1014,36 +1170,25 @@ private fun HomeLoadingSkeleton() {
         )
         Spacer(modifier = Modifier.height(Spacing.x3))
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.x2)) {
-            repeat(3) {
-                SkeletonBox(
-                    modifier = Modifier
-                        .width(135.dp)
-                        .height(110.dp),
-                )
-            }
+            SkeletonBox(modifier = Modifier.weight(1f).height(90.dp))
+            SkeletonBox(modifier = Modifier.weight(1f).height(90.dp))
+        }
+        Spacer(modifier = Modifier.height(Spacing.x2))
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.x2)) {
+            SkeletonBox(modifier = Modifier.weight(1f).height(90.dp))
+            SkeletonBox(modifier = Modifier.weight(1f).height(90.dp))
         }
         Spacer(modifier = Modifier.height(Spacing.x3))
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.x2)) {
-            SkeletonBox(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(180.dp),
-            )
-            SkeletonBox(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(180.dp),
-            )
-        }
+        SkeletonBox(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(180.dp),
+        )
         Spacer(modifier = Modifier.height(Spacing.x3))
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.x2)) {
-            repeat(4) {
-                SkeletonBox(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(70.dp),
-                )
-            }
-        }
+        SkeletonBox(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(180.dp),
+        )
     }
 }

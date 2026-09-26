@@ -11,8 +11,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.BasicAlertDialog
@@ -32,6 +34,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.company.stockpro.core.designsystem.component.ButtonVariant
@@ -48,8 +52,8 @@ import com.company.stockpro.core.domain.model.Quantity
 import com.company.stockpro.core.domain.model.StockMovement
 
 /**
- * Modal dialog for posting stock movements (Receive, Issue, Adjust) per architecture.md §6.
- * Implements pre-validation, reorder threshold alerts, and optimistic submission.
+ * Precision Industrial Modal Dialog for posting stock movements (Receive, Issue, Adjust).
+ * Implements live balance impact preview, pre-validation alerts, and optimistic ledger submission.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,6 +78,15 @@ fun PostMovementDialog(
     val hasInsufficientStock = isIssue && reqMilli > item.available.milli
     val dropsBelowReorder = isIssue && (item.onHand.milli - reqMilli) <= item.reorderLevel.milli
 
+    // Projected Stock Balance calculation
+    val currentUnits = item.onHand.toUnitsDouble
+    val projectedUnits = when (selectedType) {
+        MovementType.RECEIPT -> currentUnits + quantityUnits
+        MovementType.ISSUE -> (currentUnits - quantityUnits).coerceAtLeast(0.0)
+        MovementType.ADJUSTMENT -> quantityUnits.toDouble()
+        else -> currentUnits
+    }
+
     BasicAlertDialog(
         onDismissRequest = onDismiss,
         modifier = modifier,
@@ -81,7 +94,8 @@ fun PostMovementDialog(
         Surface(
             shape = Radius.lg,
             color = StockProColors.Surface,
-            tonalElevation = 6.dp,
+            border = androidx.compose.foundation.BorderStroke(1.dp, StockProColors.OutlineSubtle),
+            shadowElevation = 8.dp,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Column(
@@ -89,31 +103,65 @@ fun PostMovementDialog(
                     .fillMaxWidth()
                     .padding(Spacing.cardPadding),
             ) {
-                // Header
-                Text(
-                    text = "Post Stock Movement",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = "${item.code} · ${item.name}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                // 1. Industrial Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column {
+                        Text(
+                            text = "POST STOCK MOVEMENT",
+                            style = StockProCodeTextStyle.copy(
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = StockProColors.TextSecondary,
+                            ),
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = item.name,
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                            color = StockProColors.TextPrimary,
+                            maxLines = 1,
+                        )
+                    }
 
-                Spacer(modifier = Modifier.height(Spacing.x4))
+                    Surface(
+                        shape = Radius.xs,
+                        color = StockProColors.SurfaceAlt,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, StockProColors.Outline),
+                    ) {
+                        Text(
+                            text = item.code,
+                            style = StockProCodeTextStyle.copy(fontSize = 11.sp, fontWeight = FontWeight.Bold),
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        )
+                    }
+                }
 
-                // Movement Type Segmented Selector
+                Spacer(modifier = Modifier.height(Spacing.x3))
+
+                // 2. Movement Type Segmented Selector with Semantic Colors
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(Spacing.x2),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    val types = listOf(MovementType.RECEIPT, MovementType.ISSUE, MovementType.ADJUSTMENT)
-                    types.forEach { type ->
+                    val types = listOf(
+                        Triple(MovementType.RECEIPT, "Receipt (+)", StockProColors.Success),
+                        Triple(MovementType.ISSUE, "Issue (-)", StockProColors.Primary),
+                        Triple(MovementType.ADJUSTMENT, "Adjust (~)", StockProColors.Warning),
+                    )
+
+                    types.forEach { (type, label, accent) ->
                         val isSelected = selectedType == type
                         Surface(
                             shape = Radius.sm,
-                            color = if (isSelected) StockProColors.Primary else StockProColors.SurfaceAlt,
+                            color = if (isSelected) accent else StockProColors.SurfaceAlt,
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                if (isSelected) accent else StockProColors.OutlineSubtle,
+                            ),
                             modifier = Modifier
                                 .weight(1f)
                                 .clip(Radius.sm)
@@ -121,25 +169,82 @@ fun PostMovementDialog(
                         ) {
                             Box(
                                 contentAlignment = Alignment.Center,
-                                modifier = Modifier.padding(vertical = Spacing.x2),
+                                modifier = Modifier.padding(vertical = 8.dp),
                             ) {
                                 Text(
-                                    text = type.name,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = if (isSelected) StockProColors.Surface else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    text = label,
+                                    style = StockProCodeTextStyle.copy(
+                                        fontSize = 11.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isSelected) Color.White else StockProColors.TextSecondary,
+                                    ),
                                 )
                             }
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(Spacing.x4))
+                Spacer(modifier = Modifier.height(Spacing.x3))
 
-                // Quantity Stepper
+                // 3. Live Balance Impact Preview Card
+                Surface(
+                    shape = Radius.md,
+                    color = StockProColors.SurfaceAlt,
+                    border = androidx.compose.foundation.BorderStroke(0.5.dp, StockProColors.Outline),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = Spacing.x3, vertical = Spacing.x2),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column {
+                            Text(
+                                text = "CURRENT ON HAND",
+                                style = StockProCodeTextStyle.copy(fontSize = 9.sp, color = StockProColors.TextTertiary, fontWeight = FontWeight.Bold),
+                            )
+                            Text(
+                                text = "${currentUnits.toLong()} ${item.unitOfMeasure.lowercase()}",
+                                style = StockProCodeTextStyle.copy(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = StockProColors.TextPrimary),
+                            )
+                        }
+
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = null,
+                            tint = StockProColors.TextSecondary,
+                            modifier = Modifier.size(16.dp),
+                        )
+
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = "PROJECTED BALANCE",
+                                style = StockProCodeTextStyle.copy(fontSize = 9.sp, color = StockProColors.TextTertiary, fontWeight = FontWeight.Bold),
+                            )
+                            Text(
+                                text = "${projectedUnits.toLong()} ${item.unitOfMeasure.lowercase()}",
+                                style = StockProCodeTextStyle.copy(
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = if (projectedUnits <= item.reorderLevel.toUnitsDouble) StockProColors.Warning else StockProColors.Success,
+                                ),
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(Spacing.x3))
+
+                // 4. Quantity Stepper
                 Text(
-                    text = if (isAdjustment) "New Physical Count" else "Quantity",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    text = if (isAdjustment) "PHYSICAL COUNT IN WAREHOUSE" else "MOVEMENT QUANTITY",
+                    style = StockProCodeTextStyle.copy(
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = StockProColors.TextSecondary,
+                    ),
                 )
                 Spacer(modifier = Modifier.height(Spacing.x1))
                 NumericStepper(
@@ -161,7 +266,7 @@ fun PostMovementDialog(
                     ) {
                         Text(
                             text = "Insufficient stock. Only ${item.available.formatted()} ${item.unitOfMeasure.lowercase()} available.",
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
                             color = StockProColors.Danger,
                             modifier = Modifier.padding(Spacing.x2),
                         )
@@ -181,11 +286,12 @@ fun PostMovementDialog(
                                 imageVector = Icons.Default.Warning,
                                 contentDescription = null,
                                 tint = StockProColors.Warning,
+                                modifier = Modifier.size(16.dp),
                             )
                             Spacer(modifier = Modifier.width(Spacing.x1))
                             Text(
-                                text = "Warning: This will reduce stock below reorder point (${item.reorderLevel.toUnitsDouble.toLong()}).",
-                                style = MaterialTheme.typography.bodySmall,
+                                text = "Warning: Balance will fall below reorder threshold (${item.reorderLevel.toUnitsDouble.toLong()}).",
+                                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
                                 color = StockProColors.OnWarningContainer,
                             )
                         }
@@ -194,40 +300,43 @@ fun PostMovementDialog(
 
                 Spacer(modifier = Modifier.height(Spacing.x3))
 
-                // Reference Input
+                // 5. Reference Input
                 StockProTextField(
                     value = reference,
                     onValueChange = { reference = it },
                     label = if (selectedType == MovementType.RECEIPT) "PO / Vendor Reference" else "Department / Job Reference",
-                    placeholder = "e.g. PO-88219",
+                    placeholder = "e.g. PO-88219 or JOB-401",
                 )
 
-                // Reason Code Selector (Mandatory for ADJUSTMENT)
+                // 6. Reason Code (Mandatory for ADJUSTMENT)
                 if (isAdjustment) {
                     Spacer(modifier = Modifier.height(Spacing.x3))
                     Text(
-                        text = "Reason Code (Mandatory)",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        text = "REASON CODE (MANDATORY)",
+                        style = StockProCodeTextStyle.copy(
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = StockProColors.TextSecondary,
+                        ),
                     )
                     Spacer(modifier = Modifier.height(Spacing.x1))
                     Box(modifier = Modifier.fillMaxWidth()) {
                         Surface(
                             shape = Radius.sm,
                             color = StockProColors.Surface,
-                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, StockProColors.Outline),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(Radius.sm)
                                 .clickable { reasonDropdownExpanded = true }
-                                .padding(horizontal = Spacing.x3, vertical = Spacing.x3),
+                                .padding(horizontal = Spacing.x3, vertical = 10.dp),
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
-                                Text(selectedReason, style = StockProCodeTextStyle.copy(fontSize = 14.sp))
-                                Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                                Text(selectedReason, style = StockProCodeTextStyle.copy(fontSize = 13.sp, fontWeight = FontWeight.Bold))
+                                Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = StockProColors.TextSecondary)
                             }
                         }
 
@@ -238,7 +347,7 @@ fun PostMovementDialog(
                             val reasons = listOf("CYCLE_COUNT", "DAMAGE", "SPOILED", "FOUND_STOCK", "DATA_CORRECTION")
                             reasons.forEach { r ->
                                 DropdownMenuItem(
-                                    text = { Text(r) },
+                                    text = { Text(r, style = StockProCodeTextStyle.copy(fontSize = 12.sp)) },
                                     onClick = {
                                         selectedReason = r
                                         reasonDropdownExpanded = false
@@ -254,9 +363,9 @@ fun PostMovementDialog(
                     Text(it, color = StockProColors.Danger, style = MaterialTheme.typography.bodySmall)
                 }
 
-                Spacer(modifier = Modifier.height(Spacing.x6))
+                Spacer(modifier = Modifier.height(Spacing.x4))
 
-                // Actions
+                // 7. Actions
                 Row(
                     horizontalArrangement = Arrangement.End,
                     modifier = Modifier.fillMaxWidth(),

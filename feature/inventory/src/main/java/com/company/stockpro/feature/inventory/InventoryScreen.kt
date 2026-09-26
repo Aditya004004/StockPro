@@ -1,6 +1,7 @@
 package com.company.stockpro.feature.inventory
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -20,6 +21,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Close
@@ -63,10 +65,11 @@ import com.company.stockpro.core.domain.model.InventorySummary
 import com.company.stockpro.core.domain.model.Item
 import com.company.stockpro.core.domain.model.ItemClass
 import com.company.stockpro.core.domain.model.SortOrder
+import com.company.stockpro.core.domain.model.SyncStatus
+import com.company.stockpro.core.ui.component.EmptyReason
 import com.company.stockpro.core.ui.component.EmptyState
 import com.company.stockpro.core.ui.component.ItemListRow
 import com.company.stockpro.core.ui.component.ItemListRowSkeleton
-import com.company.stockpro.core.ui.component.SyncBanner
 
 /**
  * Stateful entry route collecting state from ViewModel and forwarding to stateless [InventoryScreen].
@@ -98,8 +101,8 @@ fun InventoryRoute(
 }
 
 /**
- * Pure, stateless InventoryScreen taking immutable state and lambda callbacks.
- * Conforms to rules.md §3.5 (no ViewModel in composables, preview-friendly).
+ * Pure, stateless Precision Industrial InventoryScreen.
+ * Faithful implementation of Stitch Industrial Inventory System (screenshot_stitch_inventory.png).
  */
 @Composable
 fun InventoryScreen(
@@ -114,6 +117,12 @@ fun InventoryScreen(
     onNeedsAttentionClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val syncStatus = when (uiState) {
+        is InventoryUiState.Content -> uiState.syncStatus
+        is InventoryUiState.Empty -> uiState.syncStatus
+        else -> SyncStatus.Synced(System.currentTimeMillis())
+    }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = StockProColors.Canvas,
@@ -133,21 +142,20 @@ fun InventoryScreen(
                 .fillMaxSize()
                 .padding(innerPadding),
         ) {
-            // Sync banner (visible if offline or needs attention)
-            when (uiState) {
-                is InventoryUiState.Content -> SyncBanner(status = uiState.syncStatus, onNeedsAttentionClick = onNeedsAttentionClick)
-                is InventoryUiState.Empty -> SyncBanner(status = uiState.syncStatus, onNeedsAttentionClick = onNeedsAttentionClick)
-                else -> Unit
-            }
+            // 1. Top Industrial Telemetry Strip
+            InventoryTelemetryStrip(
+                syncStatus = syncStatus,
+                onNeedsAttentionClick = onNeedsAttentionClick,
+            )
 
-            // Top Header: Title, Scan Button, Add Item Pill
+            // 2. Industrial Catalog Header
             InventoryHeader(
                 onScanClick = onScanClick,
                 onAddItemClick = onAddItemClick,
-                modifier = Modifier.padding(horizontal = Spacing.screenGutter, vertical = Spacing.x3),
+                modifier = Modifier.padding(horizontal = Spacing.screenGutter, vertical = Spacing.x2),
             )
 
-            // Search Bar & Filter Button with Sort Menu
+            // 3. Search Bar & Filter Button with Integrated Scan Trigger
             val currentQuery = when (uiState) {
                 is InventoryUiState.Content -> uiState.searchQuery
                 else -> ""
@@ -158,6 +166,7 @@ fun InventoryScreen(
                 SearchAndFilterBar(
                     searchQuery = currentQuery,
                     onSearchQueryChanged = onSearchQueryChanged,
+                    onScanClick = onScanClick,
                     onFilterClick = { showSortMenu = true },
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -168,35 +177,35 @@ fun InventoryScreen(
                 ) {
                     val currentSort = (uiState as? InventoryUiState.Content)?.sortOrder ?: SortOrder.NAME_ASC
                     DropdownMenuItem(
-                        text = { Text("Name (A to Z)" + if (currentSort == SortOrder.NAME_ASC) " ✓" else "") },
+                        text = { Text("Name (A to Z)" + if (currentSort == SortOrder.NAME_ASC) "  ✓" else "") },
                         onClick = {
                             onSortOrderChanged(SortOrder.NAME_ASC)
                             showSortMenu = false
                         },
                     )
                     DropdownMenuItem(
-                        text = { Text("Code (A to Z)" + if (currentSort == SortOrder.CODE_ASC) " ✓" else "") },
+                        text = { Text("SKU Code (A to Z)" + if (currentSort == SortOrder.CODE_ASC) "  ✓" else "") },
                         onClick = {
                             onSortOrderChanged(SortOrder.CODE_ASC)
                             showSortMenu = false
                         },
                     )
                     DropdownMenuItem(
-                        text = { Text("Quantity (High to Low)" + if (currentSort == SortOrder.QUANTITY_DESC) " ✓" else "") },
+                        text = { Text("Quantity: High to Low" + if (currentSort == SortOrder.QUANTITY_DESC) "  ✓" else "") },
                         onClick = {
                             onSortOrderChanged(SortOrder.QUANTITY_DESC)
                             showSortMenu = false
                         },
                     )
                     DropdownMenuItem(
-                        text = { Text("Quantity (Low to High)" + if (currentSort == SortOrder.QUANTITY_ASC) " ✓" else "") },
+                        text = { Text("Quantity: Low to High" + if (currentSort == SortOrder.QUANTITY_ASC) "  ✓" else "") },
                         onClick = {
                             onSortOrderChanged(SortOrder.QUANTITY_ASC)
                             showSortMenu = false
                         },
                     )
                     DropdownMenuItem(
-                        text = { Text("Recently Moved" + if (currentSort == SortOrder.LAST_MOVED_DESC) " ✓" else "") },
+                        text = { Text("Recently Moved" + if (currentSort == SortOrder.LAST_MOVED_DESC) "  ✓" else "") },
                         onClick = {
                             onSortOrderChanged(SortOrder.LAST_MOVED_DESC)
                             showSortMenu = false
@@ -205,9 +214,9 @@ fun InventoryScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(Spacing.x3))
+            Spacer(modifier = Modifier.height(Spacing.x2))
 
-            // Item Class Category Filter Chips
+            // 4. Category Filter Chips with Live Item Counts
             val selectedClass = when (uiState) {
                 is InventoryUiState.Content -> uiState.selectedClass
                 is InventoryUiState.Empty -> uiState.selectedClass
@@ -219,9 +228,9 @@ fun InventoryScreen(
                 modifier = Modifier.padding(horizontal = Spacing.screenGutter),
             )
 
-            Spacer(modifier = Modifier.height(Spacing.x3))
+            Spacer(modifier = Modifier.height(Spacing.x2))
 
-            // 4 KPI Summary Cards
+            // 5. 4 Summary Metric Cards (Total, Low Stock, Out of Stock, Reserved)
             val summary = when (uiState) {
                 is InventoryUiState.Content -> uiState.summary
                 is InventoryUiState.Empty -> uiState.summary
@@ -232,9 +241,9 @@ fun InventoryScreen(
                 modifier = Modifier.padding(horizontal = Spacing.screenGutter),
             )
 
-            Spacer(modifier = Modifier.height(Spacing.x3))
+            Spacer(modifier = Modifier.height(Spacing.x2))
 
-            // Section Header & Sort Dropdown
+            // 6. Section Header with Sort Selector
             val sortOrder = when (uiState) {
                 is InventoryUiState.Content -> uiState.sortOrder
                 else -> SortOrder.NAME_ASC
@@ -244,15 +253,15 @@ fun InventoryScreen(
                 else -> 0
             }
             SectionHeaderWithSort(
-                title = "${selectedClass.toDisplayTitle()} ($itemCount)",
+                title = "${selectedClass.toDisplayTitle().uppercase()} ($itemCount)",
                 currentSort = sortOrder,
                 onSortSelected = onSortOrderChanged,
                 modifier = Modifier.padding(horizontal = Spacing.screenGutter),
             )
 
-            Spacer(modifier = Modifier.height(Spacing.x2))
+            Spacer(modifier = Modifier.height(Spacing.x1))
 
-            // Async State Body
+            // 7. Dynamic Inventory List
             when (uiState) {
                 is InventoryUiState.Loading -> {
                     LazyColumn(
@@ -260,7 +269,7 @@ fun InventoryScreen(
                         verticalArrangement = Arrangement.spacedBy(Spacing.x2),
                         modifier = Modifier.fillMaxSize(),
                     ) {
-                        items(6) {
+                        items(5) {
                             ItemListRowSkeleton()
                         }
                     }
@@ -271,8 +280,8 @@ fun InventoryScreen(
                         reason = uiState.reason,
                         onActionClick = {
                             when (uiState.reason) {
-                                is com.company.stockpro.core.ui.component.EmptyReason.SearchMiss -> onSearchQueryChanged("")
-                                is com.company.stockpro.core.ui.component.EmptyReason.NoItems -> onAddItemClick()
+                                is EmptyReason.SearchMiss -> onSearchQueryChanged("")
+                                is EmptyReason.NoItems -> onAddItemClick()
                                 else -> onClassSelected(ItemClass.COMPONENT)
                             }
                         },
@@ -284,7 +293,9 @@ fun InventoryScreen(
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
-                        modifier = Modifier.fillMaxSize().padding(Spacing.screenGutter),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(Spacing.screenGutter),
                     ) {
                         Text(
                             text = "Something went wrong loading inventory.",
@@ -302,19 +313,26 @@ fun InventoryScreen(
 
                 is InventoryUiState.Content -> {
                     LazyColumn(
-                        contentPadding = PaddingValues(horizontal = Spacing.screenGutter, vertical = Spacing.x1),
+                        contentPadding = PaddingValues(
+                            start = Spacing.screenGutter,
+                            end = Spacing.screenGutter,
+                            top = Spacing.x1,
+                            bottom = 80.dp, // Clearance for FAB
+                        ),
                         verticalArrangement = Arrangement.spacedBy(Spacing.x2),
                         modifier = Modifier.fillMaxSize(),
                     ) {
                         items(
                             items = uiState.items,
                             key = { it.id },
-                            contentType = { "item_row" },
+                            contentType = { "item_card" },
                         ) { item ->
                             ItemListRow(
                                 item = item,
                                 onClick = { onItemClick(item) },
                                 onOverflowClick = { onItemClick(item) },
+                                onReceiveClick = onQuickMovementClick,
+                                onIssueClick = onQuickMovementClick,
                             )
                         }
                     }
@@ -324,7 +342,70 @@ fun InventoryScreen(
     }
 }
 
-// ── Sub-components ──
+// ── Industrial Sub-Components ──
+
+@Composable
+private fun InventoryTelemetryStrip(
+    syncStatus: SyncStatus,
+    onNeedsAttentionClick: () -> Unit,
+) {
+    val isOnline = syncStatus is SyncStatus.Synced
+    val statusColor = if (isOnline) StockProColors.Success else StockProColors.Warning
+
+    Surface(
+        color = StockProColors.SurfaceAlt,
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(width = 0.5.dp, color = StockProColors.OutlineSubtle),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Spacing.screenGutter, vertical = 6.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.clickable {
+                    if (!isOnline) onNeedsAttentionClick()
+                },
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(7.dp)
+                        .clip(Radius.pill)
+                        .background(statusColor),
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = if (isOnline) "SYNC ONLINE" else "OFFLINE CACHED",
+                    style = StockProCodeTextStyle.copy(
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = statusColor,
+                    ),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "•  LATENCY 18ms",
+                    style = StockProCodeTextStyle.copy(
+                        fontSize = 10.sp,
+                        color = StockProColors.TextTertiary,
+                    ),
+                )
+            }
+
+            Text(
+                text = "BARCODE / RFID READY",
+                style = StockProCodeTextStyle.copy(
+                    fontSize = 10.sp,
+                    color = StockProColors.TextTertiary,
+                ),
+            )
+        }
+    }
+}
 
 @Composable
 private fun InventoryHeader(
@@ -339,31 +420,38 @@ private fun InventoryHeader(
     ) {
         Column {
             Text(
-                text = "Inventory",
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface,
+                text = "INVENTORY CATALOG",
+                style = StockProCodeTextStyle.copy(
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = StockProColors.TextSecondary,
+                ),
             )
             Text(
-                text = "Manage and track your stock items",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                text = "Plant 01 Warehouse",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = (-0.3).sp,
+                ),
+                color = StockProColors.TextPrimary,
             )
         }
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             Surface(
-                shape = Radius.md,
-                color = StockProColors.PrimaryContainer,
+                shape = Radius.sm,
+                color = StockProColors.Surface,
+                border = androidx.compose.foundation.BorderStroke(1.dp, StockProColors.OutlineSubtle),
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(Radius.md)
+                    .size(38.dp)
+                    .clip(Radius.sm)
                     .clickable(onClick = onScanClick),
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Default.QrCodeScanner,
                         contentDescription = "Scan Item Barcode",
-                        tint = StockProColors.Primary,
+                        tint = StockProColors.TextPrimary,
                         modifier = Modifier.size(20.dp),
                     )
                 }
@@ -374,7 +462,7 @@ private fun InventoryHeader(
             StockProButton(
                 text = "+ Add Item",
                 onClick = onAddItemClick,
-                minHeight = 40.dp,
+                minHeight = 38.dp,
             )
         }
     }
@@ -384,6 +472,7 @@ private fun InventoryHeader(
 private fun SearchAndFilterBar(
     searchQuery: String,
     onSearchQueryChanged: (String) -> Unit,
+    onScanClick: () -> Unit,
     onFilterClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -394,41 +483,56 @@ private fun SearchAndFilterBar(
         StockProTextField(
             value = searchQuery,
             onValueChange = onSearchQueryChanged,
-            placeholder = "Search by name, code or category…",
+            placeholder = "Search SKU, description, bin location…",
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Default.Search,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.outlineVariant,
+                    tint = StockProColors.TextTertiary,
+                    modifier = Modifier.size(20.dp),
                 )
             },
-            trailingIcon = if (searchQuery.isNotBlank()) {
-                {
+            trailingIcon = {
+                if (searchQuery.isNotBlank()) {
                     IconButton(onClick = { onSearchQueryChanged("") }) {
-                        Icon(Icons.Default.Close, contentDescription = "Clear search")
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Clear search",
+                            tint = StockProColors.TextSecondary,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                } else {
+                    IconButton(onClick = onScanClick) {
+                        Icon(
+                            imageVector = Icons.Default.QrCodeScanner,
+                            contentDescription = "Scan Barcode",
+                            tint = StockProColors.Primary,
+                            modifier = Modifier.size(20.dp),
+                        )
                     }
                 }
-            } else null,
+            },
             modifier = Modifier.weight(1f),
         )
 
         Spacer(modifier = Modifier.width(Spacing.x2))
 
         Surface(
-            shape = Radius.sm,
+            shape = Radius.md,
             color = StockProColors.Surface,
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            border = androidx.compose.foundation.BorderStroke(1.dp, StockProColors.OutlineSubtle),
             modifier = Modifier
                 .size(48.dp)
-                .clip(Radius.sm)
+                .clip(Radius.md)
                 .clickable(onClick = onFilterClick),
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = Icons.Default.FilterList,
-                    contentDescription = "Filter",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(22.dp),
+                    contentDescription = "Filter & Sort",
+                    tint = StockProColors.TextPrimary,
+                    modifier = Modifier.size(20.dp),
                 )
             }
         }
@@ -457,8 +561,8 @@ private fun ItemClassChips(
         classes.forEach { (itemClass, label) ->
             val isSelected = selectedClass == itemClass
             val bgColor = if (isSelected) StockProColors.Primary else StockProColors.Surface
-            val contentColor = if (isSelected) StockProColors.Surface else MaterialTheme.colorScheme.onSurfaceVariant
-            val borderColor = if (isSelected) StockProColors.Primary else MaterialTheme.colorScheme.outlineVariant
+            val contentColor = if (isSelected) Color.White else StockProColors.TextSecondary
+            val borderColor = if (isSelected) StockProColors.Primary else StockProColors.OutlineSubtle
 
             Surface(
                 shape = Radius.pill,
@@ -470,7 +574,7 @@ private fun ItemClassChips(
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(horizontal = Spacing.x3, vertical = Spacing.x2),
+                    modifier = Modifier.padding(horizontal = Spacing.x3, vertical = 6.dp),
                 ) {
                     val icon = when (itemClass) {
                         ItemClass.COMPONENT -> Icons.Default.Widgets
@@ -483,12 +587,15 @@ private fun ItemClassChips(
                         imageVector = icon,
                         contentDescription = null,
                         tint = contentColor,
-                        modifier = Modifier.size(16.dp),
+                        modifier = Modifier.size(15.dp),
                     )
-                    Spacer(modifier = Modifier.width(Spacing.x1))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = label,
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
+                        style = StockProCodeTextStyle.copy(
+                            fontSize = 11.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        ),
                         color = contentColor,
                     )
                 }
@@ -504,33 +611,29 @@ private fun InventorySummaryCards(
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.x2),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.x1),
     ) {
         SummaryPillCard(
-            label = "Total Items",
+            label = "TOTAL",
             value = "${summary.totalItems}",
-            bgColor = StockProColors.SuccessContainer,
-            accentColor = StockProColors.BrandMark,
+            accentColor = StockProColors.Primary,
             modifier = Modifier.weight(1f),
         )
         SummaryPillCard(
-            label = "Low Stock",
+            label = "LOW STOCK",
             value = "${summary.lowStockCount}",
-            bgColor = StockProColors.WarningContainer,
             accentColor = StockProColors.Warning,
             modifier = Modifier.weight(1f),
         )
         SummaryPillCard(
-            label = "Out of Stock",
+            label = "OUT OF STOCK",
             value = "${summary.outOfStockCount}",
-            bgColor = StockProColors.DangerContainer,
             accentColor = StockProColors.Danger,
             modifier = Modifier.weight(1f),
         )
         SummaryPillCard(
-            label = "Reserved",
+            label = "RESERVED",
             value = "${summary.reservedCount}",
-            bgColor = StockProColors.ReservedContainer,
             accentColor = StockProColors.Reserved,
             modifier = Modifier.weight(1f),
         )
@@ -541,33 +644,36 @@ private fun InventorySummaryCards(
 private fun SummaryPillCard(
     label: String,
     value: String,
-    bgColor: Color,
     accentColor: Color,
     modifier: Modifier = Modifier,
 ) {
     Surface(
         shape = Radius.md,
-        color = bgColor.copy(alpha = 0.5f),
+        color = StockProColors.Surface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, StockProColors.OutlineSubtle),
         modifier = modifier,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(vertical = Spacing.x2, horizontal = Spacing.x1),
+            modifier = Modifier.padding(vertical = Spacing.x2, horizontal = 4.dp),
         ) {
             Text(
                 text = value,
                 style = StockProCodeTextStyle.copy(
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.ExtraBold,
                     color = accentColor,
                 ),
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = label,
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = StockProCodeTextStyle.copy(
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = StockProColors.TextTertiary,
+                ),
                 maxLines = 1,
             )
         }
@@ -590,23 +696,42 @@ private fun SectionHeaderWithSort(
     ) {
         Text(
             text = title,
-            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-            color = MaterialTheme.colorScheme.onSurface,
+            style = StockProCodeTextStyle.copy(
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = StockProColors.TextSecondary,
+            ),
         )
 
         Box {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
+            Surface(
+                shape = Radius.pill,
+                color = StockProColors.SurfaceAlt,
+                border = androidx.compose.foundation.BorderStroke(0.5.dp, StockProColors.Outline),
                 modifier = Modifier
-                    .clip(Radius.sm)
-                    .clickable { sortExpanded = true }
-                    .padding(horizontal = Spacing.x2, vertical = Spacing.x1),
+                    .clip(Radius.pill)
+                    .clickable { sortExpanded = true },
             ) {
-                Text(
-                    text = "Sort by: ${currentSort.displayName}",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = StockProColors.Primary,
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = Spacing.x2, vertical = 4.dp),
+                ) {
+                    Text(
+                        text = "Sort: ${currentSort.displayName}",
+                        style = StockProCodeTextStyle.copy(
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = StockProColors.TextPrimary,
+                        ),
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(
+                        imageVector = Icons.Default.ArrowDropDown,
+                        contentDescription = "Sort options",
+                        tint = StockProColors.TextSecondary,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
             }
 
             DropdownMenu(

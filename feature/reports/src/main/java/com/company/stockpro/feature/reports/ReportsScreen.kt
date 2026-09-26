@@ -20,20 +20,23 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.ShowChart
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -54,6 +57,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.company.stockpro.core.designsystem.component.ButtonVariant
+import com.company.stockpro.core.designsystem.component.StockProButton
 import com.company.stockpro.core.designsystem.theme.Radius
 import com.company.stockpro.core.designsystem.theme.Spacing
 import com.company.stockpro.core.designsystem.theme.StockProCodeTextStyle
@@ -64,13 +69,8 @@ import com.company.stockpro.core.ui.component.chart.MultiSeriesLineChart
 import com.company.stockpro.core.ui.component.chart.StockCompositionDonut
 
 /**
- * Production Reports Screen matching UI mockup media_1789794856398.png:
- * - Date Range Filter
- * - Section Pills (Overview, Inventory, Purchases, Usage)
- * - 4-Card Period KPI Grid
- * - Stock Distribution Donut & Monthly Trend Line Chart
- * - Top 5 Low Stock Items Table
- * - Generate Report Tiles with Android Share Sheet dispatch
+ * Precision Industrial Reports & Analytics Screen.
+ * Faithful implementation of Stitch Industrial Reports (screenshot_stitch_reports.png).
  */
 @Composable
 fun ReportsRoute(
@@ -174,216 +174,310 @@ private fun ReportsContent(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(scrollState)
-            .padding(horizontal = Spacing.screenGutter)
-            .padding(bottom = Spacing.x6),
+            .padding(bottom = 96.dp),
     ) {
-        Spacer(modifier = Modifier.height(Spacing.x3))
+        // 1. Top Industrial Telemetry Ribbon
+        ReportsTelemetryStrip()
 
-        // 1. Header: Title + Date Range Selector
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column {
-                Text(
-                    text = "Reports",
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = StockProColors.TextPrimary,
-                )
-                Text(
-                    text = "Insights into your inventory and operations",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = StockProColors.TextSecondary,
-                )
-            }
+        Column(modifier = Modifier.padding(horizontal = Spacing.screenGutter)) {
+            Spacer(modifier = Modifier.height(Spacing.x2))
 
-            Box {
+            // 2. Header: Title + Export CSV Trigger
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column {
+                    Text(
+                        text = "REPORTS & ANALYTICS",
+                        style = StockProCodeTextStyle.copy(
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = StockProColors.TextSecondary,
+                        ),
+                    )
+                    Text(
+                        text = "Plant 01 Production",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = (-0.3).sp,
+                        ),
+                        color = StockProColors.TextPrimary,
+                    )
+                }
+
                 Surface(
                     shape = Radius.pill,
-                    color = StockProColors.SurfaceAlt,
+                    color = StockProColors.Primary,
                     modifier = Modifier
                         .clip(Radius.pill)
-                        .clickable { dateDropdownExpanded = true },
+                        .clickable { onExportReportClick("Full Inventory Report", state.lowStockItems) },
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = Spacing.x2, vertical = Spacing.x1),
+                        modifier = Modifier.padding(horizontal = Spacing.x3, vertical = 6.dp),
                     ) {
                         Icon(
-                            imageVector = Icons.Default.CalendarMonth,
-                            contentDescription = null,
-                            tint = StockProColors.TextSecondary,
-                            modifier = Modifier.size(16.dp),
+                            imageVector = Icons.Default.Download,
+                            contentDescription = "Export CSV",
+                            tint = Color.White,
+                            modifier = Modifier.size(14.dp),
                         )
-                        Spacer(modifier = Modifier.width(Spacing.x1))
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = state.selectedDateRange.label,
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-                            color = StockProColors.TextPrimary,
-                        )
-                        Icon(
-                            imageVector = Icons.Default.ArrowDropDown,
-                            contentDescription = null,
-                            tint = StockProColors.TextSecondary,
-                        )
-                    }
-                }
-
-                DropdownMenu(
-                    expanded = dateDropdownExpanded,
-                    onDismissRequest = { dateDropdownExpanded = false },
-                ) {
-                    state.availableDateRanges.forEach { range ->
-                        DropdownMenuItem(
-                            text = { Text(range.label) },
-                            onClick = {
-                                onDateRangeSelected(range)
-                                dateDropdownExpanded = false
-                            },
+                            text = "Export CSV",
+                            style = StockProCodeTextStyle.copy(
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                            ),
                         )
                     }
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.height(Spacing.x3))
+            Spacer(modifier = Modifier.height(Spacing.x2))
 
-        // 2. Section Pills (Overview, Inventory, Purchases, Usage)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.x2),
-        ) {
-            ReportSection.entries.forEach { section ->
-                val isSelected = section == state.selectedSection
-                val containerColor = if (isSelected) StockProColors.BrandMark else StockProColors.SurfaceAlt
-                val contentColor = if (isSelected) Color.White else StockProColors.TextSecondary
+            // 3. Date Range Selector Pills
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.x2),
+            ) {
+                state.availableDateRanges.forEach { range ->
+                    val isSelected = range == state.selectedDateRange
+                    val bgColor = if (isSelected) StockProColors.Primary else StockProColors.Surface
+                    val textColor = if (isSelected) Color.White else StockProColors.TextSecondary
+                    val borderColor = if (isSelected) StockProColors.Primary else StockProColors.OutlineSubtle
 
-                Surface(
-                    shape = Radius.pill,
-                    color = containerColor,
-                    modifier = Modifier
-                        .clip(Radius.pill)
-                        .clickable { onSectionSelected(section) },
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = Spacing.x3, vertical = Spacing.x1),
+                    Surface(
+                        shape = Radius.pill,
+                        color = bgColor,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, borderColor),
+                        modifier = Modifier
+                            .clip(Radius.pill)
+                            .clickable { onDateRangeSelected(range) },
                     ) {
-                        val icon = when (section) {
-                            ReportSection.OVERVIEW -> Icons.Default.Widgets
-                            ReportSection.INVENTORY -> Icons.Default.Inventory
-                            ReportSection.PURCHASES -> Icons.Default.ShoppingCart
-                            ReportSection.USAGE -> Icons.Default.BarChart
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = Spacing.x3, vertical = 6.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CalendarMonth,
+                                contentDescription = null,
+                                tint = textColor,
+                                modifier = Modifier.size(13.dp),
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = range.label,
+                                style = StockProCodeTextStyle.copy(
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = textColor,
+                                ),
+                            )
                         }
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = null,
-                            tint = contentColor,
-                            modifier = Modifier.size(16.dp),
-                        )
-                        Spacer(modifier = Modifier.width(Spacing.x1))
-                        Text(
-                            text = section.label,
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
-                            color = contentColor,
-                        )
                     }
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.height(Spacing.x3))
+            Spacer(modifier = Modifier.height(Spacing.x3))
 
-        // 3. 4-Card Period KPI Grid (2x2)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.x2),
-        ) {
-            PeriodKpiCard(
-                title = "Total Items",
-                value = String.format("%,d", state.totalItems),
-                deltaText = "↑ +${state.totalItemsDeltaPercent}%",
-                icon = Icons.Default.Widgets,
-                iconTint = StockProColors.BrandMark,
-                containerColor = StockProColors.PrimaryContainer.copy(alpha = 0.5f),
-                modifier = Modifier.weight(1f),
-            )
-            PeriodKpiCard(
-                title = "Inventory Value",
-                value = formatRupees(state.inventoryValuePaise),
-                deltaText = "↑ +${state.inventoryValueDeltaPercent}%",
-                icon = Icons.Default.ShoppingBag,
-                iconTint = StockProColors.Success,
-                containerColor = StockProColors.SuccessContainer.copy(alpha = 0.5f),
-                modifier = Modifier.weight(1f),
-            )
-        }
+            // 4. 2x2 Operational KPI Grid
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.x2)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.x2),
+                ) {
+                    ReportsKpiCard(
+                        title = "TOTAL ITEMS",
+                        value = String.format("%,d", state.totalItems),
+                        deltaText = "+${state.totalItemsDeltaPercent}%",
+                        subText = "active catalog",
+                        accentColor = StockProColors.Primary,
+                        modifier = Modifier.weight(1f),
+                    )
+                    ReportsKpiCard(
+                        title = "VALUATION",
+                        value = formatRupees(state.inventoryValuePaise),
+                        deltaText = "+${state.inventoryValueDeltaPercent}%",
+                        subText = "asset value",
+                        accentColor = StockProColors.Success,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
 
-        Spacer(modifier = Modifier.height(Spacing.x2))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.x2),
+                ) {
+                    ReportsKpiCard(
+                        title = "INBOUND RECV",
+                        value = String.format("%,d", state.itemsPurchased),
+                        deltaText = "+${state.itemsPurchasedDeltaPercent}%",
+                        subText = "units received",
+                        accentColor = StockProColors.Warning,
+                        modifier = Modifier.weight(1f),
+                    )
+                    ReportsKpiCard(
+                        title = "DISPATCHED",
+                        value = String.format("%,d", state.itemsIssued),
+                        deltaText = "+${state.itemsIssuedDeltaPercent}%",
+                        subText = "units issued",
+                        accentColor = StockProColors.Production,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.x2),
-        ) {
-            PeriodKpiCard(
-                title = "Items Purchased",
-                value = String.format("%,d", state.itemsPurchased),
-                deltaText = "↑ +${state.itemsPurchasedDeltaPercent}%",
-                icon = Icons.Default.ShoppingCart,
-                iconTint = StockProColors.Warning,
-                containerColor = StockProColors.WarningContainer.copy(alpha = 0.5f),
-                modifier = Modifier.weight(1f),
-            )
-            PeriodKpiCard(
-                title = "Items Issued",
-                value = String.format("%,d", state.itemsIssued),
-                deltaText = "↑ +${state.itemsIssuedDeltaPercent}%",
-                icon = Icons.AutoMirrored.Filled.TrendingUp,
-                iconTint = StockProColors.Primary,
-                containerColor = StockProColors.SurfaceAlt,
-                modifier = Modifier.weight(1f),
-            )
-        }
+            Spacer(modifier = Modifier.height(Spacing.x3))
 
-        Spacer(modifier = Modifier.height(Spacing.x3))
-
-        // 4. Charts Row: Stock Distribution & Monthly Trend
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.x2),
-        ) {
-            // Left: Stock Distribution Donut
+            // 5. Inbound vs Outbound Trend Line Chart (Full Width Card)
             Surface(
                 shape = Radius.lg,
                 color = StockProColors.Surface,
                 modifier = Modifier
-                    .weight(1f)
+                    .fillMaxWidth()
                     .border(1.dp, StockProColors.OutlineSubtle, Radius.lg),
             ) {
                 Column(modifier = Modifier.padding(Spacing.x3)) {
-                    Text(
-                        text = "Stock Distribution",
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                        color = StockProColors.TextPrimary,
-                    )
-                    Spacer(modifier = Modifier.height(Spacing.x2))
-                    StockCompositionDonut(
-                        segments = state.stockSegments,
-                        totalCount = state.totalItems,
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column {
+                            Text(
+                                text = "INBOUND VS OUTBOUND FLOW",
+                                style = StockProCodeTextStyle.copy(
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = StockProColors.TextSecondary,
+                                ),
+                            )
+                            Text(
+                                text = "Monthly material turnover velocity",
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                color = StockProColors.TextTertiary,
+                            )
+                        }
+
+                        // Chart Legend
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.x2),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(StockProColors.Success),
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Inbound",
+                                    style = StockProCodeTextStyle.copy(fontSize = 10.sp, color = StockProColors.TextSecondary),
+                                )
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(StockProColors.Primary),
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Outbound",
+                                    style = StockProCodeTextStyle.copy(fontSize = 10.sp, color = StockProColors.TextSecondary),
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(Spacing.x3))
+
+                    MultiSeriesLineChart(
+                        seriesList = state.trendSeries,
+                        xLabels = state.trendMonths,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
             }
 
-            // Right: Monthly Trend Multi-Series Line Chart
+            Spacer(modifier = Modifier.height(Spacing.x3))
+
+            // 6. Valuation by Category Progress Breakdown (Full Width Card)
             Surface(
                 shape = Radius.lg,
                 color = StockProColors.Surface,
                 modifier = Modifier
-                    .weight(1f)
+                    .fillMaxWidth()
+                    .border(1.dp, StockProColors.OutlineSubtle, Radius.lg),
+            ) {
+                Column(modifier = Modifier.padding(Spacing.x3)) {
+                    Text(
+                        text = "VALUATION BY CATEGORY",
+                        style = StockProCodeTextStyle.copy(
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = StockProColors.TextSecondary,
+                        ),
+                    )
+                    Spacer(modifier = Modifier.height(Spacing.x2))
+
+                    CategoryValuationRow(name = "Components", percentage = 42, amount = "₹ 20.2 Lakh", color = StockProColors.Primary)
+                    Spacer(modifier = Modifier.height(Spacing.x2))
+                    CategoryValuationRow(name = "Raw Materials", percentage = 30, amount = "₹ 14.5 Lakh", color = StockProColors.Success)
+                    Spacer(modifier = Modifier.height(Spacing.x2))
+                    CategoryValuationRow(name = "Finished Goods", percentage = 21, amount = "₹ 10.1 Lakh", color = StockProColors.Production)
+                    Spacer(modifier = Modifier.height(Spacing.x2))
+                    CategoryValuationRow(name = "Tools & Equipment", percentage = 7, amount = "₹ 3.4 Lakh", color = StockProColors.Warning)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.x3))
+
+            // 7. Stock Distribution Donut Card (Full Width)
+            Surface(
+                shape = Radius.lg,
+                color = StockProColors.Surface,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, StockProColors.OutlineSubtle, Radius.lg),
+            ) {
+                Column(modifier = Modifier.padding(Spacing.x3)) {
+                    Text(
+                        text = "STOCK COMPOSITION DISTRIBUTION",
+                        style = StockProCodeTextStyle.copy(
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = StockProColors.TextSecondary,
+                        ),
+                    )
+                    Spacer(modifier = Modifier.height(Spacing.x2))
+
+                    StockCompositionDonut(
+                        segments = state.stockSegments,
+                        totalCount = state.totalItems,
+                        centerLabel = "Total SKUs",
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.x3))
+
+            // 8. Top 5 Low Stock Critical Table
+            Surface(
+                shape = Radius.lg,
+                color = StockProColors.Surface,
+                modifier = Modifier
+                    .fillMaxWidth()
                     .border(1.dp, StockProColors.OutlineSubtle, Radius.lg),
             ) {
                 Column(modifier = Modifier.padding(Spacing.x3)) {
@@ -393,241 +487,306 @@ private fun ReportsContent(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = "Monthly Trend",
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                            color = StockProColors.TextPrimary,
+                            text = "TOP REORDER PRIORITIES",
+                            style = StockProCodeTextStyle.copy(
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = StockProColors.TextSecondary,
+                            ),
                         )
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = state.trendRangeSelector,
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    fontSize = 11.sp,
-                                    color = StockProColors.TextSecondary,
-                                ),
-                            )
-                            Icon(
-                                imageVector = Icons.Default.ArrowDropDown,
-                                contentDescription = null,
-                                tint = StockProColors.TextSecondary,
-                                modifier = Modifier.size(16.dp),
-                            )
-                        }
+                        Text(
+                            text = "Catalog >",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = StockProColors.Primary,
+                                fontWeight = FontWeight.SemiBold,
+                            ),
+                            modifier = Modifier.clickable { onNavigateToInventory() },
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(Spacing.x2))
 
-                    MultiSeriesLineChart(
-                        seriesList = state.trendSeries,
-                        xLabels = state.trendMonths,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(Spacing.x3))
-
-        // 5. Top 5 Low Stock Items Table (docs/design.md §5.12 data table spec)
-        Surface(
-            shape = Radius.lg,
-            color = StockProColors.Surface,
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.dp, StockProColors.OutlineSubtle, Radius.lg),
-        ) {
-            Column(modifier = Modifier.padding(Spacing.x3)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = "Top 5 Low Stock Items",
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                        color = StockProColors.TextPrimary,
-                    )
-                    Text(
-                        text = "View All",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = StockProColors.BrandMark,
-                            fontSize = 11.sp,
-                        ),
-                        modifier = Modifier.clickable { onNavigateToInventory() },
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(Spacing.x2))
-
-                // Table Header
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(StockProColors.SurfaceAlt, Radius.xs)
-                        .padding(horizontal = Spacing.x2, vertical = Spacing.x1),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = "#",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = StockProColors.TextSecondary,
-                        modifier = Modifier.width(24.dp),
-                    )
-                    Text(
-                        text = "Item Name",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = StockProColors.TextSecondary,
-                        modifier = Modifier.weight(1.2f),
-                    )
-                    Text(
-                        text = "Code",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = StockProColors.TextSecondary,
-                        modifier = Modifier.weight(0.8f),
-                    )
-                    Text(
-                        text = "Current Stock",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = StockProColors.TextSecondary,
-                        textAlign = TextAlign.End,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Text(
-                        text = "Reorder Level",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = StockProColors.TextSecondary,
-                        textAlign = TextAlign.End,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-
-                // Table Rows
-                state.lowStockItems.take(5).forEachIndexed { index, item ->
+                    // Table Header
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onItemClick(item.id) }
-                            .padding(horizontal = Spacing.x2, vertical = Spacing.x2),
+                            .background(StockProColors.SurfaceAlt, Radius.xs)
+                            .padding(horizontal = Spacing.x2, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = "${index + 1}",
-                            style = StockProCodeTextStyle.copy(fontSize = 11.sp),
-                            color = StockProColors.TextSecondary,
-                            modifier = Modifier.width(24.dp),
+                            text = "#",
+                            style = StockProCodeTextStyle.copy(fontSize = 10.sp, color = StockProColors.TextTertiary),
+                            modifier = Modifier.width(22.dp),
                         )
                         Text(
-                            text = item.name,
-                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                            color = StockProColors.TextPrimary,
-                            maxLines = 1,
-                            modifier = Modifier.weight(1.2f),
+                            text = "Item Name",
+                            style = StockProCodeTextStyle.copy(fontSize = 10.sp, color = StockProColors.TextTertiary),
+                            modifier = Modifier.weight(1.3f),
                         )
                         Text(
-                            text = item.code,
-                            style = StockProCodeTextStyle.copy(
-                                fontSize = 11.sp,
-                                color = StockProColors.BrandMark,
-                            ),
+                            text = "SKU",
+                            style = StockProCodeTextStyle.copy(fontSize = 10.sp, color = StockProColors.TextTertiary),
+                            modifier = Modifier.weight(0.9f),
+                        )
+                        Text(
+                            text = "On Hand",
+                            style = StockProCodeTextStyle.copy(fontSize = 10.sp, color = StockProColors.TextTertiary),
+                            textAlign = TextAlign.End,
                             modifier = Modifier.weight(0.8f),
                         )
                         Text(
-                            text = item.onHand.toUnitsDouble.toLong().toString(),
-                            style = StockProCodeTextStyle.copy(
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = StockProColors.Danger,
-                            ),
+                            text = "Min Reorder",
+                            style = StockProCodeTextStyle.copy(fontSize = 10.sp, color = StockProColors.TextTertiary),
                             textAlign = TextAlign.End,
-                            modifier = Modifier.weight(1f),
-                        )
-                        Text(
-                            text = item.reorderLevel.toUnitsDouble.toLong().toString(),
-                            style = StockProCodeTextStyle.copy(fontSize = 12.sp),
-                            color = StockProColors.TextSecondary,
-                            textAlign = TextAlign.End,
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(0.9f),
                         )
                     }
-                    if (index < 4) {
-                        Box(
+
+                    state.lowStockItems.take(5).forEachIndexed { index, item ->
+                        Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(1.dp)
-                                .background(StockProColors.OutlineSubtle),
+                                .clickable { onItemClick(item.id) }
+                                .padding(horizontal = Spacing.x2, vertical = Spacing.x2),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = "${index + 1}",
+                                style = StockProCodeTextStyle.copy(fontSize = 11.sp, fontWeight = FontWeight.Bold),
+                                color = StockProColors.TextSecondary,
+                                modifier = Modifier.width(22.dp),
+                            )
+                            Text(
+                                text = item.name,
+                                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                                color = StockProColors.TextPrimary,
+                                maxLines = 1,
+                                modifier = Modifier.weight(1.3f),
+                            )
+                            Text(
+                                text = item.code,
+                                style = StockProCodeTextStyle.copy(
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = StockProColors.Primary,
+                                ),
+                                modifier = Modifier.weight(0.9f),
+                            )
+                            Text(
+                                text = item.onHand.toUnitsDouble.toLong().toString(),
+                                style = StockProCodeTextStyle.copy(
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = StockProColors.Danger,
+                                ),
+                                textAlign = TextAlign.End,
+                                modifier = Modifier.weight(0.8f),
+                            )
+                            Text(
+                                text = item.reorderLevel.toUnitsDouble.toLong().toString(),
+                                style = StockProCodeTextStyle.copy(fontSize = 11.sp, color = StockProColors.TextSecondary),
+                                textAlign = TextAlign.End,
+                                modifier = Modifier.weight(0.9f),
+                            )
+                        }
+
+                        if (index < 4) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(0.5.dp)
+                                    .background(StockProColors.OutlineSubtle),
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.x3))
+
+            // 9. Export Report Action Tiles
+            Surface(
+                shape = Radius.lg,
+                color = StockProColors.Surface,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, StockProColors.OutlineSubtle, Radius.lg),
+            ) {
+                Column(modifier = Modifier.padding(Spacing.x3)) {
+                    Text(
+                        text = "EXPORT REPORT PACKS",
+                        style = StockProCodeTextStyle.copy(
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = StockProColors.TextSecondary,
+                        ),
+                    )
+                    Spacer(modifier = Modifier.height(Spacing.x2))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.x2),
+                    ) {
+                        ReportActionTile(
+                            title = "Valuation\nLedger",
+                            icon = Icons.Default.Description,
+                            color = StockProColors.Primary,
+                            containerColor = StockProColors.PrimaryContainer.copy(alpha = 0.5f),
+                            onClick = { onExportReportClick("Valuation Ledger", state.lowStockItems) },
+                            modifier = Modifier.weight(1f),
+                        )
+                        ReportActionTile(
+                            title = "Purchase\nHistory",
+                            icon = Icons.Default.ShoppingCart,
+                            color = StockProColors.Success,
+                            containerColor = StockProColors.SuccessContainer.copy(alpha = 0.5f),
+                            onClick = { onExportReportClick("Purchase Report", state.lowStockItems) },
+                            modifier = Modifier.weight(1f),
+                        )
+                        ReportActionTile(
+                            title = "Usage &\nIssues",
+                            icon = Icons.Default.BarChart,
+                            color = StockProColors.Warning,
+                            containerColor = StockProColors.WarningContainer.copy(alpha = 0.5f),
+                            onClick = { onExportReportClick("Usage Report", state.lowStockItems) },
+                            modifier = Modifier.weight(1f),
+                        )
+                        ReportActionTile(
+                            title = "Reorder\nAudit",
+                            icon = Icons.Default.PieChart,
+                            color = StockProColors.Production,
+                            containerColor = StockProColors.ProductionContainer.copy(alpha = 0.5f),
+                            onClick = { onExportReportClick("Reorder Audit", state.lowStockItems) },
+                            modifier = Modifier.weight(1f),
                         )
                     }
                 }
             }
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(Spacing.x3))
+// ── Reports Sub-Components ──
 
-        // 6. Generate Report Section (4 Action Tiles)
-        Surface(
-            shape = Radius.lg,
-            color = StockProColors.Surface,
+@Composable
+private fun ReportsTelemetryStrip() {
+    Surface(
+        color = StockProColors.SurfaceAlt,
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(width = 0.5.dp, color = StockProColors.OutlineSubtle),
+    ) {
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, StockProColors.OutlineSubtle, Radius.lg),
+                .padding(horizontal = Spacing.screenGutter, vertical = 6.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(modifier = Modifier.padding(Spacing.x3)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = "Generate Report",
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                        color = StockProColors.TextPrimary,
-                    )
-                    Text(
-                        text = "View All",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = StockProColors.BrandMark,
-                            fontSize = 11.sp,
-                        ),
-                        modifier = Modifier.clickable { onNavigateToInventory() },
-                    )
-                }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(7.dp)
+                        .clip(CircleShape)
+                        .background(StockProColors.Success),
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "SYNC ONLINE",
+                    style = StockProCodeTextStyle.copy(
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = StockProColors.Success,
+                    ),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "•  LEDGER VERIFIED",
+                    style = StockProCodeTextStyle.copy(
+                        fontSize = 10.sp,
+                        color = StockProColors.TextTertiary,
+                    ),
+                )
+            }
 
-                Spacer(modifier = Modifier.height(Spacing.x2))
+            Text(
+                text = "EXPORT READY (CSV)",
+                style = StockProCodeTextStyle.copy(
+                    fontSize = 10.sp,
+                    color = StockProColors.TextTertiary,
+                ),
+            )
+        }
+    }
+}
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.x2),
-                ) {
-                    ReportActionTile(
-                        title = "Inventory\nReport",
-                        icon = Icons.Default.Description,
-                        iconTint = StockProColors.BrandMark,
-                        containerColor = StockProColors.PrimaryContainer.copy(alpha = 0.5f),
-                        onClick = { onExportReportClick("Inventory Report", state.lowStockItems) },
-                        modifier = Modifier.weight(1f),
-                    )
-                    ReportActionTile(
-                        title = "Purchase\nReport",
-                        icon = Icons.Default.ShoppingCart,
-                        iconTint = StockProColors.Success,
-                        containerColor = StockProColors.SuccessContainer.copy(alpha = 0.5f),
-                        onClick = { onExportReportClick("Purchase Report", state.lowStockItems) },
-                        modifier = Modifier.weight(1f),
-                    )
-                    ReportActionTile(
-                        title = "Usage\nReport",
-                        icon = Icons.Default.BarChart,
-                        iconTint = StockProColors.Warning,
-                        containerColor = StockProColors.WarningContainer.copy(alpha = 0.5f),
-                        onClick = { onExportReportClick("Usage Report", state.lowStockItems) },
-                        modifier = Modifier.weight(1f),
-                    )
-                    ReportActionTile(
-                        title = "Stock\nValuation",
-                        icon = Icons.Default.PieChart,
-                        iconTint = StockProColors.Primary,
-                        containerColor = StockProColors.SurfaceAlt,
-                        onClick = { onExportReportClick("Stock Valuation", state.lowStockItems) },
-                        modifier = Modifier.weight(1f),
+@Composable
+private fun ReportsKpiCard(
+    title: String,
+    value: String,
+    deltaText: String,
+    subText: String,
+    accentColor: Color,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        shape = Radius.lg,
+        color = StockProColors.Surface,
+        modifier = modifier.border(1.dp, StockProColors.OutlineSubtle, Radius.lg),
+    ) {
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Box(
+                modifier = Modifier
+                    .width(4.dp)
+                    .height(86.dp)
+                    .background(accentColor),
+            )
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = Spacing.x2, vertical = Spacing.x2),
+            ) {
+                Text(
+                    text = title,
+                    style = StockProCodeTextStyle.copy(
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = StockProColors.TextSecondary,
+                    ),
+                    maxLines = 1,
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = (-0.3).sp,
+                    ),
+                    color = StockProColors.TextPrimary,
+                    maxLines = 1,
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        shape = Radius.xs,
+                        color = StockProColors.SuccessContainer,
+                    ) {
+                        Text(
+                            text = deltaText,
+                            style = StockProCodeTextStyle.copy(
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = StockProColors.Success,
+                            ),
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = subText,
+                        style = StockProCodeTextStyle.copy(fontSize = 9.sp, color = StockProColors.TextTertiary),
+                        maxLines = 1,
                     )
                 }
             }
@@ -636,71 +795,53 @@ private fun ReportsContent(
 }
 
 @Composable
-private fun PeriodKpiCard(
-    title: String,
-    value: String,
-    deltaText: String,
-    icon: ImageVector,
-    iconTint: Color,
-    containerColor: Color,
-    modifier: Modifier = Modifier,
+private fun CategoryValuationRow(
+    name: String,
+    percentage: Int,
+    amount: String,
+    color: Color,
 ) {
-    Surface(
-        shape = Radius.lg,
-        color = containerColor,
-        modifier = modifier.border(1.dp, StockProColors.OutlineSubtle, Radius.lg),
-    ) {
-        Column(modifier = Modifier.padding(Spacing.x3)) {
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(Radius.sm)
-                    .background(Color.White),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = iconTint,
-                    modifier = Modifier.size(18.dp),
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(color),
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                    color = StockProColors.TextPrimary,
                 )
             }
-
-            Spacer(modifier = Modifier.height(Spacing.x2))
-
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                color = StockProColors.TextSecondary,
-            )
-
-            Spacer(modifier = Modifier.height(Spacing.x1))
-
-            Text(
-                text = value,
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                color = StockProColors.TextPrimary,
-            )
-
-            Spacer(modifier = Modifier.height(Spacing.x1))
-
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = deltaText,
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = StockProColors.Success,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 10.sp,
-                    ),
+                    text = "$percentage%  ",
+                    style = StockProCodeTextStyle.copy(fontSize = 11.sp, fontWeight = FontWeight.Bold, color = color),
                 )
-                Spacer(modifier = Modifier.width(Spacing.x1))
                 Text(
-                    text = "vs last month",
-                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 9.sp),
-                    color = StockProColors.TextSecondary,
+                    text = "($amount)",
+                    style = StockProCodeTextStyle.copy(fontSize = 11.sp, color = StockProColors.TextSecondary),
                 )
             }
         }
+        Spacer(modifier = Modifier.height(4.dp))
+        LinearProgressIndicator(
+            progress = { percentage / 100f },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(6.dp)
+                .clip(Radius.pill),
+            color = color,
+            trackColor = StockProColors.OutlineSubtle,
+        )
     }
 }
 
@@ -708,37 +849,46 @@ private fun PeriodKpiCard(
 private fun ReportActionTile(
     title: String,
     icon: ImageVector,
-    iconTint: Color,
+    color: Color,
     containerColor: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(
         shape = Radius.md,
-        color = containerColor,
+        color = StockProColors.Surface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, StockProColors.OutlineSubtle),
         modifier = modifier
             .clip(Radius.md)
-            .clickable(onClick = onClick)
-            .border(1.dp, StockProColors.OutlineSubtle, Radius.md),
+            .clickable(onClick = onClick),
     ) {
         Column(
-            modifier = Modifier.padding(vertical = Spacing.x3, horizontal = Spacing.x1),
+            modifier = Modifier.padding(vertical = Spacing.x2, horizontal = 4.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = iconTint,
-                modifier = Modifier.size(24.dp),
-            )
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(Radius.sm)
+                    .background(containerColor),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = color,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
             Spacer(modifier = Modifier.height(Spacing.x1))
             Text(
                 text = title,
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                color = StockProColors.TextPrimary,
+                style = StockProCodeTextStyle.copy(
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = StockProColors.TextPrimary,
+                ),
                 textAlign = TextAlign.Center,
-                fontSize = 10.sp,
                 maxLines = 2,
             )
         }
@@ -748,9 +898,9 @@ private fun ReportActionTile(
 private fun formatRupees(paise: Long): String {
     val inRupees = paise / 100.0
     return if (inRupees >= 10_000_000) {
-        "₹ ${String.format("%.1f", inRupees / 10_000_000.0)}M"
+        "₹ ${String.format("%.1f", inRupees / 10_000_000.0)} Cr"
     } else if (inRupees >= 100_000) {
-        "₹ ${String.format("%.1f", inRupees / 100_000.0)}L"
+        "₹ ${String.format("%.1f", inRupees / 100_000.0)} Lakh"
     } else {
         "₹ ${String.format("%,.0f", inRupees)}"
     }
@@ -763,46 +913,19 @@ private fun ReportsLoadingSkeleton() {
             .fillMaxSize()
             .padding(Spacing.screenGutter),
     ) {
-        SkeletonBox(
-            modifier = Modifier
-                .fillMaxWidth(0.5f)
-                .height(28.dp),
-        )
+        SkeletonBox(modifier = Modifier.fillMaxWidth(0.5f).height(24.dp))
         Spacer(modifier = Modifier.height(Spacing.x3))
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.x2)) {
             repeat(4) {
-                SkeletonBox(
-                    modifier = Modifier
-                        .width(70.dp)
-                        .height(32.dp),
-                )
+                SkeletonBox(modifier = Modifier.width(80.dp).height(30.dp), shape = Radius.pill)
             }
         }
         Spacer(modifier = Modifier.height(Spacing.x3))
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.x2)) {
-            SkeletonBox(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(110.dp),
-            )
-            SkeletonBox(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(110.dp),
-            )
+            SkeletonBox(modifier = Modifier.weight(1f).height(90.dp))
+            SkeletonBox(modifier = Modifier.weight(1f).height(90.dp))
         }
         Spacer(modifier = Modifier.height(Spacing.x3))
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.x2)) {
-            SkeletonBox(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(160.dp),
-            )
-            SkeletonBox(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(160.dp),
-            )
-        }
+        SkeletonBox(modifier = Modifier.fillMaxWidth().height(160.dp))
     }
 }
