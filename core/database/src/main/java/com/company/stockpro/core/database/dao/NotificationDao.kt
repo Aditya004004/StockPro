@@ -28,8 +28,14 @@ interface NotificationDao {
     @Query("UPDATE notifications SET is_read = 1 WHERE plant_id = :plantId")
     suspend fun markAllAsRead(plantId: String)
 
+    @Query("SELECT * FROM notifications WHERE plant_id = :plantId")
+    suspend fun getAll(plantId: String): List<NotificationEntity>
+
     @Query("DELETE FROM notifications WHERE plant_id = :plantId")
     suspend fun deleteAll(plantId: String)
+
+    @Query("DELETE FROM notifications WHERE id = :id")
+    suspend fun deleteById(id: String)
 
     @Query("SELECT COUNT(*) FROM notifications")
     suspend fun count(): Int

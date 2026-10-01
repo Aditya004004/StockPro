@@ -1,5 +1,6 @@
 package com.company.stockpro.feature.home
 
+import com.company.stockpro.core.domain.model.Currency
 import com.company.stockpro.core.domain.model.Item
 import com.company.stockpro.core.domain.model.MovementType
 import com.company.stockpro.core.domain.model.SyncStatus
@@ -15,7 +16,9 @@ sealed interface HomeUiState {
     data class Content(
         val userName: String = "Aditya",
         val activePlant: String = "Plant 1",
+        val activeWarehouse: String = "Main Warehouse",
         val availablePlants: List<String> = listOf("Plant 1", "Plant 2"),
+        val currency: Currency = Currency.INR,
         val unreadAlertsCount: Int = 3,
         // 4-Card KPI Carousel (Total Items, Raw Materials, Low Stock, Finished Goods)
         val totalItems: Long,

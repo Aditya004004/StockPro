@@ -53,6 +53,7 @@ import com.company.stockpro.core.designsystem.theme.Radius
 import com.company.stockpro.core.designsystem.theme.Spacing
 import com.company.stockpro.core.designsystem.theme.StockProCodeTextStyle
 import com.company.stockpro.core.designsystem.theme.StockProColors
+import com.company.stockpro.core.domain.model.Currency
 import com.company.stockpro.core.domain.model.Item
 import com.company.stockpro.core.domain.model.MovementType
 import com.company.stockpro.core.domain.model.StockLevel
@@ -73,6 +74,7 @@ fun ItemDetailScreen(
     onReceiveClick: () -> Unit,
     onIssueClick: () -> Unit,
     onAdjustClick: () -> Unit,
+    currency: Currency = Currency.INR,
     toolCustody: ToolCustody? = null,
     onIssueTool: (operatorName: String, notes: String?) -> Unit = { _, _ -> },
     onReturnTool: (notes: String?) -> Unit = {},
@@ -356,7 +358,7 @@ fun ItemDetailScreen(
                             ) {
                                 Text("Unit Cost", style = MaterialTheme.typography.bodyMedium, color = StockProColors.TextSecondary)
                                 Text(
-                                    "₹ %.2f".format(item.unitCost.toRupeesDouble),
+                                    currency.formatMoney(item.unitCost),
                                     style = StockProCodeTextStyle.copy(fontWeight = FontWeight.Bold, fontSize = 13.sp),
                                 )
                             }

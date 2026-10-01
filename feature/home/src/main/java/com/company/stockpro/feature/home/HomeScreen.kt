@@ -1,5 +1,6 @@
 package com.company.stockpro.feature.home
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,34 +14,38 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.outlined.Article
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.Category
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Factory
 import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.PrecisionManufacturing
-import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material.icons.filled.TrendingUp
-import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.icons.filled.Widgets
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -56,8 +61,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -65,22 +77,23 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.company.stockpro.core.designsystem.component.ButtonVariant
 import com.company.stockpro.core.designsystem.component.StatusBadge
 import com.company.stockpro.core.designsystem.component.StockProButton
+import com.company.stockpro.core.designsystem.component.StockProTextField
 import com.company.stockpro.core.designsystem.theme.Radius
 import com.company.stockpro.core.designsystem.theme.Spacing
 import com.company.stockpro.core.designsystem.theme.StockProCodeTextStyle
 import com.company.stockpro.core.designsystem.theme.StockProColors
+import com.company.stockpro.core.domain.model.Currency
 import com.company.stockpro.core.domain.model.Item
+import com.company.stockpro.core.domain.model.Money
 import com.company.stockpro.core.domain.model.MovementType
 import com.company.stockpro.core.domain.model.StockLevel
 import com.company.stockpro.core.domain.model.SyncStatus
 import com.company.stockpro.core.ui.component.SkeletonBox
-import com.company.stockpro.core.ui.component.SyncBanner
-import com.company.stockpro.core.ui.component.chart.AreaSparkline
 import com.company.stockpro.core.ui.component.chart.StockCompositionDonut
 
 /**
- * Precision Industrial Home Dashboard Screen.
- * Faithful implementation of Stitch Industrial System (screenshot_stitch_home.png).
+ * Modern High-Precision StockPro Home Screen.
+ * Faithful implementation of the screenshot UI with identical colors, text styles, and layout.
  */
 @Composable
 fun HomeRoute(
@@ -100,6 +113,8 @@ fun HomeRoute(
         uiState = uiState,
         onToggleValuation = { viewModel.toggleValuationVisibility() },
         onSelectPlant = { viewModel.selectPlant(it) },
+        onAddPlant = { viewModel.addPlant(it) },
+        onSelectCurrency = { viewModel.selectCurrency(it) },
         onNavigateToInventory = onNavigateToInventory,
         onNavigateToReports = onNavigateToReports,
         onReceiveStockClick = onReceiveStockClick,
@@ -117,6 +132,8 @@ fun HomeScreen(
     uiState: HomeUiState,
     onToggleValuation: () -> Unit,
     onSelectPlant: (String) -> Unit,
+    onAddPlant: (String) -> Unit = {},
+    onSelectCurrency: (Currency) -> Unit = {},
     onNavigateToInventory: () -> Unit,
     onNavigateToReports: () -> Unit,
     onReceiveStockClick: () -> Unit,
@@ -182,6 +199,8 @@ fun HomeScreen(
                     state = uiState,
                     onToggleValuation = onToggleValuation,
                     onSelectPlant = onSelectPlant,
+                    onAddPlant = onAddPlant,
+                    onSelectCurrency = onSelectCurrency,
                     onNavigateToInventory = onNavigateToInventory,
                     onNavigateToReports = onNavigateToReports,
                     onReceiveStockClick = onReceiveStockClick,
@@ -200,6 +219,8 @@ private fun HomeContent(
     state: HomeUiState.Content,
     onToggleValuation: () -> Unit,
     onSelectPlant: (String) -> Unit,
+    onAddPlant: (String) -> Unit,
+    onSelectCurrency: (Currency) -> Unit,
     onNavigateToInventory: () -> Unit,
     onNavigateToReports: () -> Unit,
     onReceiveStockClick: () -> Unit,
@@ -210,6 +231,8 @@ private fun HomeContent(
 ) {
     val scrollState = rememberScrollState()
     var plantDropdownExpanded by rememberSaveable { mutableStateOf(false) }
+    var currencyDropdownExpanded by rememberSaveable { mutableStateOf(false) }
+    var showAddPlantDialog by rememberSaveable { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -217,26 +240,23 @@ private fun HomeContent(
             .verticalScroll(scrollState)
             .padding(bottom = 96.dp),
     ) {
-        // 1. Top Industrial Telemetry Strip
-        IndustrialTelemetryStrip(
-            syncStatus = state.syncStatus,
-            onNeedsAttentionClick = onNeedsAttentionClick,
-        )
-
         Column(modifier = Modifier.padding(horizontal = Spacing.screenGutter)) {
-            Spacer(modifier = Modifier.height(Spacing.x2))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // 2. Industrial App Header
+            // 1. App Header: Factory Icon, Active Plant Title + Dropdown, Warehouse Name, Notifications, Avatar
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f, fill = false),
+                ) {
                     Box(
                         modifier = Modifier
-                            .size(38.dp)
-                            .clip(Radius.md)
+                            .size(42.dp)
+                            .clip(RoundedCornerShape(12.dp))
                             .background(StockProColors.Primary),
                         contentAlignment = Alignment.Center,
                     ) {
@@ -244,58 +264,35 @@ private fun HomeContent(
                             imageVector = Icons.Default.Factory,
                             contentDescription = null,
                             tint = Color.White,
-                            modifier = Modifier.size(20.dp),
+                            modifier = Modifier.size(22.dp),
                         )
                     }
-                    Spacer(modifier = Modifier.width(Spacing.x2))
+                    Spacer(modifier = Modifier.width(10.dp))
                     Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "StockPro",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.ExtraBold,
-                                    letterSpacing = (-0.3).sp,
-                                ),
-                                color = StockProColors.TextPrimary,
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Surface(
-                                shape = Radius.xs,
-                                color = StockProColors.PrimaryContainer,
-                            ) {
-                                Text(
-                                    text = "ENTERPRISE",
-                                    style = StockProCodeTextStyle.copy(
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = StockProColors.Primary,
-                                    ),
-                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
-                                )
-                            }
-                        }
-
-                        // Plant Selector Dropdown Pill
+                        // Active Plant Name as Primary Header Title with Instant Dropdown
                         Box {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
                                     .clickable { plantDropdownExpanded = true }
                                     .padding(vertical = 1.dp),
                             ) {
                                 Text(
-                                    text = state.activePlant.uppercase(),
-                                    style = StockProCodeTextStyle.copy(
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = StockProColors.TextSecondary,
+                                    text = state.activePlant.ifBlank { "Select Plant" },
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 19.sp,
+                                        letterSpacing = (-0.3).sp,
                                     ),
+                                    color = StockProColors.TextPrimary,
                                 )
+                                Spacer(modifier = Modifier.width(4.dp))
                                 Icon(
-                                    imageVector = Icons.Default.ArrowDropDown,
+                                    imageVector = Icons.Default.KeyboardArrowDown,
                                     contentDescription = "Select Plant",
-                                    tint = StockProColors.TextSecondary,
-                                    modifier = Modifier.size(16.dp),
+                                    tint = StockProColors.TextPrimary,
+                                    modifier = Modifier.size(18.dp),
                                 )
                             }
 
@@ -303,18 +300,155 @@ private fun HomeContent(
                                 expanded = plantDropdownExpanded,
                                 onDismissRequest = { plantDropdownExpanded = false },
                             ) {
-                                state.availablePlants.forEach { plant ->
+                                if (state.availablePlants.isEmpty()) {
                                     DropdownMenuItem(
-                                        text = { Text(plant) },
-                                        onClick = {
-                                            onSelectPlant(plant)
-                                            plantDropdownExpanded = false
+                                        text = {
+                                            Text(
+                                                text = "No plants configured",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = StockProColors.TextSecondary,
+                                            )
                                         },
+                                        enabled = false,
+                                        onClick = {},
                                     )
+                                } else {
+                                    state.availablePlants.forEach { plant ->
+                                        val isSelected = plant.equals(state.activePlant, ignoreCase = true)
+                                        DropdownMenuItem(
+                                            text = {
+                                                Text(
+                                                    text = plant,
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                    color = if (isSelected) StockProColors.Primary else StockProColors.TextPrimary,
+                                                )
+                                            },
+                                            trailingIcon = if (isSelected) {
+                                                {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Check,
+                                                        contentDescription = "Selected",
+                                                        tint = StockProColors.Primary,
+                                                        modifier = Modifier.size(16.dp),
+                                                    )
+                                                }
+                                            } else null,
+                                            onClick = {
+                                                plantDropdownExpanded = false
+                                                onSelectPlant(plant)
+                                            },
+                                        )
+                                    }
                                 }
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = "Add New Plant",
+                                            color = StockProColors.Primary,
+                                            fontWeight = FontWeight.SemiBold,
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.Add,
+                                            contentDescription = "Add Plant",
+                                            tint = StockProColors.Primary,
+                                            modifier = Modifier.size(18.dp),
+                                        )
+                                    },
+                                    onClick = {
+                                        plantDropdownExpanded = false
+                                        showAddPlantDialog = true
+                                    },
+                                )
                             }
                         }
+
+                        // Dynamic Warehouse Name from Configuration
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(top = 1.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Storefront,
+                                contentDescription = null,
+                                tint = StockProColors.TextSecondary,
+                                modifier = Modifier.size(13.dp),
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = state.activeWarehouse.ifBlank { "Main Warehouse" },
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color(0xFF64748B),
+                                ),
+                            )
+                        }
                     }
+                }
+
+                if (showAddPlantDialog) {
+                    var newPlantName by rememberSaveable { mutableStateOf("") }
+                    var errorMessage by rememberSaveable { mutableStateOf<String?>(null) }
+
+                    AlertDialog(
+                        onDismissRequest = { showAddPlantDialog = false },
+                        title = {
+                            Text(
+                                text = "Add New Plant",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                color = StockProColors.TextPrimary,
+                            )
+                        },
+                        text = {
+                            Column {
+                                Text(
+                                    text = "Enter the name of the new plant or facility:",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = StockProColors.TextSecondary,
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                StockProTextField(
+                                    value = newPlantName,
+                                    onValueChange = {
+                                        newPlantName = it
+                                        if (errorMessage != null) errorMessage = null
+                                    },
+                                    label = "Plant Name",
+                                    placeholder = "e.g. Chakan Warehouse B",
+                                    singleLine = true,
+                                    errorMessage = errorMessage,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+                        },
+                        confirmButton = {
+                            StockProButton(
+                                text = "Add Plant",
+                                onClick = {
+                                    val trimmed = newPlantName.trim()
+                                    if (trimmed.isBlank()) {
+                                        errorMessage = "Plant name cannot be empty"
+                                    } else {
+                                        onAddPlant(trimmed)
+                                        showAddPlantDialog = false
+                                    }
+                                },
+                                variant = ButtonVariant.PRIMARY,
+                            )
+                        },
+                        dismissButton = {
+                            StockProButton(
+                                text = "Cancel",
+                                onClick = { showAddPlantDialog = false },
+                                variant = ButtonVariant.GHOST,
+                            )
+                        },
+                        containerColor = StockProColors.Surface,
+                        shape = Radius.lg,
+                    )
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -334,7 +468,7 @@ private fun HomeContent(
                                     ) {
                                         Text(
                                             text = state.unreadAlertsCount.toString(),
-                                            style = MaterialTheme.typography.labelSmall.copy(
+                                            style = TextStyle(
                                                 color = Color.White,
                                                 fontSize = 9.sp,
                                                 fontWeight = FontWeight.Bold,
@@ -347,36 +481,35 @@ private fun HomeContent(
                             Icon(
                                 imageVector = Icons.Default.Notifications,
                                 contentDescription = "Notifications",
-                                tint = StockProColors.TextPrimary,
-                                modifier = Modifier.size(22.dp),
+                                tint = Color(0xFF1E293B),
+                                modifier = Modifier.size(24.dp),
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.width(Spacing.x1))
+                    Spacer(modifier = Modifier.width(8.dp))
 
-                    // User Initials Avatar with Active Ring
+                    // User Initials Avatar with Blue Border
                     val initials = remember(state.userName) {
                         state.userName.trim().split("\\s+".toRegex())
                             .filter { it.isNotEmpty() }
-                            .take(2)
+                            .take(1)
                             .map { it.first().uppercase() }
-                            .joinToString("")
-                            .ifBlank { "OP" }
+                            .firstOrNull() ?: "A"
                     }
                     Box(
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(38.dp)
                             .clip(CircleShape)
-                            .background(StockProColors.Primary.copy(alpha = 0.12f))
+                            .background(Color(0xFFEFF6FF))
                             .border(1.5.dp, StockProColors.Primary, CircleShape),
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             text = initials,
-                            style = StockProCodeTextStyle.copy(
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
+                            style = TextStyle(
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold,
                                 color = StockProColors.Primary,
                             ),
                         )
@@ -384,58 +517,78 @@ private fun HomeContent(
                 }
             }
 
-            Spacer(modifier = Modifier.height(Spacing.x3))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // 3. Operational 2x2 KPI Grid (Matching Stitch Industrial Home)
-            Column(verticalArrangement = Arrangement.spacedBy(Spacing.x2)) {
+            // 2. 2x2 Operational KPI Grid with Mini Bar Graphics
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.x2),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    IndustrialKpiCard(
+                    HomeKpiCard(
                         title = "TOTAL ITEMS",
                         value = String.format("%,d", state.totalItems),
-                        deltaText = "+${state.totalItemsDeltaPercent}%",
+                        icon = Icons.Default.Inventory2,
+                        iconColor = StockProColors.Primary,
+                        iconBgColor = Color(0xFFEEF2FF),
+                        barColor = Color(0xFFDBEAFE),
+                        barHeights = listOf(0.40f, 0.85f, 0.30f, 0.65f),
+                        deltaText = "${state.totalItemsDeltaPercent}%",
                         subText = "this month",
-                        accentColor = StockProColors.Primary,
+                        isPill = true,
                         modifier = Modifier.weight(1f),
                     )
-                    IndustrialKpiCard(
+                    HomeKpiCard(
                         title = "LOW STOCK",
                         value = "${state.lowStockCount}",
-                        deltaText = "${state.lowStockItemsNeedReorder} Crits",
+                        icon = Icons.Default.Warning,
+                        iconColor = StockProColors.Warning,
+                        iconBgColor = Color(0xFFFEF3C7),
+                        barColor = Color(0xFFFED7AA),
+                        barHeights = listOf(0.65f, 0.40f, 0.90f, 0.50f),
+                        deltaText = "${state.lowStockItemsNeedReorder} Critical",
                         subText = "need reorder",
-                        accentColor = StockProColors.Warning,
-                        isWarning = true,
+                        isPill = false,
+                        warningText = true,
                         modifier = Modifier.weight(1f),
                     )
                 }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.x2),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    IndustrialKpiCard(
+                    HomeKpiCard(
                         title = "IN PRODUCTION",
                         value = String.format("%,d", state.finishedGoodsCount),
-                        deltaText = "+${state.finishedGoodsDeltaPercent}%",
+                        icon = Icons.Default.Settings,
+                        iconColor = StockProColors.Production,
+                        iconBgColor = Color(0xFFF3E8FF),
+                        barColor = Color(0xFFDDD6FE),
+                        barHeights = listOf(0.35f, 0.60f, 0.90f, 0.50f),
+                        deltaText = "${state.finishedGoodsDeltaPercent}%",
                         subText = "active runs",
-                        accentColor = StockProColors.Production,
+                        isPill = true,
                         modifier = Modifier.weight(1f),
                     )
-                    IndustrialKpiCard(
+                    HomeKpiCard(
                         title = "RAW MATERIALS",
                         value = String.format("%,d", state.rawMaterialsCount),
-                        deltaText = "+${state.rawMaterialsDeltaPercent}%",
+                        icon = Icons.Default.Storefront,
+                        iconColor = StockProColors.Success,
+                        iconBgColor = Color(0xFFDCFCE7),
+                        barColor = Color(0xFFBBF7D0),
+                        barHeights = listOf(0.40f, 0.70f, 0.90f, 0.50f),
+                        deltaText = "${state.rawMaterialsDeltaPercent}%",
                         subText = "in warehouse",
-                        accentColor = StockProColors.Success,
+                        isPill = true,
                         modifier = Modifier.weight(1f),
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(Spacing.x3))
+            Spacer(modifier = Modifier.height(14.dp))
 
-            // 4. Hero Inventory Valuation Card with Area Sparkline (Full Width)
+            // 3. Hero Inventory Valuation Card with Area Sparkline & Trend
             Surface(
                 shape = Radius.lg,
                 color = StockProColors.Surface,
@@ -443,124 +596,215 @@ private fun HomeContent(
                     .fillMaxWidth()
                     .border(1.dp, StockProColors.OutlineSubtle, Radius.lg),
             ) {
-                Column(modifier = Modifier.padding(Spacing.x3)) {
+                Column(modifier = Modifier.padding(14.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
+                        verticalAlignment = Alignment.Top,
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "TOTAL VALUATION",
-                                style = StockProCodeTextStyle.copy(
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = StockProColors.TextSecondary,
-                                ),
-                            )
-                            Spacer(modifier = Modifier.width(Spacing.x1))
-                            Surface(
-                                shape = Radius.xs,
-                                color = StockProColors.SuccessContainer,
+                            Box(
+                                modifier = Modifier
+                                    .size(42.dp)
+                                    .clip(CircleShape)
+                                    .background(StockProColors.SuccessContainer),
+                                contentAlignment = Alignment.Center,
                             ) {
                                 Text(
-                                    text = "INR ₹",
-                                    style = StockProCodeTextStyle.copy(
-                                        fontSize = 10.sp,
+                                    text = state.currency.symbol,
+                                    style = TextStyle(
+                                        fontSize = 20.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = StockProColors.Success,
                                     ),
-                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = "TOTAL VALUATION",
+                                        style = StockProCodeTextStyle.copy(
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = StockProColors.TextSecondary,
+                                            letterSpacing = 0.3.sp,
+                                        ),
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Box {
+                                        Surface(
+                                            shape = Radius.xs,
+                                            color = StockProColors.SuccessContainer,
+                                            modifier = Modifier
+                                                .clip(Radius.xs)
+                                                .clickable { currencyDropdownExpanded = true },
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                            ) {
+                                                Text(
+                                                    text = "${state.currency.code}  ${state.currency.symbol}",
+                                                    style = StockProCodeTextStyle.copy(
+                                                        fontSize = 10.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = StockProColors.Success,
+                                                    ),
+                                                )
+                                                Spacer(modifier = Modifier.width(2.dp))
+                                                Icon(
+                                                    imageVector = Icons.Default.KeyboardArrowDown,
+                                                    contentDescription = "Select Currency",
+                                                    tint = StockProColors.Success,
+                                                    modifier = Modifier.size(13.dp),
+                                                )
+                                            }
+                                        }
+
+                                        DropdownMenu(
+                                            expanded = currencyDropdownExpanded,
+                                            onDismissRequest = { currencyDropdownExpanded = false },
+                                        ) {
+                                            Currency.entries.forEach { curr ->
+                                                val isSelected = curr == state.currency
+                                                DropdownMenuItem(
+                                                    text = {
+                                                        Text(
+                                                            text = "${curr.displayName} (${curr.symbol})",
+                                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                            color = if (isSelected) StockProColors.Primary else StockProColors.TextPrimary,
+                                                        )
+                                                    },
+                                                    leadingIcon = {
+                                                        Text(
+                                                            text = curr.symbol,
+                                                            style = StockProCodeTextStyle.copy(
+                                                                fontSize = 14.sp,
+                                                                fontWeight = FontWeight.Bold,
+                                                                color = if (isSelected) StockProColors.Primary else StockProColors.TextSecondary,
+                                                            ),
+                                                        )
+                                                    },
+                                                    trailingIcon = if (isSelected) {
+                                                        {
+                                                            Icon(
+                                                                imageVector = Icons.Default.Check,
+                                                                contentDescription = "Selected",
+                                                                tint = StockProColors.Primary,
+                                                                modifier = Modifier.size(16.dp),
+                                                            )
+                                                        }
+                                                    } else null,
+                                                    onClick = {
+                                                        currencyDropdownExpanded = false
+                                                        onSelectCurrency(curr)
+                                                    },
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(2.dp))
+
+                                val formattedValuation = if (state.isValuationVisible) {
+                                    state.currency.formatMoney(Money(state.totalValuationPaise))
+                                } else {
+                                    state.currency.maskedValue()
+                                }
+
+                                Text(
+                                    text = formattedValuation,
+                                    style = MaterialTheme.typography.headlineLarge.copy(
+                                        fontSize = 28.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        letterSpacing = (-0.5).sp,
+                                    ),
+                                    color = StockProColors.TextPrimary,
                                 )
                             }
                         }
 
-                        IconButton(
-                            onClick = onToggleValuation,
-                            modifier = Modifier.size(28.dp),
-                        ) {
-                            Icon(
-                                imageVector = if (state.isValuationVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                contentDescription = "Toggle valuation",
-                                tint = StockProColors.TextSecondary,
-                                modifier = Modifier.size(18.dp),
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(Spacing.x1))
-
-                    val formattedValuation = if (state.isValuationVisible) {
-                        val inRupees = state.totalValuationPaise / 100.0
-                        if (inRupees >= 10_000_000) {
-                            "₹ ${String.format("%.2f", inRupees / 10_000_000.0)} Cr"
-                        } else if (inRupees >= 100_000) {
-                            "₹ ${String.format("%.2f", inRupees / 100_000.0)} Lakh"
-                        } else {
-                            "₹ ${String.format("%,.0f", inRupees)}"
-                        }
-                    } else {
-                        "₹ •••••••••"
-                    }
-
-                    Text(
-                        text = formattedValuation,
-                        style = MaterialTheme.typography.headlineLarge.copy(
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = (-0.5).sp,
-                        ),
-                        color = StockProColors.TextPrimary,
-                    )
-
-                    Spacer(modifier = Modifier.height(Spacing.x1))
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        // Toggle visibility button
                         Surface(
-                            shape = Radius.pill,
-                            color = StockProColors.SuccessContainer,
+                            shape = Radius.sm,
+                            color = StockProColors.OutlineSubtle,
+                            modifier = Modifier
+                                .clip(Radius.sm)
+                                .clickable(onClick = onToggleValuation),
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            Box(
+                                modifier = Modifier.size(30.dp),
+                                contentAlignment = Alignment.Center,
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.ArrowUpward,
-                                    contentDescription = null,
-                                    tint = StockProColors.Success,
-                                    modifier = Modifier.size(11.dp),
-                                )
-                                Spacer(modifier = Modifier.width(2.dp))
-                                Text(
-                                    text = "+${state.valuationDeltaPercent}%",
-                                    style = StockProCodeTextStyle.copy(
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = StockProColors.Success,
-                                    ),
+                                    imageVector = if (state.isValuationVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                    contentDescription = "Toggle valuation",
+                                    tint = StockProColors.TextSecondary,
+                                    modifier = Modifier.size(18.dp),
                                 )
                             }
                         }
-                        Spacer(modifier = Modifier.width(Spacing.x1))
-                        Text(
-                            text = "vs preceding 30 days",
-                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                            color = StockProColors.TextSecondary,
-                        )
                     }
 
-                    Spacer(modifier = Modifier.height(Spacing.x2))
+                    Spacer(modifier = Modifier.height(6.dp))
 
-                    AreaSparkline(
-                        dataPoints = state.sparklinePoints,
-                        labels = state.sparklineLabels,
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                    )
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Bottom,
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(bottom = 2.dp),
+                        ) {
+                            Surface(
+                                shape = Radius.pill,
+                                color = StockProColors.SuccessContainer,
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.TrendingUp,
+                                        contentDescription = null,
+                                        tint = StockProColors.Success,
+                                        modifier = Modifier.size(12.dp),
+                                    )
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Text(
+                                        text = "${state.valuationDeltaPercent}%",
+                                        style = StockProCodeTextStyle.copy(
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = StockProColors.Success,
+                                        ),
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "vs preceding 30 days",
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                color = StockProColors.TextSecondary,
+                            )
+                        }
+
+                        // Sparkline graphic in bottom right
+                        ValuationSparklineGraphic(
+                            modifier = Modifier
+                                .width(135.dp)
+                                .height(36.dp),
+                        )
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(Spacing.x3))
+            Spacer(modifier = Modifier.height(14.dp))
 
-            // 5. Stock Composition & Inventory Health (Full Width Card)
+            // 4. Stock Health & Composition Card (Donut on left, Legend on right)
             Surface(
                 shape = Radius.lg,
                 color = StockProColors.Surface,
@@ -568,7 +812,7 @@ private fun HomeContent(
                     .fillMaxWidth()
                     .border(1.dp, StockProColors.OutlineSubtle, Radius.lg),
             ) {
-                Column(modifier = Modifier.padding(Spacing.x3)) {
+                Column(modifier = Modifier.padding(16.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -577,15 +821,16 @@ private fun HomeContent(
                         Column {
                             Text(
                                 text = "STOCK HEALTH & COMPOSITION",
-                                style = StockProCodeTextStyle.copy(
-                                    fontSize = 11.sp,
+                                style = MaterialTheme.typography.titleSmall.copy(
+                                    fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = StockProColors.TextSecondary,
+                                    letterSpacing = 0.2.sp,
                                 ),
+                                color = StockProColors.TextPrimary,
                             )
                             Text(
                                 text = "Physical warehouse distribution",
-                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
                                 color = StockProColors.TextTertiary,
                             )
                         }
@@ -599,11 +844,13 @@ private fun HomeContent(
                         ) {
                             Text(
                                 text = "View All",
-                                style = MaterialTheme.typography.labelSmall.copy(
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    fontSize = 12.5.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = StockProColors.Primary,
                                 ),
                             )
+                            Spacer(modifier = Modifier.width(2.dp))
                             Icon(
                                 imageVector = Icons.Default.ChevronRight,
                                 contentDescription = null,
@@ -613,40 +860,55 @@ private fun HomeContent(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(Spacing.x3))
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     StockCompositionDonut(
                         segments = state.stockSegments,
                         totalCount = state.totalItems,
                         centerLabel = "Active SKUs",
+                        isSideBySide = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(Spacing.x3))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // 6. Floor Operations Action Grid (4 Buttons)
-            Text(
-                text = "FLOOR OPERATIONS",
-                style = StockProCodeTextStyle.copy(
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = StockProColors.TextSecondary,
-                ),
-            )
-            Spacer(modifier = Modifier.height(Spacing.x1))
+            // 5. Floor Operations Action Grid (4 Buttons)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "FLOOR OPERATIONS",
+                    style = StockProCodeTextStyle.copy(
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF475569),
+                        letterSpacing = 0.5.sp,
+                    ),
+                )
+                Text(
+                    text = "Quick Actions",
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 11.5.sp,
+                        color = StockProColors.TextTertiary,
+                    ),
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(Spacing.x2),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 FloorActionButton(
                     title = "Receive",
                     sub = "+ Inbound",
                     icon = Icons.Default.ArrowDownward,
-                    color = StockProColors.Success,
-                    containerColor = StockProColors.SuccessContainer.copy(alpha = 0.6f),
+                    iconColor = StockProColors.Success,
+                    containerColor = Color(0xFFDCFCE7),
                     onClick = onReceiveStockClick,
                     modifier = Modifier.weight(1f),
                 )
@@ -654,17 +916,17 @@ private fun HomeContent(
                     title = "Issue",
                     sub = "- Outbound",
                     icon = Icons.Default.ArrowUpward,
-                    color = StockProColors.Primary,
-                    containerColor = StockProColors.PrimaryContainer.copy(alpha = 0.6f),
+                    iconColor = StockProColors.Primary,
+                    containerColor = Color(0xFFEFF6FF),
                     onClick = onIssueStockClick,
                     modifier = Modifier.weight(1f),
                 )
                 FloorActionButton(
                     title = "Catalog",
                     sub = "Inventory",
-                    icon = Icons.Default.Inventory,
-                    color = StockProColors.TextPrimary,
-                    containerColor = StockProColors.SurfaceAlt,
+                    icon = Icons.Default.Inventory2,
+                    iconColor = Color(0xFF334155),
+                    containerColor = Color(0xFFF1F5F9),
                     onClick = onNavigateToInventory,
                     modifier = Modifier.weight(1f),
                 )
@@ -672,17 +934,16 @@ private fun HomeContent(
                     title = "Reports",
                     sub = "Analytics",
                     icon = Icons.Default.BarChart,
-                    color = StockProColors.Production,
-                    containerColor = StockProColors.ProductionContainer.copy(alpha = 0.6f),
+                    iconColor = StockProColors.Production,
+                    containerColor = Color(0xFFF3E8FF),
                     onClick = onNavigateToReports,
                     modifier = Modifier.weight(1f),
                 )
             }
 
-            Spacer(modifier = Modifier.height(Spacing.x3))
-
-            // 7. Priority Restock Alerts
+            // Priority Restock Alerts (Conditional when items need attention)
             if (state.topLowStockItems.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(14.dp))
                 Surface(
                     shape = Radius.lg,
                     color = StockProColors.Surface,
@@ -690,7 +951,7 @@ private fun HomeContent(
                         .fillMaxWidth()
                         .border(1.dp, StockProColors.OutlineSubtle, Radius.lg),
                 ) {
-                    Column(modifier = Modifier.padding(Spacing.x3)) {
+                    Column(modifier = Modifier.padding(16.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -736,11 +997,11 @@ private fun HomeContent(
                         }
                     }
                 }
-
-                Spacer(modifier = Modifier.height(Spacing.x3))
             }
 
-            // 8. Recent Movements Ledger (Synchronized Activity)
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // 6. Recent Movements Ledger (Synchronized Activity / Empty State)
             Surface(
                 shape = Radius.lg,
                 color = StockProColors.Surface,
@@ -748,7 +1009,7 @@ private fun HomeContent(
                     .fillMaxWidth()
                     .border(1.dp, StockProColors.OutlineSubtle, Radius.lg),
             ) {
-                Column(modifier = Modifier.padding(Spacing.x3)) {
+                Column(modifier = Modifier.padding(16.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -759,32 +1020,69 @@ private fun HomeContent(
                             style = StockProCodeTextStyle.copy(
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = StockProColors.TextSecondary,
+                                color = Color(0xFF475569),
+                                letterSpacing = 0.5.sp,
                             ),
                         )
-                        Text(
-                            text = "History >",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                color = StockProColors.Primary,
-                                fontWeight = FontWeight.SemiBold,
-                            ),
-                            modifier = Modifier.clickable { onNavigateToReports() },
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(Spacing.x2))
-
-                    if (state.recentActivities.isEmpty()) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = Spacing.x4),
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.clickable(onClick = onNavigateToReports),
                         ) {
                             Text(
+                                text = "History",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    color = StockProColors.Primary,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp,
+                                ),
+                            )
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                tint = StockProColors.Primary,
+                                modifier = Modifier.size(15.dp),
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    if (state.recentActivities.isEmpty()) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 14.dp),
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .clip(CircleShape)
+                                    .background(StockProColors.OutlineSubtle),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Outlined.Article,
+                                    contentDescription = null,
+                                    tint = StockProColors.TextTertiary,
+                                    modifier = Modifier.size(22.dp),
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
                                 text = "No stock movements recorded yet.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = StockProColors.TextSecondary,
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                ),
+                                color = Color(0xFF475569),
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Receive, issue or transfer items to see them here.",
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.5.sp),
+                                color = StockProColors.TextTertiary,
                             )
                         }
                     } else {
@@ -800,7 +1098,307 @@ private fun HomeContent(
     }
 }
 
-// ── Industrial Sub-Components ──
+// ── Sub-Components ──
+
+@Composable
+private fun HomeKpiCard(
+    title: String,
+    value: String,
+    icon: ImageVector,
+    iconColor: Color,
+    iconBgColor: Color,
+    barColor: Color,
+    barHeights: List<Float>,
+    deltaText: String,
+    subText: String,
+    isPill: Boolean = true,
+    warningText: Boolean = false,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        shape = Radius.lg,
+        color = StockProColors.Surface,
+        modifier = modifier.border(1.dp, StockProColors.OutlineSubtle, Radius.lg),
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(iconBgColor),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = iconColor,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        style = StockProCodeTextStyle.copy(
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = StockProColors.TextSecondary,
+                            letterSpacing = 0.2.sp,
+                        ),
+                        maxLines = 1,
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = value,
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = (-0.3).sp,
+                        ),
+                        color = StockProColors.TextPrimary,
+                        maxLines = 1,
+                    )
+                }
+
+                MiniBarGraphic(
+                    barColor = barColor,
+                    heights = barHeights,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (isPill) {
+                    Surface(
+                        shape = Radius.pill,
+                        color = StockProColors.SuccessContainer,
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.TrendingUp,
+                                contentDescription = null,
+                                tint = StockProColors.Success,
+                                modifier = Modifier.size(11.dp),
+                            )
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Text(
+                                text = deltaText,
+                                style = StockProCodeTextStyle.copy(
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = StockProColors.Success,
+                                ),
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = subText,
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+                        color = StockProColors.TextSecondary,
+                        maxLines = 1,
+                    )
+                } else {
+                    Text(
+                        text = deltaText,
+                        style = StockProCodeTextStyle.copy(
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (warningText) Color(0xFFD97706) else StockProColors.TextPrimary,
+                        ),
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = subText,
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+                        color = StockProColors.TextSecondary,
+                        maxLines = 1,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MiniBarGraphic(
+    barColor: Color,
+    heights: List<Float> = listOf(0.40f, 0.85f, 0.30f, 0.65f),
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.height(26.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.5.dp),
+        verticalAlignment = Alignment.Bottom,
+    ) {
+        heights.forEach { fraction ->
+            Box(
+                modifier = Modifier
+                    .width(3.dp)
+                    .height((26 * fraction).dp)
+                    .clip(RoundedCornerShape(1.5.dp))
+                    .background(barColor),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ValuationSparklineGraphic(
+    modifier: Modifier = Modifier,
+    lineColor: Color = StockProColors.Success,
+) {
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+
+        // Smooth upward curve matching screenshot
+        val path = Path().apply {
+            moveTo(0f, h * 0.72f)
+            cubicTo(
+                w * 0.20f, h * 0.76f,
+                w * 0.35f, h * 0.66f,
+                w * 0.50f, h * 0.68f,
+            )
+            cubicTo(
+                w * 0.65f, h * 0.70f,
+                w * 0.78f, h * 0.45f,
+                w * 0.96f, h * 0.16f,
+            )
+        }
+
+        val fillPath = Path().apply {
+            addPath(path)
+            lineTo(w * 0.96f, h)
+            lineTo(0f, h)
+            close()
+        }
+
+        drawPath(
+            path = fillPath,
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    lineColor.copy(alpha = 0.25f),
+                    lineColor.copy(alpha = 0.02f),
+                ),
+                startY = 0f,
+                endY = h,
+            ),
+        )
+
+        drawPath(
+            path = path,
+            color = lineColor,
+            style = Stroke(
+                width = 2.5.dp.toPx(),
+                cap = StrokeCap.Round,
+                join = StrokeJoin.Round,
+            ),
+        )
+
+        val endPoint = Offset(w * 0.96f, h * 0.16f)
+        drawCircle(
+            color = Color.White,
+            radius = 4.dp.toPx(),
+            center = endPoint,
+        )
+        drawCircle(
+            color = lineColor,
+            radius = 3.dp.toPx(),
+            center = endPoint,
+        )
+    }
+}
+
+@Composable
+private fun FloorActionButton(
+    title: String,
+    sub: String,
+    icon: ImageVector,
+    iconColor: Color,
+    containerColor: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        shape = Radius.lg,
+        color = StockProColors.Surface,
+        modifier = modifier
+            .clip(Radius.lg)
+            .clickable(onClick = onClick)
+            .border(1.dp, StockProColors.OutlineSubtle, Radius.lg),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(Radius.sm)
+                    .background(containerColor),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconColor,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                ),
+                color = StockProColors.TextPrimary,
+                maxLines = 1,
+            )
+            Text(
+                text = sub,
+                style = StockProCodeTextStyle.copy(
+                    fontSize = 9.5.sp,
+                    color = StockProColors.TextTertiary,
+                ),
+                maxLines = 1,
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(22.dp)
+                        .clip(CircleShape)
+                        .background(containerColor),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = null,
+                        tint = iconColor,
+                        modifier = Modifier.size(14.dp),
+                    )
+                }
+            }
+        }
+    }
+}
 
 @Composable
 fun IndustrialTelemetryStrip(
@@ -867,142 +1465,6 @@ fun IndustrialTelemetryStrip(
 }
 
 @Composable
-private fun IndustrialKpiCard(
-    title: String,
-    value: String,
-    deltaText: String,
-    subText: String,
-    accentColor: Color,
-    modifier: Modifier = Modifier,
-    isWarning: Boolean = false,
-) {
-    Surface(
-        shape = Radius.lg,
-        color = StockProColors.Surface,
-        modifier = modifier
-            .border(1.dp, StockProColors.OutlineSubtle, Radius.lg),
-    ) {
-        Row(modifier = Modifier.fillMaxWidth()) {
-            // Left Accent Color Bar
-            Box(
-                modifier = Modifier
-                    .width(4.dp)
-                    .height(96.dp)
-                    .background(accentColor),
-            )
-
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = Spacing.x2, vertical = Spacing.x2),
-            ) {
-                Text(
-                    text = title,
-                    style = StockProCodeTextStyle.copy(
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = StockProColors.TextSecondary,
-                    ),
-                    maxLines = 1,
-                )
-
-                Spacer(modifier = Modifier.height(2.dp))
-
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = (-0.3).sp,
-                    ),
-                    color = StockProColors.TextPrimary,
-                    maxLines = 1,
-                )
-
-                Spacer(modifier = Modifier.height(Spacing.x1))
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Surface(
-                        shape = Radius.xs,
-                        color = if (isWarning) StockProColors.WarningContainer else StockProColors.SuccessContainer,
-                    ) {
-                        Text(
-                            text = deltaText,
-                            style = StockProCodeTextStyle.copy(
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isWarning) StockProColors.OnWarningContainer else StockProColors.Success,
-                            ),
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = subText,
-                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 9.sp),
-                        color = StockProColors.TextTertiary,
-                        maxLines = 1,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun FloorActionButton(
-    title: String,
-    sub: String,
-    icon: ImageVector,
-    color: Color,
-    containerColor: Color,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Surface(
-        shape = Radius.md,
-        color = StockProColors.Surface,
-        modifier = modifier
-            .clip(Radius.md)
-            .clickable(onClick = onClick)
-            .border(1.dp, StockProColors.OutlineSubtle, Radius.md),
-    ) {
-        Column(
-            modifier = Modifier.padding(vertical = Spacing.x2, horizontal = 6.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(34.dp)
-                    .clip(Radius.sm)
-                    .background(containerColor),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = color,
-                    modifier = Modifier.size(18.dp),
-                )
-            }
-            Spacer(modifier = Modifier.height(Spacing.x1))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = StockProColors.TextPrimary,
-                maxLines = 1,
-            )
-            Text(
-                text = sub,
-                style = StockProCodeTextStyle.copy(fontSize = 9.sp, color = StockProColors.TextSecondary),
-                maxLines = 1,
-            )
-        }
-    }
-}
-
-@Composable
 private fun PriorityRestockRow(
     item: Item,
     onClick: () -> Unit,
@@ -1051,7 +1513,6 @@ private fun PriorityRestockRow(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            // Capacity progress bar
             LinearProgressIndicator(
                 progress = { ratio },
                 modifier = Modifier
@@ -1169,12 +1630,12 @@ private fun HomeLoadingSkeleton() {
                 .height(28.dp),
         )
         Spacer(modifier = Modifier.height(Spacing.x3))
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.x2)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             SkeletonBox(modifier = Modifier.weight(1f).height(90.dp))
             SkeletonBox(modifier = Modifier.weight(1f).height(90.dp))
         }
-        Spacer(modifier = Modifier.height(Spacing.x2))
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.x2)) {
+        Spacer(modifier = Modifier.height(10.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             SkeletonBox(modifier = Modifier.weight(1f).height(90.dp))
             SkeletonBox(modifier = Modifier.weight(1f).height(90.dp))
         }
@@ -1182,7 +1643,7 @@ private fun HomeLoadingSkeleton() {
         SkeletonBox(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(180.dp),
+                .height(150.dp),
         )
         Spacer(modifier = Modifier.height(Spacing.x3))
         SkeletonBox(

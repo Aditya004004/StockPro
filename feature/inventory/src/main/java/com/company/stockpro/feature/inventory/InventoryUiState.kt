@@ -1,5 +1,6 @@
 package com.company.stockpro.feature.inventory
 
+import com.company.stockpro.core.domain.model.Currency
 import com.company.stockpro.core.domain.model.InventorySummary
 import com.company.stockpro.core.domain.model.Item
 import com.company.stockpro.core.domain.model.ItemClass
@@ -23,6 +24,10 @@ sealed interface InventoryUiState {
         val selectedClass: ItemClass = ItemClass.COMPONENT,
         val searchQuery: String = "",
         val sortOrder: SortOrder = SortOrder.NAME_ASC,
+        val activePlant: String = "Plant 1",
+        val activeWarehouse: String = "Central Warehouse",
+        val availablePlants: List<String> = listOf("Plant 1"),
+        val currency: Currency = Currency.INR,
         val syncStatus: SyncStatus = SyncStatus.Synced(0L),
     ) : InventoryUiState
 
@@ -31,6 +36,10 @@ sealed interface InventoryUiState {
         val reason: EmptyReason,
         val summary: InventorySummary = InventorySummary(),
         val selectedClass: ItemClass = ItemClass.COMPONENT,
+        val activePlant: String = "Plant 1",
+        val activeWarehouse: String = "Central Warehouse",
+        val availablePlants: List<String> = listOf("Plant 1"),
+        val currency: Currency = Currency.INR,
         val syncStatus: SyncStatus = SyncStatus.Synced(0L),
     ) : InventoryUiState
 

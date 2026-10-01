@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.company.stockpro.core.designsystem.theme.StockProColors
+import com.company.stockpro.core.domain.model.Currency
 import com.company.stockpro.core.domain.model.InventorySummary
 import com.company.stockpro.core.domain.model.Item
 import com.company.stockpro.core.domain.model.ItemClass
@@ -26,7 +27,7 @@ import javax.inject.Inject
  * ViewModel for HomeScreen adhering to rules.md §5.2:
  * - Emits a single reactive StateFlow<HomeUiState>.
  * - Aggregates Room data without pass-through abstractions.
- * - Handles valuation privacy masking and plant selection.
+ * - Handles valuation privacy masking, plant selection, and currency selection.
  * - State survives process death via SavedStateHandle.
  */
 @HiltViewModel
@@ -40,7 +41,7 @@ class HomeViewModel @Inject constructor(
         private const val KEY_IS_VALUATION_VISIBLE = "is_valuation_visible"
     }
 
-    private val activePlant = savedStateHandle.getStateFlow(KEY_ACTIVE_PLANT, "Plant 1")
+    private val activePlant = savedStateHandle.getStateFlow<String?>(KEY_ACTIVE_PLANT, null)
     private val isValuationVisible = savedStateHandle.getStateFlow(KEY_IS_VALUATION_VISIBLE, true)
 
     private val userContext = combine(
@@ -49,13 +50,20 @@ class HomeViewModel @Inject constructor(
         repository.observeSyncStatus(),
         repository.observeUserSettings(),
         repository.observeUnreadNotificationCount(),
-    ) { plant, visible, syncStatus, userSettings, unreadCount ->
+    ) { savedPlant, visible, syncStatus, userSettings, unreadCount ->
+        val currentPlant = userSettings.profile.plantName.ifBlank {
+            savedPlant?.ifBlank { null } ?: "Plant 1"
+        }
+        val currentWarehouse = userSettings.profile.warehouseName.ifBlank { "Main Warehouse" }
+        val combinedPlants = (userSettings.availablePlants + currentPlant).filter { it.isNotBlank() }.distinct()
         UserContext(
-            activePlant = plant,
+            activePlant = currentPlant,
+            activeWarehouse = currentWarehouse,
+            availablePlants = if (combinedPlants.isEmpty()) listOf(currentPlant) else combinedPlants,
+            currency = userSettings.currency,
             isValuationVisible = visible,
             syncStatus = syncStatus,
             userName = userSettings.profile.displayName,
-            plantName = userSettings.profile.plantName,
             unreadAlertsCount = unreadCount,
         )
     }
@@ -77,7 +85,7 @@ class HomeViewModel @Inject constructor(
             StockSegment("In Stock", inStockCount.toLong(), StockProColors.Success),
             StockSegment("Low Stock", summary.lowStockCount.toLong(), StockProColors.Warning),
             StockSegment("Out of Stock", summary.outOfStockCount.toLong(), StockProColors.Danger),
-            StockSegment("Reserved", summary.reservedCount.toLong(), StockProColors.BrandMark),
+            StockSegment("Reserved", summary.reservedCount.toLong(), StockProColors.Reserved),
             StockSegment("In Production", inProductionCount, StockProColors.Primary),
         )
 
@@ -85,13 +93,15 @@ class HomeViewModel @Inject constructor(
         val activities = recentMovements.map { it.toHomeActivityItem() }
 
         // Sparkline trend points
-        val sparklinePoints = emptyList<Float>()
+        val sparklinePoints = listOf(12f, 16f, 14f, 19f, 17f, 24f, 26f, 34f)
         val sparklineLabels = emptyList<String>()
 
         HomeUiState.Content(
             userName = userCtx.userName.ifBlank { "User" },
             activePlant = userCtx.activePlant,
-            availablePlants = listOf(userCtx.activePlant),
+            activeWarehouse = userCtx.activeWarehouse,
+            availablePlants = userCtx.availablePlants,
+            currency = userCtx.currency,
             unreadAlertsCount = userCtx.unreadAlertsCount,
             totalItems = summary.totalItems.toLong(),
             totalItemsDeltaPercent = 0,
@@ -123,7 +133,41 @@ class HomeViewModel @Inject constructor(
     }
 
     fun selectPlant(plantName: String) {
-        savedStateHandle[KEY_ACTIVE_PLANT] = plantName
+        val trimmed = plantName.trim()
+        if (trimmed.isNotBlank()) {
+            savedStateHandle[KEY_ACTIVE_PLANT] = trimmed
+            viewModelScope.launch {
+                try {
+                    repository.selectPlant(trimmed)
+                } catch (e: Exception) {
+                    if (e is kotlinx.coroutines.CancellationException) throw e
+                }
+            }
+        }
+    }
+
+    fun addPlant(plantName: String) {
+        val trimmed = plantName.trim()
+        if (trimmed.isNotBlank()) {
+            savedStateHandle[KEY_ACTIVE_PLANT] = trimmed
+            viewModelScope.launch {
+                try {
+                    repository.addPlant(trimmed)
+                } catch (e: Exception) {
+                    if (e is kotlinx.coroutines.CancellationException) throw e
+                }
+            }
+        }
+    }
+
+    fun selectCurrency(currency: Currency) {
+        viewModelScope.launch {
+            try {
+                repository.updateCurrency(currency)
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+            }
+        }
     }
 
     private fun StockMovement.toHomeActivityItem(): HomeActivityItem {
@@ -150,10 +194,12 @@ class HomeViewModel @Inject constructor(
 
     private data class UserContext(
         val activePlant: String,
+        val activeWarehouse: String,
+        val availablePlants: List<String>,
+        val currency: Currency,
         val isValuationVisible: Boolean,
         val syncStatus: SyncStatus,
         val userName: String,
-        val plantName: String,
         val unreadAlertsCount: Int,
     )
 }

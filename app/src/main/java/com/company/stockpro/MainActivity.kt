@@ -10,6 +10,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -112,7 +113,14 @@ fun StockProApp(
         }
     }
 
-    StockProTheme {
+    val userSettings by mainViewModel.userSettings.collectAsStateWithLifecycle()
+    val isDarkTheme = when (userSettings.themeMode) {
+        com.company.stockpro.core.domain.model.ThemeMode.LIGHT -> false
+        com.company.stockpro.core.domain.model.ThemeMode.DARK -> true
+        com.company.stockpro.core.domain.model.ThemeMode.SYSTEM -> androidx.compose.foundation.isSystemInDarkTheme()
+    }
+
+    StockProTheme(darkTheme = isDarkTheme) {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             bottomBar = {
@@ -138,7 +146,10 @@ fun StockProApp(
                 }
             },
         ) { innerPadding ->
-            val modifier = Modifier.padding(innerPadding)
+            val modifier = Modifier
+                .padding(innerPadding)
+                .consumeWindowInsets(innerPadding)
+            val userSettings by mainViewModel.userSettings.collectAsStateWithLifecycle()
 
             NavHost(
                 navController = navController,
@@ -292,6 +303,7 @@ fun StockProApp(
                                 movementItem = currentItem
                                 movementType = MovementType.ADJUSTMENT
                             },
+                            currency = userSettings.currency,
                             toolCustody = toolCustody,
                             onIssueTool = { operator, notes ->
                                 mainViewModel.issueTool(currentItem.id, operator, notes)
@@ -397,6 +409,7 @@ fun StockProApp(
                             },
                         )
                     },
+                    currency = userSettings.currency,
                 )
             }
         }

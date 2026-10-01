@@ -1,18 +1,23 @@
 package com.company.stockpro.feature.reports
 
+import com.company.stockpro.core.domain.model.Currency
 import com.company.stockpro.core.domain.model.InventorySummary
 import com.company.stockpro.core.domain.model.Item
 import com.company.stockpro.core.domain.model.ItemClass
 import com.company.stockpro.core.domain.model.Money
+import com.company.stockpro.core.domain.model.MovementType
 import com.company.stockpro.core.domain.model.Quantity
 import com.company.stockpro.core.domain.model.SortOrder
 import com.company.stockpro.core.domain.model.StockMovement
 import com.company.stockpro.core.domain.model.SyncStatus
+import com.company.stockpro.core.domain.model.UserProfile
+import com.company.stockpro.core.domain.model.UserSettings
 import com.company.stockpro.core.domain.repository.InventoryRepository
 import com.company.stockpro.core.domain.util.DataResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
@@ -23,6 +28,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -62,6 +68,7 @@ class ReportsViewModelTest {
         assertEquals(3, content.totalItems)
         assertEquals(1, content.lowStockItems.size)
         assertEquals(2, content.trendSeries.size)
+        assertEquals(Currency.INR, content.currency)
     }
 
     @Test
@@ -89,11 +96,11 @@ class ReportsViewModelTest {
     }
 
     @Test
-    fun `exportReportCsv builds valid CSV formatted content`() = runTest {
+    fun `exportReportCsv builds valid CSV formatted content with global currency`() = runTest {
         backgroundScope.launch { viewModel.uiState.collect() }
         advanceUntilIdle()
 
-        viewModel.exportReportCsv("Inventory Report", fakeRepository.items)
+        viewModel.exportReportCsv("Inventory Report", fakeRepository.items, Currency.INR)
         advanceUntilIdle()
 
         val state = viewModel.uiState.value as ReportsUiState.Content
@@ -102,6 +109,89 @@ class ReportsViewModelTest {
         assertTrue(csv.contains("Code,Name,Class,Category,Location,Unit,On Hand,Reserved,Reorder Level,Unit Cost (₹),Total Value (₹)"))
         assertTrue(csv.contains("BRG-001"))
         assertTrue(csv.contains("Ball Bearing"))
+    }
+
+    @Test
+    fun `exportReportCsv with USD uses dollar symbol in headers`() = runTest {
+        backgroundScope.launch { viewModel.uiState.collect() }
+        advanceUntilIdle()
+
+        viewModel.exportReportCsv("USD Report", fakeRepository.items, Currency.USD)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as ReportsUiState.Content
+        val csv = state.generatedCsvContent!!
+        assertTrue(csv.contains("Unit Cost ($),Total Value ($)"))
+    }
+
+    @Test
+    fun `currency update reflects in reports state`() = runTest {
+        backgroundScope.launch { viewModel.uiState.collect() }
+        advanceUntilIdle()
+
+        fakeRepository.updateCurrency(Currency.USD)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as ReportsUiState.Content
+        assertEquals(Currency.USD, state.currency)
+    }
+
+    @Test
+    fun `month navigation updates selectedMonthLabel and state`() = runTest {
+        backgroundScope.launch { viewModel.uiState.collect() }
+        advanceUntilIdle()
+
+        val initialMonthLabel = (viewModel.uiState.value as ReportsUiState.Content).selectedMonthLabel
+        viewModel.onPreviousMonth()
+        advanceUntilIdle()
+
+        val prevMonthLabel = (viewModel.uiState.value as ReportsUiState.Content).selectedMonthLabel
+        assertNotEquals(initialMonthLabel, prevMonthLabel)
+
+        viewModel.onNextMonth()
+        advanceUntilIdle()
+        val restoredMonthLabel = (viewModel.uiState.value as ReportsUiState.Content).selectedMonthLabel
+        assertEquals(initialMonthLabel, restoredMonthLabel)
+    }
+
+    @Test
+    fun `valuation by category groups dynamic items correctly`() = runTest {
+        backgroundScope.launch { viewModel.uiState.collect() }
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as ReportsUiState.Content
+        val valuations = state.categoryValuations
+        assertTrue(valuations.isNotEmpty())
+        val categories = valuations.map { it.categoryName }
+        assertTrue(categories.contains("Mechanical"))
+        assertTrue(categories.contains("Metals"))
+    }
+
+    @Test
+    fun `inbound and outbound flow computes live series from movements`() = runTest {
+        backgroundScope.launch { viewModel.uiState.collect() }
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as ReportsUiState.Content
+        assertEquals(2, state.trendSeries.size)
+        val inbound = state.trendSeries.find { it.name == "Inbound" }
+        val outbound = state.trendSeries.find { it.name == "Outbound" }
+        assertNotNull(inbound)
+        assertNotNull(outbound)
+        assertTrue(inbound!!.dataPoints.sum() > 0f)
+        assertTrue(outbound!!.dataPoints.sum() > 0f)
+    }
+
+    @Test
+    fun `selecting plant updates active plant in reports`() = runTest {
+        backgroundScope.launch { viewModel.uiState.collect() }
+        advanceUntilIdle()
+
+        viewModel.selectPlant("Plant 2")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as ReportsUiState.Content
+        assertEquals("Plant 2", state.activePlant)
     }
 }
 
@@ -151,6 +241,39 @@ private class FakeReportsRepository : InventoryRepository {
         ),
     )
 
+    val movements = listOf(
+        StockMovement(
+            id = "m1",
+            itemId = "item_1",
+            type = MovementType.RECEIPT,
+            delta = Quantity(50_000L),
+            createdAt = System.currentTimeMillis() - 1000L,
+        ),
+        StockMovement(
+            id = "m2",
+            itemId = "item_2",
+            type = MovementType.ISSUE,
+            delta = Quantity(-20_000L),
+            createdAt = System.currentTimeMillis() - 2000L,
+        ),
+    )
+
+    val userSettingsFlow = MutableStateFlow(
+        UserSettings(
+            profile = UserProfile(
+                uid = "u1",
+                displayName = "User",
+                email = "u@co.com",
+                role = com.company.stockpro.core.domain.model.Role.INVENTORY_MANAGER,
+                plantId = "p1",
+                plantName = "Plant 1",
+                warehouseName = "Main Warehouse",
+            ),
+            availablePlants = listOf("Plant 1", "Plant 2"),
+            currency = Currency.INR,
+        ),
+    )
+
     override fun observeItems(): Flow<List<Item>> = flowOf(items)
 
     override fun observeItemsByClass(itemClass: ItemClass, sortOrder: SortOrder): Flow<List<Item>> =
@@ -171,7 +294,7 @@ private class FakeReportsRepository : InventoryRepository {
 
     override fun observeLedger(itemId: String): Flow<List<StockMovement>> = flowOf(emptyList())
 
-    override fun observeRecentMovements(limit: Int): Flow<List<StockMovement>> = flowOf(emptyList())
+    override fun observeRecentMovements(limit: Int): Flow<List<StockMovement>> = flowOf(movements)
 
     override suspend fun getItem(itemId: String): DataResult<Item> =
         items.find { it.id == itemId }?.let { DataResult.Success(it) }
@@ -204,11 +327,16 @@ private class FakeReportsRepository : InventoryRepository {
     override suspend fun clearNotifications() {}
     override fun observeNotificationPreferences(): Flow<com.company.stockpro.core.domain.model.NotificationPreferences> = flowOf(com.company.stockpro.core.domain.model.NotificationPreferences())
     override suspend fun updateNotificationPreferences(preferences: com.company.stockpro.core.domain.model.NotificationPreferences) {}
-    override fun observeUserSettings(): Flow<com.company.stockpro.core.domain.model.UserSettings> = flowOf(
-        com.company.stockpro.core.domain.model.UserSettings(
-            profile = com.company.stockpro.core.domain.model.UserProfile("u1", "User", "u@co.com", com.company.stockpro.core.domain.model.Role.INVENTORY_MANAGER, "p1", "Plant 1"),
-        ),
-    )
+    override fun observeUserSettings(): Flow<UserSettings> = userSettingsFlow
+    override suspend fun selectPlant(plantName: String): DataResult<Unit> {
+        userSettingsFlow.value = userSettingsFlow.value.copy(
+            profile = userSettingsFlow.value.profile.copy(plantName = plantName),
+        )
+        return DataResult.Success(Unit)
+    }
+    override suspend fun updateCurrency(currency: Currency) {
+        userSettingsFlow.value = userSettingsFlow.value.copy(currency = currency)
+    }
     override suspend fun updateUserProfile(displayName: String): DataResult<Unit> = DataResult.Success(Unit)
     override suspend fun updateThemeMode(themeMode: com.company.stockpro.core.domain.model.ThemeMode) {}
     override suspend fun updateLanguage(language: com.company.stockpro.core.domain.model.AppLanguage) {}
@@ -224,4 +352,3 @@ private class FakeReportsRepository : InventoryRepository {
     override suspend fun returnTool(itemId: String, notes: String?): DataResult<Unit> = DataResult.Success(Unit)
     override suspend fun logCalibration(itemId: String, calibratedAt: Long, nextDueAt: Long, notes: String?): DataResult<Unit> = DataResult.Success(Unit)
 }
-

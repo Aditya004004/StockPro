@@ -8,6 +8,7 @@ import com.company.stockpro.core.database.entity.TeamMemberEntity
 import com.company.stockpro.core.database.entity.ToolCustodyEntity
 import com.company.stockpro.core.domain.model.AppLanguage
 import com.company.stockpro.core.domain.model.AppNotification
+import com.company.stockpro.core.domain.model.Currency
 import com.company.stockpro.core.domain.model.Item
 import com.company.stockpro.core.domain.model.ItemClass
 import com.company.stockpro.core.domain.model.Money
@@ -30,9 +31,12 @@ import com.company.stockpro.core.domain.util.UiText
 import androidx.room.withTransaction
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -88,6 +92,9 @@ class InventoryRepositoryImpl(
             seedDefaultsIfEmpty()
         }
         appScope.launch {
+            observeAndReconcileNotifications()
+        }
+        appScope.launch {
             try {
                 com.google.firebase.auth.FirebaseAuth.getInstance().addAuthStateListener { auth ->
                     val user = auth.currentUser
@@ -137,15 +144,115 @@ class InventoryRepositoryImpl(
             )
         }
 
-        if (notificationDao.count() == 0) {
-            val now = System.currentTimeMillis()
-            notificationDao.insertAll(
-                listOf(
-                    NotificationEntity("notif_1", "plant_01", NotificationType.LOW_STOCK.name, "Low Stock Alert", "Ball Bearing is below minimum par level (5 on hand vs 500 par).", "BRG-001", false, now - 1800000),
-                    NotificationEntity("notif_2", "plant_01", NotificationType.PO_DUE.name, "Purchase Order Due", "PO-2024-0142 scheduled delivery expected this week.", null, false, now - 7200000),
-                    NotificationEntity("notif_3", "plant_01", NotificationType.SYNC_FAILURE.name, "Sync Alert", "1 background movement queued offline and awaiting network sync.", null, true, now - 86400000),
+        // Clean up any legacy mock notifications that might have been seeded previously
+        notificationDao.deleteById("notif_1")
+        notificationDao.deleteById("notif_2")
+        notificationDao.deleteById("notif_3")
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private suspend fun observeAndReconcileNotifications() {
+        combine(
+            itemDao.observeActiveItems(),
+            outboxDao.observeFailedEntries(),
+            userSettingsFlow,
+        ) { items, failedEntries, settings ->
+            Triple(items, failedEntries, settings)
+        }.collect { (items, failedEntries, settings) ->
+            reconcileNotifications(items, failedEntries, settings)
+        }
+    }
+
+    private suspend fun reconcileNotifications(
+        items: List<com.company.stockpro.core.database.entity.ItemEntity>,
+        failedEntries: List<OutboxEntity>,
+        settings: UserSettings,
+    ) {
+        val currentPlant = settings.profile.plantId
+        val existingNotifications = notificationDao.getAll(currentPlant).associateBy { it.id }
+        val now = System.currentTimeMillis()
+        val prefs = settings.notificationPreferences
+
+        val desiredIds = mutableSetOf<String>()
+
+        // 1. Check Out of Stock items
+        if (prefs.isTypeEnabled(NotificationType.OUT_OF_STOCK)) {
+            for (item in items) {
+                if (item.onHandMilli <= 0) {
+                    val notifId = "out_of_stock_${item.id}"
+                    desiredIds.add(notifId)
+                    val existing = existingNotifications[notifId]
+                    notificationDao.insert(
+                        NotificationEntity(
+                            id = notifId,
+                            plantId = currentPlant,
+                            type = NotificationType.OUT_OF_STOCK.name,
+                            title = "Out of Stock: ${item.name}",
+                            body = "${item.name} (${item.code}) is completely out of stock.",
+                            entityRef = item.code,
+                            isRead = existing?.isRead ?: false,
+                            createdAt = existing?.createdAt ?: now,
+                        ),
+                    )
+                }
+            }
+        }
+
+        // 2. Check Low Stock items
+        if (prefs.isTypeEnabled(NotificationType.LOW_STOCK)) {
+            for (item in items) {
+                if (item.onHandMilli > 0 && item.reorderLevelMilli > 0 && item.onHandMilli <= item.reorderLevelMilli) {
+                    val notifId = "low_stock_${item.id}"
+                    desiredIds.add(notifId)
+                    val existing = existingNotifications[notifId]
+                    val onHandQty = Quantity(item.onHandMilli).formatted()
+                    val reorderQty = Quantity(item.reorderLevelMilli).formatted()
+                    notificationDao.insert(
+                        NotificationEntity(
+                            id = notifId,
+                            plantId = currentPlant,
+                            type = NotificationType.LOW_STOCK.name,
+                            title = "Low Stock: ${item.name}",
+                            body = "${item.name} (${item.code}) is below reorder level ($onHandQty vs $reorderQty).",
+                            entityRef = item.code,
+                            isRead = existing?.isRead ?: false,
+                            createdAt = existing?.createdAt ?: now,
+                        ),
+                    )
+                }
+            }
+        }
+
+        // 3. Check Sync Failures
+        if (prefs.isTypeEnabled(NotificationType.SYNC_FAILURE) && failedEntries.isNotEmpty()) {
+            val notifId = "sync_failure"
+            desiredIds.add(notifId)
+            val existing = existingNotifications[notifId]
+            notificationDao.insert(
+                NotificationEntity(
+                    id = notifId,
+                    plantId = currentPlant,
+                    type = NotificationType.SYNC_FAILURE.name,
+                    title = "Sync Alert",
+                    body = "${failedEntries.size} offline update(s) failed to sync. Tap to review.",
+                    entityRef = null,
+                    isRead = existing?.isRead ?: false,
+                    createdAt = existing?.createdAt ?: now,
                 ),
             )
+        }
+
+        // 4. Remove any automated notifications that are no longer valid
+        for (existing in existingNotifications.values) {
+            if (existing.id.startsWith("low_stock_") ||
+                existing.id.startsWith("out_of_stock_") ||
+                existing.id == "sync_failure" ||
+                existing.id in listOf("notif_1", "notif_2", "notif_3")
+            ) {
+                if (!desiredIds.contains(existing.id)) {
+                    notificationDao.deleteById(existing.id)
+                }
+            }
         }
     }
 
@@ -367,6 +474,16 @@ class InventoryRepositoryImpl(
         }
     }
 
+    override suspend fun triggerSync(): DataResult<Unit> {
+        return try {
+            syncManager?.pullDelta(currentOrgId, currentPlantId)
+            DataResult.Success(Unit)
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            DataResult.Error(UiText.Dynamic(e.localizedMessage ?: "Sync failed"))
+        }
+    }
+
     override fun observeFailedEntries(): Flow<List<com.company.stockpro.core.domain.model.FailedOutboxEntry>> =
         outboxDao.observeFailedEntries().map { entities ->
             entities.map {
@@ -392,11 +509,17 @@ class InventoryRepositoryImpl(
     // Phase 5: Notifications & Preferences
     // ==========================================
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeNotifications(): Flow<List<AppNotification>> =
-        notificationDao.observeAll(currentPlantId).map { entities -> entities.map { it.toDomain() } }
+        userSettingsFlow.map { it.profile.plantId }.flatMapLatest { plantId ->
+            notificationDao.observeAll(plantId).map { entities -> entities.map { it.toDomain() } }
+        }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeUnreadNotificationCount(): Flow<Int> =
-        notificationDao.observeUnreadCount(currentPlantId)
+        userSettingsFlow.map { it.profile.plantId }.flatMapLatest { plantId ->
+            notificationDao.observeUnreadCount(plantId)
+        }
 
     override suspend fun markNotificationAsRead(id: String) {
         notificationDao.markAsRead(id)
@@ -429,6 +552,76 @@ class InventoryRepositoryImpl(
         return DataResult.Success(Unit)
     }
 
+    override suspend fun updateFullUserProfile(
+        displayName: String,
+        email: String,
+        phone: String,
+        company: String,
+        plantName: String,
+    ): DataResult<Unit> {
+        val cleanPlant = plantName.trim()
+        val plantId = if (cleanPlant.isNotBlank()) {
+            "plant_" + cleanPlant.lowercase().replace("[^a-z0-9]".toRegex(), "_")
+        } else {
+            userSettingsFlow.value.profile.plantId
+        }
+        userSettingsFlow.update { current ->
+            val updatedPlants = if (cleanPlant.isNotBlank() && !current.availablePlants.contains(cleanPlant)) {
+                current.availablePlants + cleanPlant
+            } else {
+                current.availablePlants
+            }
+            current.copy(
+                profile = current.profile.copy(
+                    displayName = displayName.trim(),
+                    email = email.trim(),
+                    phone = phone.trim(),
+                    company = company.trim(),
+                    plantName = if (cleanPlant.isNotBlank()) cleanPlant else current.profile.plantName,
+                    plantId = plantId,
+                ),
+                availablePlants = updatedPlants,
+            )
+        }
+        return DataResult.Success(Unit)
+    }
+
+    override suspend fun selectPlant(plantName: String): DataResult<Unit> {
+        val cleanName = plantName.trim()
+        if (cleanName.isBlank()) return DataResult.Error(UiText.Dynamic("Plant name cannot be empty"))
+        val plantId = "plant_" + cleanName.lowercase().replace("[^a-z0-9]".toRegex(), "_")
+        userSettingsFlow.update { current ->
+            current.copy(
+                profile = current.profile.copy(
+                    plantName = cleanName,
+                    plantId = plantId,
+                ),
+            )
+        }
+        return DataResult.Success(Unit)
+    }
+
+    override suspend fun addPlant(plantName: String): DataResult<Unit> {
+        val cleanName = plantName.trim()
+        if (cleanName.isBlank()) return DataResult.Error(UiText.Dynamic("Plant name cannot be empty"))
+        val plantId = "plant_" + cleanName.lowercase().replace("[^a-z0-9]".toRegex(), "_")
+        userSettingsFlow.update { current ->
+            val updatedList = if (current.availablePlants.contains(cleanName)) {
+                current.availablePlants
+            } else {
+                current.availablePlants + cleanName
+            }
+            current.copy(
+                profile = current.profile.copy(
+                    plantName = cleanName,
+                    plantId = plantId,
+                ),
+                availablePlants = updatedList,
+            )
+        }
+        return DataResult.Success(Unit)
+    }
+
     override suspend fun updateThemeMode(themeMode: ThemeMode) {
         userSettingsFlow.update { it.copy(themeMode = themeMode) }
     }
@@ -439,6 +632,10 @@ class InventoryRepositoryImpl(
 
     override suspend fun updateUnitSystem(unitSystem: UnitSystem) {
         userSettingsFlow.update { it.copy(unitSystem = unitSystem) }
+    }
+
+    override suspend fun updateCurrency(currency: Currency) {
+        userSettingsFlow.update { it.copy(currency = currency) }
     }
 
     override suspend fun clearCache(): DataResult<Long> {

@@ -10,7 +10,10 @@ data class NotificationPreferences(
     val poDueEnabled: Boolean = true,
     val largeAdjustmentEnabled: Boolean = true,
     val syncFailureEnabled: Boolean = true,
+    val expiryWarningEnabled: Boolean = true,
 ) {
+    val criticalStockEnabled: Boolean get() = outOfStockEnabled
+
     fun isTypeEnabled(type: NotificationType): Boolean = when (type) {
         NotificationType.LOW_STOCK -> lowStockEnabled
         NotificationType.OUT_OF_STOCK -> outOfStockEnabled

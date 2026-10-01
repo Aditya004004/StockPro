@@ -12,9 +12,23 @@ enum class AppLanguage(val displayLabel: String, val code: String) {
     MARATHI("मराठी (Marathi)", "mr");
 }
 
-enum class UnitSystem(val displayLabel: String) {
-    METRIC("Metric (kg, L, pcs)"),
-    IMPERIAL("Imperial (lb, gal, pcs)");
+enum class UnitSystem(
+    val displayLabel: String,
+    val weightUnit: String = "kg",
+    val volumeUnit: String = "L",
+) {
+    METRIC("Metric (kg, L, pcs)", "kg", "L"),
+    IMPERIAL("Imperial (lb, gal, pcs)", "lb", "gal");
+
+    fun convertWeightKg(kg: Double): Double = when (this) {
+        METRIC -> kg
+        IMPERIAL -> kg * 2.20462262
+    }
+
+    fun convertVolumeLiters(liters: Double): Double = when (this) {
+        METRIC -> liters
+        IMPERIAL -> liters * 0.26417205
+    }
 }
 
 data class UserProfile(
@@ -25,6 +39,10 @@ data class UserProfile(
     val plantId: String,
     val plantName: String,
     val orgId: String = "org_demo",
+    val warehouseName: String = "Main Warehouse",
+    val phone: String = "+91 98765 43210",
+    val company: String = "StockPro Manufacturing Ltd",
+    val lastLoginMillis: Long = 1711958400000L,
 ) {
     val initials: String
         get() {
@@ -42,5 +60,7 @@ data class UserSettings(
     val themeMode: ThemeMode = ThemeMode.LIGHT,
     val language: AppLanguage = AppLanguage.ENGLISH,
     val unitSystem: UnitSystem = UnitSystem.METRIC,
+    val currency: Currency = Currency.INR,
     val notificationPreferences: NotificationPreferences = NotificationPreferences(),
+    val availablePlants: List<String> = listOf("Pune Plant 1", "Plant 01 Production", "Chakan Assembly"),
 )

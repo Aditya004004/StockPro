@@ -115,6 +115,41 @@ class InventoryViewModelTest {
         assertTrue(state is InventoryUiState.Content)
         assertEquals(SortOrder.QUANTITY_DESC, (state as InventoryUiState.Content).sortOrder)
     }
+
+    @Test
+    fun `selecting plant updates active plant and warehouse in state`() = runTest {
+        backgroundScope.launch { viewModel.uiState.collect() }
+        advanceUntilIdle()
+
+        viewModel.selectPlant("Plant 2")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state is InventoryUiState.Content)
+        val content = state as InventoryUiState.Content
+        assertEquals("Plant 2", content.activePlant)
+        assertEquals("Plant 2 - Main", content.activeWarehouse)
+    }
+
+    @Test
+    fun `currency update reflects in inventory state`() = runTest {
+        backgroundScope.launch { viewModel.uiState.collect() }
+        advanceUntilIdle()
+
+        fakeRepository.updateCurrency(com.company.stockpro.core.domain.model.Currency.USD)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state is InventoryUiState.Content)
+        assertEquals(com.company.stockpro.core.domain.model.Currency.USD, (state as InventoryUiState.Content).currency)
+    }
+
+    @Test
+    fun `triggerSync invokes repository triggerSync`() = runTest {
+        viewModel.triggerSync()
+        advanceUntilIdle()
+        assertTrue(fakeRepository.syncTriggered)
+    }
 }
 
 private class FakeTestRepository : InventoryRepository {
@@ -217,11 +252,39 @@ private class FakeTestRepository : InventoryRepository {
     override suspend fun clearNotifications() {}
     override fun observeNotificationPreferences(): Flow<com.company.stockpro.core.domain.model.NotificationPreferences> = flowOf(com.company.stockpro.core.domain.model.NotificationPreferences())
     override suspend fun updateNotificationPreferences(preferences: com.company.stockpro.core.domain.model.NotificationPreferences) {}
-    override fun observeUserSettings(): Flow<com.company.stockpro.core.domain.model.UserSettings> = flowOf(
+    val userSettingsFlow = MutableStateFlow(
         com.company.stockpro.core.domain.model.UserSettings(
-            profile = com.company.stockpro.core.domain.model.UserProfile("u1", "User", "u@co.com", com.company.stockpro.core.domain.model.Role.INVENTORY_MANAGER, "p1", "Plant 1"),
+            profile = com.company.stockpro.core.domain.model.UserProfile(
+                "u1", "User", "u@co.com",
+                com.company.stockpro.core.domain.model.Role.INVENTORY_MANAGER,
+                "p1", "Plant 1", "Main Warehouse"
+            ),
+            availablePlants = listOf("Plant 1", "Plant 2"),
+            currency = com.company.stockpro.core.domain.model.Currency.INR,
         ),
     )
+    override fun observeUserSettings(): Flow<com.company.stockpro.core.domain.model.UserSettings> = userSettingsFlow
+
+    override suspend fun selectPlant(plantName: String): DataResult<Unit> {
+        userSettingsFlow.value = userSettingsFlow.value.copy(
+            profile = userSettingsFlow.value.profile.copy(
+                plantName = plantName,
+                warehouseName = "$plantName - Main",
+            ),
+        )
+        return DataResult.Success(Unit)
+    }
+
+    override suspend fun updateCurrency(currency: com.company.stockpro.core.domain.model.Currency) {
+        userSettingsFlow.value = userSettingsFlow.value.copy(currency = currency)
+    }
+
+    var syncTriggered = false
+    override suspend fun triggerSync(): DataResult<Unit> {
+        syncTriggered = true
+        return DataResult.Success(Unit)
+    }
+
     override suspend fun updateUserProfile(displayName: String): DataResult<Unit> = DataResult.Success(Unit)
     override suspend fun updateThemeMode(themeMode: com.company.stockpro.core.domain.model.ThemeMode) {}
     override suspend fun updateLanguage(language: com.company.stockpro.core.domain.model.AppLanguage) {}

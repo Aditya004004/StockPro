@@ -10,10 +10,10 @@ object StockProColors {
 
     val BrandMark = Color(0xFF065F46)
     val Accent = Color(0xFF10B981)
-    val AccentContainer = Color(0xFFD1FAE5)
+    val AccentContainer = Color(0xFFDCFCE7)
 
     val Success = Color(0xFF16A34A)
-    val SuccessContainer = Color(0xFFD1FAE5)
+    val SuccessContainer = Color(0xFFDCFCE7)
     val OnSuccessContainer = Color(0xFF065F46)
 
     val Warning = Color(0xFFF59E0B)
@@ -24,27 +24,27 @@ object StockProColors {
     val DangerContainer = Color(0xFFFEE2E2)
     val OnDangerContainer = Color(0xFF991B1B)
 
-    // Resolved Design Decision: Reserved is Teal to decouple from action Primary Blue
-    val Reserved = Color(0xFF0891B2)
+    // Reserved is Teal to decouple from action Primary Blue
+    val Reserved = Color(0xFF0F766E)
     val ReservedContainer = Color(0xFFCFFAFE)
     val OnReservedContainer = Color(0xFF155E75)
 
-    val Production = Color(0xFF8B5CF6)
-    val ProductionContainer = Color(0xFFEDE9FE)
+    val Production = Color(0xFF9333EA)
+    val ProductionContainer = Color(0xFFF3E8FF)
     val OnProductionContainer = Color(0xFF5B21B6)
 
-    val Canvas = Color(0xFFF5F7FA)
+    val Canvas = Color(0xFFF8FAFC)
     val Surface = Color(0xFFFFFFFF)
     val SurfaceAlt = Color(0xFFF9FAFB)
-    val SurfaceNav = Color(0xFFF7F4F9)
+    val SurfaceNav = Color(0xFFFFFFFF)
 
-    val Outline = Color(0xFFE5E7EB)
-    val OutlineSubtle = Color(0xFFF1F3F5)
+    val Outline = Color(0xFFE2E8F0)
+    val OutlineSubtle = Color(0xFFF1F5F9)
 
     val TextPrimary = Color(0xFF0F172A)
-    val TextSecondary = Color(0xFF6B7280)
-    val TextTertiary = Color(0xFF9CA3AF)
-    val TextDisabled = Color(0xFFC4C9D2)
+    val TextSecondary = Color(0xFF64748B)
+    val TextTertiary = Color(0xFF94A3B8)
+    val TextDisabled = Color(0xFFCBD5E1)
 }
 
 data class StockProStatusColors(

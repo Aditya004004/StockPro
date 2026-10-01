@@ -5,8 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.company.stockpro.core.domain.model.AppNotification
 import com.company.stockpro.core.domain.model.FailedOutboxEntry
 import com.company.stockpro.core.domain.model.Item
+import com.company.stockpro.core.domain.model.Role
 import com.company.stockpro.core.domain.model.StockMovement
 import com.company.stockpro.core.domain.model.ToolCustody
+import com.company.stockpro.core.domain.model.UserProfile
+import com.company.stockpro.core.domain.model.UserSettings
 import com.company.stockpro.core.domain.repository.InventoryRepository
 import com.company.stockpro.core.domain.usecase.PostMovementUseCase
 import com.company.stockpro.core.domain.util.DataResult
@@ -24,6 +27,23 @@ class MainViewModel @Inject constructor(
     private val repository: InventoryRepository,
     private val postMovementUseCase: PostMovementUseCase,
 ) : ViewModel() {
+
+    val userSettings: StateFlow<UserSettings> = repository
+        .observeUserSettings()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = UserSettings(
+                profile = UserProfile(
+                    uid = "",
+                    displayName = "User",
+                    email = "",
+                    role = Role.INVENTORY_MANAGER,
+                    plantId = "plant_01",
+                    plantName = "Pune Plant 1",
+                ),
+            ),
+        )
 
     val failedEntries: StateFlow<List<FailedOutboxEntry>> = repository
         .observeFailedEntries()

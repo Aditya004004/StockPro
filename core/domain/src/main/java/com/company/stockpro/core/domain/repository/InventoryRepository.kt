@@ -67,6 +67,9 @@ interface InventoryRepository {
     /** Full synchronization status stream. */
     fun observeSyncStatus(): Flow<com.company.stockpro.core.domain.model.SyncStatus>
 
+    /** Trigger manual synchronization with remote delta. */
+    suspend fun triggerSync(): DataResult<Unit> = DataResult.Success(Unit)
+
     /** Observe failed outbox entries for the "Needs Attention" view. */
     fun observeFailedEntries(): Flow<List<com.company.stockpro.core.domain.model.FailedOutboxEntry>>
 
@@ -111,6 +114,21 @@ interface InventoryRepository {
     /** Update user display name. */
     suspend fun updateUserProfile(displayName: String): DataResult<Unit>
 
+    /** Update full user profile details (Issue S1). */
+    suspend fun updateFullUserProfile(
+        displayName: String,
+        email: String,
+        phone: String,
+        company: String,
+        plantName: String,
+    ): DataResult<Unit> = updateUserProfile(displayName)
+
+    /** Switch active plant. */
+    suspend fun selectPlant(plantName: String): DataResult<Unit> = DataResult.Success(Unit)
+
+    /** Add a new plant to available plants and select it. */
+    suspend fun addPlant(plantName: String): DataResult<Unit> = DataResult.Success(Unit)
+
     /** Update app theme preference. */
     suspend fun updateThemeMode(themeMode: com.company.stockpro.core.domain.model.ThemeMode)
 
@@ -119,6 +137,9 @@ interface InventoryRepository {
 
     /** Update app unit system preference. */
     suspend fun updateUnitSystem(unitSystem: com.company.stockpro.core.domain.model.UnitSystem)
+
+    /** Update global currency preference. */
+    suspend fun updateCurrency(currency: com.company.stockpro.core.domain.model.Currency) {}
 
     /** Clear app cache and return number of bytes freed. */
     suspend fun clearCache(): DataResult<Long>

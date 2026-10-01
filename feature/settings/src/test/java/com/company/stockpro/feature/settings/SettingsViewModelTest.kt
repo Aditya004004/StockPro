@@ -97,6 +97,30 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun `updateFullProfile updates all profile attributes and persists permanently`() = runTest {
+        backgroundScope.launch { viewModel.uiState.collect() }
+        advanceUntilIdle()
+
+        viewModel.showDialog(SettingsDialog.EditProfile)
+        viewModel.updateFullProfile(
+            displayName = "Rajesh Sharma",
+            email = "rajesh.sharma@tata.com",
+            phone = "+91 99887 76655",
+            company = "Tata Motors Manufacturing",
+            plantName = "Chakan Assembly",
+        )
+        advanceUntilIdle()
+
+        val content = viewModel.uiState.value as SettingsUiState.Content
+        assertEquals("Rajesh Sharma", content.userSettings.profile.displayName)
+        assertEquals("rajesh.sharma@tata.com", content.userSettings.profile.email)
+        assertEquals("+91 99887 76655", content.userSettings.profile.phone)
+        assertEquals("Tata Motors Manufacturing", content.userSettings.profile.company)
+        assertEquals("Chakan Assembly", content.userSettings.profile.plantName)
+        assertNull(content.activeDialog)
+    }
+
+    @Test
     fun `updateTheme, language, and unitSystem propagate to settings`() = runTest {
         backgroundScope.launch { viewModel.uiState.collect() }
         advanceUntilIdle()
@@ -123,6 +147,7 @@ class SettingsViewModelTest {
             poDueEnabled = false,
             largeAdjustmentEnabled = true,
             syncFailureEnabled = false,
+            expiryWarningEnabled = true,
         )
 
         viewModel.updateNotificationPreferences(updatedPrefs)
@@ -131,9 +156,11 @@ class SettingsViewModelTest {
         val content = viewModel.uiState.value as SettingsUiState.Content
         assertEquals(false, content.userSettings.notificationPreferences.lowStockEnabled)
         assertEquals(true, content.userSettings.notificationPreferences.outOfStockEnabled)
+        assertEquals(true, content.userSettings.notificationPreferences.criticalStockEnabled)
         assertEquals(false, content.userSettings.notificationPreferences.poDueEnabled)
         assertEquals(true, content.userSettings.notificationPreferences.largeAdjustmentEnabled)
         assertEquals(false, content.userSettings.notificationPreferences.syncFailureEnabled)
+        assertEquals(true, content.userSettings.notificationPreferences.expiryWarningEnabled)
     }
 
     @Test
@@ -166,6 +193,55 @@ class SettingsViewModelTest {
         advanceUntilIdle()
         assertNull((viewModel.uiState.value as SettingsUiState.Content).exportedCsv)
     }
+
+    @Test
+    fun `exportDatabase in JSON, CSV, and EXCEL formats creates expected payload`() = runTest {
+        backgroundScope.launch { viewModel.uiState.collect() }
+        advanceUntilIdle()
+
+        // JSON format
+        viewModel.exportDatabase(ExportFormat.JSON)
+        advanceUntilIdle()
+        var content = viewModel.uiState.value as SettingsUiState.Content
+        assertNotNull(content.exportedPayload)
+        assertEquals(ExportFormat.JSON, content.exportedPayload?.format)
+        assertTrue(content.exportedPayload?.content!!.contains("\"application\": \"StockPro\""))
+        assertTrue(content.exportedPayload?.fileName!!.endsWith(".json"))
+
+        // CSV format
+        viewModel.exportDatabase(ExportFormat.CSV)
+        advanceUntilIdle()
+        content = viewModel.uiState.value as SettingsUiState.Content
+        assertEquals(ExportFormat.CSV, content.exportedPayload?.format)
+        assertTrue(content.exportedPayload?.content!!.contains("StockPro Master Data & Settings Export"))
+        assertTrue(content.exportedPayload?.fileName!!.endsWith(".csv"))
+
+        // EXCEL format
+        viewModel.exportDatabase(ExportFormat.EXCEL)
+        advanceUntilIdle()
+        content = viewModel.uiState.value as SettingsUiState.Content
+        assertEquals(ExportFormat.EXCEL, content.exportedPayload?.format)
+        assertTrue(content.exportedPayload?.content!!.contains("Excel XML/Workbook"))
+        assertTrue(content.exportedPayload?.fileName!!.endsWith(".xlsx"))
+    }
+
+    @Test
+    fun `importDatabase triggers success banner and dismisses dialog`() = runTest {
+        backgroundScope.launch { viewModel.uiState.collect() }
+        advanceUntilIdle()
+
+        viewModel.showDialog(SettingsDialog.ImportDatabaseConfirm)
+        viewModel.importDatabase()
+        advanceUntilIdle()
+
+        val content = viewModel.uiState.value as SettingsUiState.Content
+        assertNull(content.activeDialog)
+        assertNotNull(content.statusBannerMessage)
+
+        viewModel.dismissStatusBanner()
+        advanceUntilIdle()
+        assertNull((viewModel.uiState.value as SettingsUiState.Content).statusBannerMessage)
+    }
 }
 
 private class FakeSettingsRepository : InventoryRepository {
@@ -179,6 +255,8 @@ private class FakeSettingsRepository : InventoryRepository {
                 role = Role.INVENTORY_MANAGER,
                 plantId = "plant_01",
                 plantName = "Pune Plant 1",
+                phone = "+91 98765 43210",
+                company = "StockPro Manufacturing Ltd",
             ),
             themeMode = ThemeMode.LIGHT,
             language = AppLanguage.ENGLISH,
@@ -191,6 +269,27 @@ private class FakeSettingsRepository : InventoryRepository {
 
     override suspend fun updateUserProfile(displayName: String): DataResult<Unit> {
         userSettingsFlow.update { it.copy(profile = it.profile.copy(displayName = displayName)) }
+        return DataResult.Success(Unit)
+    }
+
+    override suspend fun updateFullUserProfile(
+        displayName: String,
+        email: String,
+        phone: String,
+        company: String,
+        plantName: String,
+    ): DataResult<Unit> {
+        userSettingsFlow.update {
+            it.copy(
+                profile = it.profile.copy(
+                    displayName = displayName,
+                    email = email,
+                    phone = phone,
+                    company = company,
+                    plantName = plantName,
+                ),
+            )
+        }
         return DataResult.Success(Unit)
     }
 

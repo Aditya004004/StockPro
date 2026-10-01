@@ -3,6 +3,7 @@ package com.company.stockpro.feature.inventory
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.company.stockpro.core.domain.model.Currency
 import com.company.stockpro.core.domain.model.InventorySummary
 import com.company.stockpro.core.domain.model.Item
 import com.company.stockpro.core.domain.model.ItemClass
@@ -100,13 +101,24 @@ class InventoryViewModel @Inject constructor(
         repository.observeSummary(),
         filterState,
         repository.observeSyncStatus(),
-    ) { items, summary, filter, syncStatus ->
+        repository.observeUserSettings(),
+    ) { items, summary, filter, syncStatus, userSettings ->
+        val activePlant = userSettings.profile.plantName.ifBlank { "Plant 1" }
+        val activeWarehouse = userSettings.profile.warehouseName.ifBlank { "Main Warehouse" }
+        val combinedPlants = (userSettings.availablePlants + activePlant).filter { it.isNotBlank() }.distinct()
+        val availablePlants = if (combinedPlants.isEmpty()) listOf(activePlant) else combinedPlants
+        val currency = userSettings.currency
+
         when {
             items.isEmpty() && filter.query.isNotBlank() -> {
                 InventoryUiState.Empty(
                     reason = EmptyReason.SearchMiss(filter.query),
                     summary = summary,
                     selectedClass = filter.itemClass,
+                    activePlant = activePlant,
+                    activeWarehouse = activeWarehouse,
+                    availablePlants = availablePlants,
+                    currency = currency,
                     syncStatus = syncStatus,
                 )
             }
@@ -115,6 +127,10 @@ class InventoryViewModel @Inject constructor(
                     reason = EmptyReason.NoItems,
                     summary = summary,
                     selectedClass = filter.itemClass,
+                    activePlant = activePlant,
+                    activeWarehouse = activeWarehouse,
+                    availablePlants = availablePlants,
+                    currency = currency,
                     syncStatus = syncStatus,
                 )
             }
@@ -123,6 +139,10 @@ class InventoryViewModel @Inject constructor(
                     reason = EmptyReason.FilterMiss(filter.itemClass.name.lowercase().replaceFirstChar { it.uppercase() }),
                     summary = summary,
                     selectedClass = filter.itemClass,
+                    activePlant = activePlant,
+                    activeWarehouse = activeWarehouse,
+                    availablePlants = availablePlants,
+                    currency = currency,
                     syncStatus = syncStatus,
                 )
             }
@@ -133,6 +153,10 @@ class InventoryViewModel @Inject constructor(
                     selectedClass = filter.itemClass,
                     searchQuery = filter.query,
                     sortOrder = filter.sort,
+                    activePlant = activePlant,
+                    activeWarehouse = activeWarehouse,
+                    availablePlants = availablePlants,
+                    currency = currency,
                     syncStatus = syncStatus,
                 )
             }
@@ -167,6 +191,29 @@ class InventoryViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching {
                 repository.discardFailedOutbox(id)
+            }
+        }
+    }
+
+    fun selectPlant(plantName: String) {
+        val trimmed = plantName.trim()
+        if (trimmed.isNotBlank()) {
+            viewModelScope.launch {
+                try {
+                    repository.selectPlant(trimmed)
+                } catch (e: Exception) {
+                    if (e is kotlinx.coroutines.CancellationException) throw e
+                }
+            }
+        }
+    }
+
+    fun triggerSync() {
+        viewModelScope.launch {
+            try {
+                repository.triggerSync()
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.company.stockpro.feature.home
 
+import com.company.stockpro.core.domain.model.Currency
 import com.company.stockpro.core.domain.model.InventorySummary
 import com.company.stockpro.core.domain.model.Item
 import com.company.stockpro.core.domain.model.ItemClass
@@ -14,6 +15,7 @@ import com.company.stockpro.core.domain.util.DataResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
@@ -64,6 +66,8 @@ class HomeViewModelTest {
         assertEquals("User", content.userName)
         assertTrue(content.isValuationVisible)
         assertEquals("Plant 1", content.activePlant)
+        assertEquals("Central Warehouse", content.activeWarehouse)
+        assertEquals(Currency.INR, content.currency)
     }
 
     @Test
@@ -92,6 +96,34 @@ class HomeViewModelTest {
 
         val state = viewModel.uiState.value as HomeUiState.Content
         assertEquals("Plant 2", state.activePlant)
+    }
+
+    @Test
+    fun `addPlant updates active plant and includes it in available plants`() = runTest {
+        backgroundScope.launch { viewModel.uiState.collect() }
+        advanceUntilIdle()
+
+        viewModel.addPlant("Warehouse 3")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as HomeUiState.Content
+        assertEquals("Warehouse 3", state.activePlant)
+        assertTrue(state.availablePlants.contains("Warehouse 3"))
+    }
+
+    @Test
+    fun `selectCurrency updates currency in state`() = runTest {
+        backgroundScope.launch { viewModel.uiState.collect() }
+        advanceUntilIdle()
+
+        val initialState = viewModel.uiState.value as HomeUiState.Content
+        assertEquals(Currency.INR, initialState.currency)
+
+        viewModel.selectCurrency(Currency.USD)
+        advanceUntilIdle()
+
+        val updatedState = viewModel.uiState.value as HomeUiState.Content
+        assertEquals(Currency.USD, updatedState.currency)
     }
 }
 
@@ -205,11 +237,38 @@ private class FakeHomeRepository : InventoryRepository {
     override suspend fun clearNotifications() {}
     override fun observeNotificationPreferences(): Flow<com.company.stockpro.core.domain.model.NotificationPreferences> = flowOf(com.company.stockpro.core.domain.model.NotificationPreferences())
     override suspend fun updateNotificationPreferences(preferences: com.company.stockpro.core.domain.model.NotificationPreferences) {}
-    override fun observeUserSettings(): Flow<com.company.stockpro.core.domain.model.UserSettings> = flowOf(
+    val userSettingsFlow = MutableStateFlow(
         com.company.stockpro.core.domain.model.UserSettings(
-            profile = com.company.stockpro.core.domain.model.UserProfile("u1", "User", "u@co.com", com.company.stockpro.core.domain.model.Role.INVENTORY_MANAGER, "p1", "Plant 1"),
+            profile = com.company.stockpro.core.domain.model.UserProfile(
+                uid = "u1",
+                displayName = "User",
+                email = "u@co.com",
+                role = com.company.stockpro.core.domain.model.Role.INVENTORY_MANAGER,
+                plantId = "p1",
+                plantName = "Plant 1",
+                warehouseName = "Central Warehouse",
+            ),
         ),
     )
+    override fun observeUserSettings(): Flow<com.company.stockpro.core.domain.model.UserSettings> = userSettingsFlow
+    override suspend fun selectPlant(plantName: String): DataResult<Unit> {
+        userSettingsFlow.value = userSettingsFlow.value.copy(
+            profile = userSettingsFlow.value.profile.copy(plantName = plantName),
+        )
+        return DataResult.Success(Unit)
+    }
+    override suspend fun addPlant(plantName: String): DataResult<Unit> {
+        val current = userSettingsFlow.value
+        val updatedPlants = (current.availablePlants + plantName).distinct()
+        userSettingsFlow.value = current.copy(
+            profile = current.profile.copy(plantName = plantName),
+            availablePlants = updatedPlants,
+        )
+        return DataResult.Success(Unit)
+    }
+    override suspend fun updateCurrency(currency: Currency) {
+        userSettingsFlow.value = userSettingsFlow.value.copy(currency = currency)
+    }
     override suspend fun updateUserProfile(displayName: String): DataResult<Unit> = DataResult.Success(Unit)
     override suspend fun updateThemeMode(themeMode: com.company.stockpro.core.domain.model.ThemeMode) {}
     override suspend fun updateLanguage(language: com.company.stockpro.core.domain.model.AppLanguage) {}

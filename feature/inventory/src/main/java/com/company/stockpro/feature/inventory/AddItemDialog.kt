@@ -40,6 +40,7 @@ import com.company.stockpro.core.designsystem.component.StockProTextField
 import com.company.stockpro.core.designsystem.theme.Radius
 import com.company.stockpro.core.designsystem.theme.Spacing
 import com.company.stockpro.core.designsystem.theme.StockProColors
+import com.company.stockpro.core.domain.model.Currency
 import com.company.stockpro.core.domain.model.Item
 import com.company.stockpro.core.domain.model.ItemClass
 import com.company.stockpro.core.domain.model.Money
@@ -55,6 +56,7 @@ import java.util.UUID
 fun AddItemDialog(
     onDismiss: () -> Unit,
     onConfirm: (Item) -> Unit,
+    currency: Currency = Currency.INR,
     modifier: Modifier = Modifier,
 ) {
     var code by remember { mutableStateOf("") }
@@ -66,10 +68,18 @@ fun AddItemDialog(
     var onHandText by remember { mutableStateOf("0") }
     var reorderLevelText by remember { mutableStateOf("10") }
     var parLevelText by remember { mutableStateOf("50") }
-    var unitCostRupeesText by remember { mutableStateOf("0.00") }
+    var unitCostText by remember { mutableStateOf("0.00") }
     var classDropdownExpanded by remember { mutableStateOf(false) }
 
-    val isValid = code.isNotBlank() && name.isNotBlank() && categoryName.isNotBlank()
+    val onHandValid = onHandText.toDoubleOrNull()?.let { it >= 0 } == true
+    val reorderValid = reorderLevelText.toDoubleOrNull()?.let { it >= 0 } == true
+    val parValid = parLevelText.toDoubleOrNull()?.let { it >= 0 } == true
+    val unitCostValid = unitCostText.toDoubleOrNull()?.let { it >= 0 } == true
+    val codeValid = code.isNotBlank()
+    val nameValid = name.isNotBlank()
+    val categoryValid = categoryName.isNotBlank()
+
+    val isValid = codeValid && nameValid && categoryValid && onHandValid && reorderValid && parValid && unitCostValid
 
     BasicAlertDialog(
         onDismissRequest = onDismiss,
@@ -159,7 +169,7 @@ fun AddItemDialog(
                         expanded = classDropdownExpanded,
                         onDismissRequest = { classDropdownExpanded = false },
                     ) {
-                        ItemClass.values().forEach { cls ->
+                        ItemClass.entries.forEach { cls ->
                             DropdownMenuItem(
                                 text = { Text(cls.name.replace("_", " ")) },
                                 onClick = {
@@ -234,11 +244,11 @@ fun AddItemDialog(
 
                 Spacer(modifier = Modifier.height(Spacing.x3))
 
-                // Unit Cost (Rupees)
+                // Unit Cost
                 StockProTextField(
-                    value = unitCostRupeesText,
-                    onValueChange = { unitCostRupeesText = it },
-                    label = "Unit Cost (₹)",
+                    value = unitCostText,
+                    onValueChange = { unitCostText = it },
+                    label = "Unit Cost",
                     placeholder = "0.00",
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -264,7 +274,7 @@ fun AddItemDialog(
                             val onHandDouble = onHandText.toDoubleOrNull() ?: 0.0
                             val reorderDouble = reorderLevelText.toDoubleOrNull() ?: 10.0
                             val parDouble = parLevelText.toDoubleOrNull() ?: 50.0
-                            val unitCostPaise = ((unitCostRupeesText.toDoubleOrNull() ?: 0.0) * 100).toLong()
+                            val unitCostMinor = ((unitCostText.toDoubleOrNull() ?: 0.0) * currency.minorUnitFactor).toLong()
 
                             val newItem = Item(
                                 id = UUID.randomUUID().toString(),
@@ -278,7 +288,7 @@ fun AddItemDialog(
                                 inProduction = Quantity.ZERO,
                                 reorderLevel = Quantity((reorderDouble * 1000).toLong()),
                                 parLevel = Quantity((parDouble * 1000).toLong()),
-                                unitCost = Money(unitCostPaise),
+                                unitCost = Money(unitCostMinor),
                                 locationCode = locationCode.trim().ifBlank { "STORE" },
                             )
                             onConfirm(newItem)
