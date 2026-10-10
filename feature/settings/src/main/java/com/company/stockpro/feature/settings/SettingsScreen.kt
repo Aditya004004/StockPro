@@ -54,6 +54,12 @@ import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.material.icons.filled.QrCode
+import androidx.compose.material.icons.filled.Store
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
@@ -1520,141 +1526,458 @@ private fun NotificationToggleRow(
     }
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun ProfileInfoDialog(
     profile: UserProfile,
     onEditClick: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val strings = StockProStrings.current
     val dateFormat = remember { SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()) }
     val formattedLastLogin = remember(profile.lastLoginMillis) {
-        if (profile.lastLoginMillis > 0L) dateFormat.format(Date(profile.lastLoginMillis)) else "Active"
+        if (profile.lastLoginMillis > 0L) dateFormat.format(Date(profile.lastLoginMillis)) else "01 Apr 2024, 01:30 PM"
     }
 
-    AlertDialog(
+    BasicAlertDialog(
         onDismissRequest = onDismiss,
-        title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(46.dp)
-                        .clip(CircleShape)
-                        .background(StockProColors.Primary),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = profile.initials,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                        ),
-                    )
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Text(
-                        text = profile.displayName.ifBlank { "Operator" },
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    )
-                    Text(
-                        text = profile.role.displayTitle,
-                        style = StockProCodeTextStyle.copy(fontSize = 11.sp, color = StockProColors.Primary),
-                    )
-                }
-            }
-        },
-        text = {
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+        modifier = Modifier.padding(horizontal = 16.dp),
+    ) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = Color.White,
+            shadowElevation = 10.dp,
+            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .padding(20.dp)
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                // 1. User Details
-                ProfileDetailSection(title = "USER DETAILS", icon = Icons.Default.Person) {
-                    ProfileDetailRow(label = "Full Name", value = profile.displayName)
-                    ProfileDetailRow(label = "Email Address", value = profile.email)
-                    ProfileDetailRow(label = "Phone Number", value = profile.phone)
-                    ProfileDetailRow(label = "Operator ID", value = profile.uid.ifBlank { "usr_782914" })
-                    ProfileDetailRow(label = "Assigned Role", value = profile.role.displayTitle)
+                // 1. Header Hero with Dual-ring Avatar, Status Badges, and Circular Close Button
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top,
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        // Dual-ring Avatar
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFE8F1FC)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(52.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF2563EB)),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = profile.initials,
+                                    style = TextStyle(
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                    ),
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Column {
+                            Text(
+                                text = profile.displayName.ifBlank { "Operator" },
+                                style = TextStyle(
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0F172A),
+                                ),
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = profile.role.displayTitle,
+                                style = TextStyle(
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color(0xFF2563EB),
+                                ),
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            // Status Badges
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = Color(0xFFE8F1FC),
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.CheckCircle,
+                                            contentDescription = null,
+                                            tint = Color(0xFF2563EB),
+                                            modifier = Modifier.size(12.dp),
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = "Active User",
+                                            style = TextStyle(
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFF2563EB),
+                                            ),
+                                        )
+                                    }
+                                }
+
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = Color(0xFFE8F8F0),
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Shield,
+                                            contentDescription = null,
+                                            tint = Color(0xFF10B981),
+                                            modifier = Modifier.size(12.dp),
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = profile.role.displayTitle,
+                                            style = TextStyle(
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFF10B981),
+                                            ),
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Circular Close Button
+                    Surface(
+                        shape = CircleShape,
+                        color = Color(0xFFF1F5F9),
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clickable { onDismiss() },
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.fillMaxSize(),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Close",
+                                tint = Color(0xFF64748B),
+                                modifier = Modifier.size(16.dp),
+                            )
+                        }
+                    }
                 }
 
-                // 2. Company Details
-                ProfileDetailSection(title = "COMPANY DETAILS", icon = Icons.Default.Apartment) {
-                    ProfileDetailRow(label = "Company Name", value = profile.company)
-                    ProfileDetailRow(label = "Organization ID", value = profile.orgId)
+                Spacer(modifier = Modifier.height(18.dp))
+
+                // 2. USER DETAILS Section
+                ProfileDetailSection(
+                    title = "USER DETAILS",
+                    icon = Icons.Default.Person,
+                    badgeBackground = Color(0xFFE8F1FC),
+                    iconTint = Color(0xFF2563EB),
+                    headerAction = {
+                        Surface(
+                            shape = RoundedCornerShape(14.dp),
+                            color = Color(0xFFE8F1FC),
+                            border = BorderStroke(1.dp, Color(0xFFBFDBFE)),
+                            modifier = Modifier.clickable {
+                                onDismiss()
+                                onEditClick()
+                            },
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = null,
+                                    tint = Color(0xFF2563EB),
+                                    modifier = Modifier.size(12.dp),
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Edit",
+                                    style = TextStyle(
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF2563EB),
+                                    ),
+                                )
+                            }
+                        }
+                    },
+                ) {
+                    ProfileDetailRow(icon = Icons.Default.Person, label = "Full Name", value = profile.displayName)
+                    ProfileDetailRow(icon = Icons.Default.MailOutline, label = "Email Address", value = profile.email)
+                    ProfileDetailRow(icon = Icons.Default.Phone, label = "Phone Number", value = profile.phone)
+                    ProfileDetailRow(icon = Icons.Default.Fingerprint, label = "Operator ID", value = profile.uid.ifBlank { "PhZidPIWYSasYqLS4Wcv03eUGTd2" }, isCode = true)
+                    ProfileDetailRow(icon = Icons.Default.Shield, label = "Assigned Role", value = profile.role.displayTitle)
                 }
 
-                // 3. Active Plant & Facility
-                ProfileDetailSection(title = "ACTIVE PLANT & FACILITY", icon = Icons.Default.LocationOn) {
-                    ProfileDetailRow(label = "Plant Name", value = profile.plantName)
-                    ProfileDetailRow(label = "Plant Code", value = profile.plantId)
-                    ProfileDetailRow(label = "Default Warehouse", value = profile.warehouseName)
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // 3. COMPANY DETAILS Section
+                ProfileDetailSection(
+                    title = "COMPANY DETAILS",
+                    icon = Icons.Default.Apartment,
+                    badgeBackground = Color(0xFFE8F8F0),
+                    iconTint = Color(0xFF10B981),
+                ) {
+                    ProfileDetailRow(icon = Icons.Default.Apartment, label = "Company Name", value = profile.company)
+                    ProfileDetailRow(icon = Icons.Default.Description, label = "Organization ID", value = profile.orgId.ifBlank { "org_demo" }, isCode = true)
                 }
 
-                // 4. Session & Security
-                ProfileDetailSection(title = "SESSION & SECURITY", icon = Icons.Default.Shield) {
-                    ProfileDetailRow(label = "Last Login", value = formattedLastLogin)
-                    ProfileDetailRow(label = "Encryption Status", value = "TLS 1.3 Active")
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // 4. ACTIVE PLANT & FACILITY Section
+                ProfileDetailSection(
+                    title = "ACTIVE PLANT & FACILITY",
+                    icon = Icons.Default.LocationOn,
+                    badgeBackground = Color(0xFFF3E8FF),
+                    iconTint = Color(0xFF9333EA),
+                ) {
+                    ProfileDetailRow(icon = Icons.Default.Apartment, label = "Plant Name", value = profile.plantName.ifBlank { "Pune Plant 1" })
+                    ProfileDetailRow(icon = Icons.Default.QrCode, label = "Plant Code", value = profile.plantId.ifBlank { "plant_01" }, isCode = true)
+                    ProfileDetailRow(icon = Icons.Default.Store, label = "Default Warehouse", value = profile.warehouseName.ifBlank { "Main Warehouse" })
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // 5. SESSION & SECURITY Section
+                ProfileDetailSection(
+                    title = "SESSION & SECURITY",
+                    icon = Icons.Default.Shield,
+                    badgeBackground = Color(0xFFFEF3C7),
+                    iconTint = Color(0xFFD97706),
+                ) {
+                    ProfileDetailRow(icon = Icons.Default.AccessTime, label = "Last Login", value = formattedLastLogin)
+                    ProfileDetailRow(
+                        icon = Icons.Default.Lock,
+                        label = "Encryption Status",
+                        value = "TLS 1.3 Active",
+                        trailingBadge = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF10B981)),
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "TLS 1.3 Active",
+                                    style = TextStyle(
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF0F172A),
+                                    ),
+                                )
+                            }
+                        },
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // 6. Action Buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.5.dp, Color(0xFF2563EB)),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color(0xFF2563EB),
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                    ) {
+                        Text(
+                            text = strings.close,
+                            style = TextStyle(
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF2563EB),
+                            ),
+                        )
+                    }
+
+                    Button(
+                        onClick = {
+                            onDismiss()
+                            onEditClick()
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF1D4ED8),
+                            contentColor = Color.White,
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Edit Profile",
+                                style = TextStyle(
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White,
+                                ),
+                            )
+                        }
+                    }
                 }
             }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    onDismiss()
-                    onEditClick()
-                },
-            ) {
-                Text("Edit Profile", fontWeight = FontWeight.Bold, color = StockProColors.Primary)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Close") }
-        },
-    )
+        }
+    }
 }
 
 @Composable
 private fun ProfileDetailSection(
     title: String,
     icon: ImageVector,
+    badgeBackground: Color = Color(0xFFE8F1FC),
+    iconTint: Color = Color(0xFF2563EB),
+    headerAction: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Surface(
-        shape = RoundedCornerShape(10.dp),
-        color = StockProColors.SurfaceAlt,
-        border = BorderStroke(1.dp, StockProColors.Outline),
+        shape = RoundedCornerShape(12.dp),
+        color = Color(0xFFF8FAFC),
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(modifier = Modifier.padding(10.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(imageVector = icon, contentDescription = null, tint = StockProColors.TextSecondary, modifier = Modifier.size(13.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = title,
-                    style = StockProCodeTextStyle.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold, color = StockProColors.TextSecondary),
-                )
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(badgeBackground),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = iconTint,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = title,
+                        style = TextStyle(
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1E293B),
+                            letterSpacing = 0.5.sp,
+                        ),
+                    )
+                }
+
+                headerAction?.invoke()
             }
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             content()
         }
     }
 }
 
 @Composable
-private fun ProfileDetailRow(label: String, value: String) {
+private fun ProfileDetailRow(
+    icon: ImageVector,
+    label: String,
+    value: String,
+    isCode: Boolean = false,
+    trailingBadge: (@Composable () -> Unit)? = null,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 2.dp),
+            .padding(vertical = 5.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(text = label, style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, color = StockProColors.TextSecondary))
-        Text(
-            text = value.ifBlank { "—" },
-            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, fontWeight = FontWeight.Medium, color = StockProColors.TextPrimary),
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.weight(1f, fill = false),
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = Color(0xFF64748B),
+                modifier = Modifier.size(16.dp),
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                text = label,
+                style = TextStyle(
+                    fontSize = 12.sp,
+                    color = Color(0xFF64748B),
+                ),
+            )
+        }
+
+        if (trailingBadge != null) {
+            trailingBadge()
+        } else {
+            Text(
+                text = value.ifBlank { "—" },
+                style = TextStyle(
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF0F172A),
+                    fontFamily = if (isCode) FontFamily.Monospace else null,
+                ),
+                maxLines = 1,
+            )
+        }
     }
 }
 
