@@ -402,10 +402,10 @@ private fun InventoryTelemetryStrip(
     }
 
     Surface(
-        color = Color(0xFFF8FAFC),
+        color = StockProColors.SurfaceAlt,
         modifier = modifier
             .fillMaxWidth()
-            .border(width = 0.5.dp, color = Color(0xFFF1F5F9)),
+            .border(width = 0.5.dp, color = StockProColors.OutlineSubtle),
     ) {
         Row(
             modifier = Modifier
@@ -439,14 +439,14 @@ private fun InventoryTelemetryStrip(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "•",
-                    style = StockProCodeTextStyle.copy(fontSize = 10.sp, color = Color(0xFF94A3B8)),
+                    style = StockProCodeTextStyle.copy(fontSize = 10.sp, color = StockProColors.TextTertiary),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "LATENCY 18ms",
                     style = StockProCodeTextStyle.copy(
                         fontSize = 10.sp,
-                        color = Color(0xFF64748B),
+                        color = StockProColors.TextSecondary,
                     ),
                 )
             }
@@ -457,14 +457,14 @@ private fun InventoryTelemetryStrip(
                     text = "LAST SYNC: $lastSyncLabel",
                     style = StockProCodeTextStyle.copy(
                         fontSize = 10.sp,
-                        color = Color(0xFF64748B),
+                        color = StockProColors.TextSecondary,
                     ),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Surface(
                     shape = RoundedCornerShape(6.dp),
-                    color = Color.White,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                    color = StockProColors.Surface,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, StockProColors.Outline),
                     modifier = Modifier
                         .clip(RoundedCornerShape(6.dp))
                         .clickable(enabled = !isSyncing, onClick = onSyncClick),
@@ -476,7 +476,7 @@ private fun InventoryTelemetryStrip(
                         Icon(
                             imageVector = Icons.Default.Sync,
                             contentDescription = "Sync Now",
-                            tint = if (isSyncing) StockProColors.Primary else Color(0xFF475569),
+                            tint = if (isSyncing) StockProColors.Primary else StockProColors.TextSecondary,
                             modifier = Modifier.size(12.dp),
                         )
                         Spacer(modifier = Modifier.width(3.dp))
@@ -485,7 +485,7 @@ private fun InventoryTelemetryStrip(
                             style = StockProCodeTextStyle.copy(
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isSyncing) StockProColors.Primary else Color(0xFF475569),
+                                color = if (isSyncing) StockProColors.Primary else StockProColors.TextSecondary,
                             ),
                         )
                     }
@@ -612,7 +612,7 @@ private fun InventoryHeader(
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFF64748B),
+                        color = StockProColors.TextSecondary,
                     ),
                 )
             }
@@ -621,8 +621,8 @@ private fun InventoryHeader(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Surface(
                 shape = RoundedCornerShape(12.dp),
-                color = Color.White,
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                color = StockProColors.Surface,
+                border = androidx.compose.foundation.BorderStroke(1.dp, StockProColors.Outline),
                 modifier = Modifier
                     .size(42.dp)
                     .clip(RoundedCornerShape(12.dp))
@@ -632,7 +632,7 @@ private fun InventoryHeader(
                     Icon(
                         imageVector = Icons.Default.QrCodeScanner,
                         contentDescription = "Scan Item Barcode",
-                        tint = Color(0xFF0F172A),
+                        tint = StockProColors.TextPrimary,
                         modifier = Modifier.size(20.dp),
                     )
                 }
@@ -682,8 +682,8 @@ private fun SearchAndFilterBar(
 ) {
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = Color.White,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        color = StockProColors.Surface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, StockProColors.Outline),
         modifier = modifier
             .fillMaxWidth()
             .height(46.dp),
@@ -771,10 +771,10 @@ private fun ItemClassChips(
     ) {
         classes.forEach { (itemClass, label) ->
             val isSelected = selectedClass == itemClass
-            val bgColor = if (isSelected) StockProColors.Primary else Color.White
-            val contentColor = if (isSelected) Color.White else Color(0xFF475569)
+            val bgColor = if (isSelected) StockProColors.Primary else StockProColors.Surface
+            val contentColor = if (isSelected) Color.White else StockProColors.TextSecondary
             val iconTint = if (isSelected) Color.White else StockProColors.TextSecondary
-            val borderColor = if (isSelected) StockProColors.Primary else Color(0xFFE2E8F0)
+            val borderColor = if (isSelected) StockProColors.Primary else StockProColors.Outline
 
             Surface(
                 shape = Radius.pill,
@@ -828,36 +828,36 @@ private fun InventorySummaryCards(
             label = "Total Items",
             value = "${summary.totalItems}",
             icon = Icons.Default.Inventory2,
-            iconColor = Color(0xFF2563EB),
-            containerColor = Color(0xFFF0F5FF),
-            borderColor = Color(0xFFDBEAFE),
+            iconColor = StockProColors.Primary,
+            containerColor = StockProColors.PrimaryContainer,
+            borderColor = StockProColors.Primary.copy(alpha = 0.25f),
             modifier = Modifier.weight(1f),
         )
         MetricSummaryCard(
             label = "Low Stock",
             value = "${summary.lowStockCount}",
             icon = Icons.Default.Warning,
-            iconColor = Color(0xFFF59E0B),
-            containerColor = Color(0xFFFFFBEB),
-            borderColor = Color(0xFFFEF3C7),
+            iconColor = StockProColors.Warning,
+            containerColor = StockProColors.WarningContainer,
+            borderColor = StockProColors.Warning.copy(alpha = 0.25f),
             modifier = Modifier.weight(1f),
         )
         MetricSummaryCard(
             label = "Out of Stock",
             value = "${summary.outOfStockCount}",
             icon = Icons.Default.CancelPresentation,
-            iconColor = Color(0xFFEF4444),
-            containerColor = Color(0xFFFEF2F2),
-            borderColor = Color(0xFFFEE2E2),
+            iconColor = StockProColors.Danger,
+            containerColor = StockProColors.DangerContainer,
+            borderColor = StockProColors.Danger.copy(alpha = 0.25f),
             modifier = Modifier.weight(1f),
         )
         MetricSummaryCard(
             label = "Reserved",
             value = "${summary.reservedCount}",
             icon = Icons.Default.BookmarkBorder,
-            iconColor = Color(0xFF0D9488),
-            containerColor = Color(0xFFF0FDFA),
-            borderColor = Color(0xFFCCFBF1),
+            iconColor = StockProColors.Reserved,
+            containerColor = StockProColors.ReservedContainer,
+            borderColor = StockProColors.Reserved.copy(alpha = 0.25f),
             modifier = Modifier.weight(1f),
         )
     }
@@ -968,8 +968,8 @@ private fun SectionHeaderWithSort(
         Box {
             Surface(
                 shape = RoundedCornerShape(10.dp),
-                color = Color.White,
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                color = StockProColors.Surface,
+                border = androidx.compose.foundation.BorderStroke(1.dp, StockProColors.Outline),
                 modifier = Modifier
                     .clip(RoundedCornerShape(10.dp))
                     .clickable(onClick = onSortClick),
@@ -981,7 +981,7 @@ private fun SectionHeaderWithSort(
                     Icon(
                         imageVector = Icons.Default.SwapVert,
                         contentDescription = null,
-                        tint = Color(0xFF0D9488),
+                        tint = StockProColors.Primary,
                         modifier = Modifier.size(16.dp),
                     )
                     Spacer(modifier = Modifier.width(4.dp))
@@ -1058,7 +1058,7 @@ private fun SectionHeaderWithSort(
 private fun InventoryTableHeader(modifier: Modifier = Modifier) {
     Surface(
         shape = RoundedCornerShape(8.dp),
-        color = Color(0xFFF1F5F9),
+        color = StockProColors.SurfaceAlt,
         modifier = modifier.fillMaxWidth(),
     ) {
         Row(
@@ -1069,7 +1069,7 @@ private fun InventoryTableHeader(modifier: Modifier = Modifier) {
                 modifier = Modifier
                     .size(16.dp)
                     .clip(RoundedCornerShape(4.dp))
-                    .border(1.5.dp, Color(0xFF94A3B8), RoundedCornerShape(4.dp)),
+                    .border(1.5.dp, StockProColors.Outline, RoundedCornerShape(4.dp)),
             )
             Spacer(modifier = Modifier.width(12.dp))
             Text(
@@ -1134,7 +1134,7 @@ private fun InventoryItemTableRow(
 ) {
     Surface(
         shape = RoundedCornerShape(10.dp),
-        color = Color.White,
+        color = StockProColors.Surface,
         border = androidx.compose.foundation.BorderStroke(1.dp, StockProColors.OutlineSubtle),
         modifier = modifier
             .fillMaxWidth()
@@ -1149,7 +1149,7 @@ private fun InventoryItemTableRow(
                 modifier = Modifier
                     .size(16.dp)
                     .clip(RoundedCornerShape(4.dp))
-                    .border(1.5.dp, Color(0xFFCBD5E1), RoundedCornerShape(4.dp)),
+                    .border(1.5.dp, StockProColors.Outline, RoundedCornerShape(4.dp)),
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1.8f)) {
@@ -1198,7 +1198,7 @@ private fun InventoryEmptyStateCard(
 ) {
     Surface(
         shape = Radius.lg,
-        color = Color.White,
+        color = StockProColors.Surface,
         border = androidx.compose.foundation.BorderStroke(1.dp, StockProColors.OutlineSubtle),
         modifier = modifier.fillMaxWidth(),
     ) {

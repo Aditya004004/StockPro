@@ -76,6 +76,9 @@ fun MultiSeriesLineChart(
         animationPlayed = true
     }
 
+    val gridColor = StockProColors.OutlineSubtle
+    val dotBgColor = StockProColors.Surface
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -113,7 +116,7 @@ fun MultiSeriesLineChart(
                 for (i in 0 until gridlineCount) {
                     val y = (height / (gridlineCount - 1)) * i
                     drawLine(
-                        color = StockProColors.OutlineSubtle,
+                        color = gridColor,
                         start = Offset(0f, y),
                         end = Offset(width, y),
                         strokeWidth = 1.dp.toPx(),
@@ -165,7 +168,7 @@ fun MultiSeriesLineChart(
                             center = pt,
                         )
                         drawCircle(
-                            color = Color.White,
+                            color = dotBgColor,
                             radius = 2.dp.toPx(),
                             center = pt,
                         )

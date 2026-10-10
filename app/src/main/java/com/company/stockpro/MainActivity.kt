@@ -157,6 +157,8 @@ fun StockProApp(
     StockProTheme(darkTheme = isDarkTheme) {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
+            containerColor = StockProColors.Canvas,
+            contentColor = StockProColors.TextPrimary,
             bottomBar = {
                 // Only show bottom nav on top-level destinations
                 val dest = currentTopLevelDestination

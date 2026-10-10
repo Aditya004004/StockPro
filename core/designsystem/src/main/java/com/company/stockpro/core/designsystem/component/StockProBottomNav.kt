@@ -58,7 +58,7 @@ fun StockProBottomNav(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        color = Color.White,
+        color = StockProColors.SurfaceNav,
         modifier = modifier
             .fillMaxWidth()
             .border(width = 0.5.dp, color = StockProColors.OutlineSubtle),

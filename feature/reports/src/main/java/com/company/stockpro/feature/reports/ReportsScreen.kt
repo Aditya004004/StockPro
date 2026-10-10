@@ -421,8 +421,8 @@ private fun ReportsContent(
             // 7. Stock Composition Donut Card (Side by Side Donut & Legend Table)
             Surface(
                 shape = RoundedCornerShape(16.dp),
-                color = Color.White,
-                border = BorderStroke(1.dp, Color(0xFFF1F5F9)),
+                color = StockProColors.Surface,
+                border = BorderStroke(1.dp, StockProColors.OutlineSubtle),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -431,7 +431,7 @@ private fun ReportsContent(
                         style = StockProCodeTextStyle.copy(
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF64748B),
+                            color = StockProColors.TextSecondary,
                         ),
                     )
                     Spacer(modifier = Modifier.height(12.dp))
@@ -470,10 +470,10 @@ private fun ReportsContent(
 @Composable
 private fun ReportsTelemetryStrip() {
     Surface(
-        color = Color(0xFFF8FAFC),
+        color = StockProColors.SurfaceAlt,
         modifier = Modifier
             .fillMaxWidth()
-            .border(width = 0.5.dp, color = Color(0xFFF1F5F9)),
+            .border(width = 0.5.dp, color = StockProColors.OutlineSubtle),
     ) {
         Row(
             modifier = Modifier
@@ -487,7 +487,7 @@ private fun ReportsTelemetryStrip() {
                     modifier = Modifier
                         .size(7.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF16A34A)),
+                        .background(StockProColors.Success),
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
@@ -495,7 +495,7 @@ private fun ReportsTelemetryStrip() {
                     style = StockProCodeTextStyle.copy(
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF16A34A),
+                        color = StockProColors.Success,
                     ),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
@@ -503,7 +503,7 @@ private fun ReportsTelemetryStrip() {
                     text = "•",
                     style = StockProCodeTextStyle.copy(
                         fontSize = 10.sp,
-                        color = Color(0xFF94A3B8),
+                        color = StockProColors.TextTertiary,
                     ),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
@@ -512,7 +512,7 @@ private fun ReportsTelemetryStrip() {
                     style = StockProCodeTextStyle.copy(
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF64748B),
+                        color = StockProColors.TextSecondary,
                     ),
                 )
             }
@@ -522,7 +522,7 @@ private fun ReportsTelemetryStrip() {
                 style = StockProCodeTextStyle.copy(
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF2563EB),
+                    color = StockProColors.Primary,
                 ),
             )
         }
@@ -553,8 +553,8 @@ private fun DateFiltersRow(
         Box(modifier = Modifier.weight(1f)) {
             Surface(
                 shape = RoundedCornerShape(10.dp),
-                color = Color.White,
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                color = StockProColors.Surface,
+                border = BorderStroke(1.dp, StockProColors.Outline),
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(10.dp))
@@ -572,13 +572,13 @@ private fun DateFiltersRow(
                         Icon(
                             imageVector = Icons.Default.CalendarMonth,
                             contentDescription = null,
-                            tint = Color(0xFF2563EB),
+                            tint = StockProColors.Primary,
                             modifier = Modifier.size(16.dp),
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = selectedRange.label,
-                            color = Color(0xFF2563EB),
+                            color = StockProColors.Primary,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
                             maxLines = 1,
@@ -587,7 +587,7 @@ private fun DateFiltersRow(
                     Icon(
                         imageVector = Icons.Default.KeyboardArrowDown,
                         contentDescription = null,
-                        tint = Color(0xFF2563EB),
+                        tint = StockProColors.Primary,
                         modifier = Modifier.size(16.dp),
                     )
                 }
@@ -604,7 +604,7 @@ private fun DateFiltersRow(
                                 text = preset.label,
                                 style = StockProCodeTextStyle.copy(
                                     fontWeight = if (preset == selectedRange) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (preset == selectedRange) Color(0xFF2563EB) else Color(0xFF0F172A),
+                                    color = if (preset == selectedRange) StockProColors.Primary else StockProColors.TextPrimary,
                                 ),
                             )
                         },
@@ -621,8 +621,8 @@ private fun DateFiltersRow(
         Box(modifier = Modifier.weight(1.2f)) {
             Surface(
                 shape = RoundedCornerShape(10.dp),
-                color = Color.White,
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                color = StockProColors.Surface,
+                border = BorderStroke(1.dp, StockProColors.Outline),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Row(
@@ -641,7 +641,7 @@ private fun DateFiltersRow(
                         Icon(
                             imageVector = Icons.Default.ChevronLeft,
                             contentDescription = "Previous Month",
-                            tint = Color(0xFF2563EB),
+                            tint = StockProColors.Primary,
                             modifier = Modifier.size(18.dp),
                         )
                     }
@@ -657,7 +657,7 @@ private fun DateFiltersRow(
                     ) {
                         Text(
                             text = selectedMonthLabel.ifBlank { "Month" },
-                            color = Color(0xFF0F172A),
+                            color = StockProColors.TextPrimary,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
                             maxLines = 1,
@@ -675,7 +675,7 @@ private fun DateFiltersRow(
                         Icon(
                             imageVector = Icons.Default.ChevronRight,
                             contentDescription = "Next Month",
-                            tint = if (canGoNextMonth) Color(0xFF2563EB) else Color(0xFFCBD5E1),
+                            tint = if (canGoNextMonth) StockProColors.Primary else StockProColors.TextTertiary,
                             modifier = Modifier.size(18.dp),
                         )
                     }
@@ -696,7 +696,7 @@ private fun DateFiltersRow(
                                 text = ym.format(monthFormatter),
                                 style = StockProCodeTextStyle.copy(
                                     fontWeight = if (ym.format(monthFormatter) == selectedMonthLabel) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (ym.format(monthFormatter) == selectedMonthLabel) Color(0xFF2563EB) else Color(0xFF0F172A),
+                                    color = if (ym.format(monthFormatter) == selectedMonthLabel) StockProColors.Primary else StockProColors.TextPrimary,
                                 ),
                             )
                         },
@@ -728,8 +728,8 @@ private fun ReportsKpiCard(
 ) {
     Surface(
         shape = RoundedCornerShape(14.dp),
-        color = Color.White,
-        border = BorderStroke(1.dp, Color(0xFFF1F5F9)),
+        color = StockProColors.Surface,
+        border = BorderStroke(1.dp, StockProColors.OutlineSubtle),
         modifier = modifier,
     ) {
         Row(
@@ -776,7 +776,7 @@ private fun ReportsKpiCard(
                             style = StockProCodeTextStyle.copy(
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF64748B),
+                                color = StockProColors.TextSecondary,
                             ),
                             maxLines = 1,
                         )
@@ -787,14 +787,14 @@ private fun ReportsKpiCard(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 18.sp,
                             ),
-                            color = Color(0xFF0F172A),
+                            color = StockProColors.TextPrimary,
                             maxLines = 1,
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Surface(
                                 shape = RoundedCornerShape(4.dp),
-                                color = Color(0xFFDCFCE7),
+                                color = StockProColors.SuccessContainer,
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
@@ -803,7 +803,7 @@ private fun ReportsKpiCard(
                                     Icon(
                                         imageVector = Icons.AutoMirrored.Filled.TrendingUp,
                                         contentDescription = null,
-                                        tint = Color(0xFF16A34A),
+                                        tint = StockProColors.Success,
                                         modifier = Modifier.size(10.dp),
                                     )
                                     Spacer(modifier = Modifier.width(1.dp))
@@ -812,7 +812,7 @@ private fun ReportsKpiCard(
                                         style = StockProCodeTextStyle.copy(
                                             fontSize = 9.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF16A34A),
+                                            color = StockProColors.Success,
                                         ),
                                     )
                                 }
@@ -822,7 +822,7 @@ private fun ReportsKpiCard(
                                 text = subText,
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     fontSize = 9.sp,
-                                    color = Color(0xFF64748B),
+                                    color = StockProColors.TextSecondary,
                                 ),
                                 maxLines = 1,
                             )
@@ -859,10 +859,14 @@ private fun InboundOutboundChartCard(
     trendSeries: List<ChartSeries> = emptyList(),
     trendMonths: List<String> = emptyList(),
 ) {
+    val gridLineColor = StockProColors.OutlineSubtle
+    val inboundColor = StockProColors.Success
+    val outboundColor = StockProColors.Primary
+
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = Color.White,
-        border = BorderStroke(1.dp, Color(0xFFF1F5F9)),
+        color = StockProColors.Surface,
+        border = BorderStroke(1.dp, StockProColors.OutlineSubtle),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -878,7 +882,7 @@ private fun InboundOutboundChartCard(
                         style = StockProCodeTextStyle.copy(
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF64748B),
+                            color = StockProColors.TextSecondary,
                         ),
                     )
                     Spacer(modifier = Modifier.height(1.dp))
@@ -886,7 +890,7 @@ private fun InboundOutboundChartCard(
                         text = "Monthly material turnover velocity",
                         style = MaterialTheme.typography.bodySmall.copy(
                             fontSize = 11.sp,
-                            color = Color(0xFF64748B),
+                            color = StockProColors.TextSecondary,
                         ),
                     )
                 }
@@ -901,14 +905,14 @@ private fun InboundOutboundChartCard(
                             modifier = Modifier
                                 .size(7.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFF16A34A)),
+                                .background(inboundColor),
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = "Inbound",
                             style = StockProCodeTextStyle.copy(
                                 fontSize = 10.sp,
-                                color = Color(0xFF64748B),
+                                color = StockProColors.TextSecondary,
                             ),
                         )
                     }
@@ -917,14 +921,14 @@ private fun InboundOutboundChartCard(
                             modifier = Modifier
                                 .size(7.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFF2563EB)),
+                                .background(outboundColor),
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = "Outbound",
                             style = StockProCodeTextStyle.copy(
                                 fontSize = 10.sp,
-                                color = Color(0xFF64748B),
+                                color = StockProColors.TextSecondary,
                             ),
                         )
                     }
@@ -973,7 +977,7 @@ private fun InboundOutboundChartCard(
                             text = step,
                             style = StockProCodeTextStyle.copy(
                                 fontSize = 10.sp,
-                                color = Color(0xFF94A3B8),
+                                color = StockProColors.TextTertiary,
                             ),
                         )
                     }
@@ -993,7 +997,7 @@ private fun InboundOutboundChartCard(
                     for (i in 0 until gridCount) {
                         val y = (height / (gridCount - 1)) * i
                         drawLine(
-                            color = Color(0xFFF1F5F9),
+                            color = gridLineColor,
                             start = Offset(0f, y),
                             end = Offset(width, y),
                             strokeWidth = 1.dp.toPx(),
@@ -1110,7 +1114,7 @@ private fun InboundOutboundChartCard(
                         text = label,
                         style = StockProCodeTextStyle.copy(
                             fontSize = 10.sp,
-                            color = Color(0xFF94A3B8),
+                            color = StockProColors.TextTertiary,
                         ),
                     )
                 }
@@ -1139,8 +1143,8 @@ private fun ValuationByCategoryCard(
 
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = Color.White,
-        border = BorderStroke(1.dp, Color(0xFFF1F5F9)),
+        color = StockProColors.Surface,
+        border = BorderStroke(1.dp, StockProColors.OutlineSubtle),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -1155,21 +1159,21 @@ private fun ValuationByCategoryCard(
                     style = StockProCodeTextStyle.copy(
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF64748B),
+                        color = StockProColors.TextSecondary,
                     ),
                 )
 
                 // % Share vs Value (<Currency>) Toggle
                 Row(
                     modifier = Modifier
-                        .background(Color(0xFFF1F5F9), RoundedCornerShape(8.dp))
+                        .background(StockProColors.SurfaceAlt, RoundedCornerShape(8.dp))
                         .padding(2.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
-                            .background(if (showShareSelected) Color(0xFF2563EB) else Color.Transparent)
+                            .background(if (showShareSelected) StockProColors.Primary else Color.Transparent)
                             .clickable { showShareSelected = true }
                             .padding(horizontal = 10.dp, vertical = 4.dp),
                     ) {
@@ -1178,7 +1182,7 @@ private fun ValuationByCategoryCard(
                             style = StockProCodeTextStyle.copy(
                                 fontSize = 11.sp,
                                 fontWeight = if (showShareSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (showShareSelected) Color.White else Color(0xFF475569),
+                                color = if (showShareSelected) Color.White else StockProColors.TextSecondary,
                             ),
                         )
                     }
@@ -1186,7 +1190,7 @@ private fun ValuationByCategoryCard(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
-                            .background(if (!showShareSelected) Color(0xFF2563EB) else Color.Transparent)
+                            .background(if (!showShareSelected) StockProColors.Primary else Color.Transparent)
                             .clickable { showShareSelected = false }
                             .padding(horizontal = 10.dp, vertical = 4.dp),
                     ) {
@@ -1195,7 +1199,7 @@ private fun ValuationByCategoryCard(
                             style = StockProCodeTextStyle.copy(
                                 fontSize = 11.sp,
                                 fontWeight = if (!showShareSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (!showShareSelected) Color.White else Color(0xFF475569),
+                                color = if (!showShareSelected) Color.White else StockProColors.TextSecondary,
                             ),
                         )
                     }
@@ -1207,7 +1211,7 @@ private fun ValuationByCategoryCard(
             if (categoryValuations.isEmpty()) {
                 Text(
                     text = "No category valuation data available.",
-                    style = MaterialTheme.typography.bodySmall.copy(color = Color(0xFF94A3B8)),
+                    style = MaterialTheme.typography.bodySmall.copy(color = StockProColors.TextTertiary),
                     modifier = Modifier.padding(vertical = 12.dp),
                 )
             } else {
@@ -1275,7 +1279,7 @@ private fun CategoryValuationItem(
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 13.sp,
                     ),
-                    color = Color(0xFF0F172A),
+                    color = StockProColors.TextPrimary,
                 )
             }
 
@@ -1293,14 +1297,14 @@ private fun CategoryValuationItem(
                     text = secondaryText,
                     style = StockProCodeTextStyle.copy(
                         fontSize = 11.sp,
-                        color = Color(0xFF64748B),
+                        color = StockProColors.TextSecondary,
                     ),
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = null,
-                    tint = Color(0xFF94A3B8),
+                    tint = StockProColors.TextTertiary,
                     modifier = Modifier.size(16.dp),
                 )
             }
@@ -1315,7 +1319,7 @@ private fun CategoryValuationItem(
                 .height(6.dp)
                 .clip(RoundedCornerShape(3.dp)),
             color = color,
-            trackColor = Color(0xFFF1F5F9),
+            trackColor = StockProColors.OutlineSubtle,
         )
     }
 }
@@ -1330,8 +1334,8 @@ private fun TopReorderPrioritiesCard(
 ) {
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = Color.White,
-        border = BorderStroke(1.dp, Color(0xFFF1F5F9)),
+        color = StockProColors.Surface,
+        border = BorderStroke(1.dp, StockProColors.OutlineSubtle),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -1346,7 +1350,7 @@ private fun TopReorderPrioritiesCard(
                     style = StockProCodeTextStyle.copy(
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF64748B),
+                        color = StockProColors.TextSecondary,
                     ),
                 )
                 Text(
@@ -1354,7 +1358,7 @@ private fun TopReorderPrioritiesCard(
                     style = StockProCodeTextStyle.copy(
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF2563EB),
+                        color = StockProColors.Primary,
                     ),
                     modifier = Modifier.clickable { onNavigateToInventory() },
                 )
@@ -1366,34 +1370,34 @@ private fun TopReorderPrioritiesCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFFF8FAFC), RoundedCornerShape(6.dp))
+                    .background(StockProColors.SurfaceAlt, RoundedCornerShape(6.dp))
                     .padding(horizontal = 8.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = "#",
-                    style = StockProCodeTextStyle.copy(fontSize = 10.sp, color = Color(0xFF94A3B8)),
+                    style = StockProCodeTextStyle.copy(fontSize = 10.sp, color = StockProColors.TextTertiary),
                     modifier = Modifier.width(22.dp),
                 )
                 Text(
                     text = "Item Name",
-                    style = StockProCodeTextStyle.copy(fontSize = 10.sp, color = Color(0xFF94A3B8)),
+                    style = StockProCodeTextStyle.copy(fontSize = 10.sp, color = StockProColors.TextTertiary),
                     modifier = Modifier.weight(1.3f),
                 )
                 Text(
                     text = "SKU",
-                    style = StockProCodeTextStyle.copy(fontSize = 10.sp, color = Color(0xFF94A3B8)),
+                    style = StockProCodeTextStyle.copy(fontSize = 10.sp, color = StockProColors.TextTertiary),
                     modifier = Modifier.weight(0.9f),
                 )
                 Text(
                     text = "On Hand",
-                    style = StockProCodeTextStyle.copy(fontSize = 10.sp, color = Color(0xFF94A3B8)),
+                    style = StockProCodeTextStyle.copy(fontSize = 10.sp, color = StockProColors.TextTertiary),
                     textAlign = TextAlign.End,
                     modifier = Modifier.weight(0.8f),
                 )
                 Text(
                     text = "Min Reorder",
-                    style = StockProCodeTextStyle.copy(fontSize = 10.sp, color = Color(0xFF94A3B8)),
+                    style = StockProCodeTextStyle.copy(fontSize = 10.sp, color = StockProColors.TextTertiary),
                     textAlign = TextAlign.End,
                     modifier = Modifier.weight(0.9f),
                 )
@@ -1410,7 +1414,7 @@ private fun TopReorderPrioritiesCard(
                     Icon(
                         imageVector = Icons.Outlined.Inventory2,
                         contentDescription = null,
-                        tint = Color(0xFF94A3B8),
+                        tint = StockProColors.TextTertiary,
                         modifier = Modifier.size(34.dp),
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -1420,14 +1424,14 @@ private fun TopReorderPrioritiesCard(
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp,
                         ),
-                        color = Color(0xFF0F172A),
+                        color = StockProColors.TextPrimary,
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = "Items reaching reorder levels will appear here.",
                         style = MaterialTheme.typography.bodySmall.copy(
                             fontSize = 11.sp,
-                            color = Color(0xFF94A3B8),
+                            color = StockProColors.TextTertiary,
                         ),
                     )
                 }
@@ -1443,13 +1447,13 @@ private fun TopReorderPrioritiesCard(
                         Text(
                             text = "${index + 1}",
                             style = StockProCodeTextStyle.copy(fontSize = 11.sp, fontWeight = FontWeight.Bold),
-                            color = Color(0xFF64748B),
+                            color = StockProColors.TextSecondary,
                             modifier = Modifier.width(22.dp),
                         )
                         Text(
                             text = item.name,
                             style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-                            color = Color(0xFF0F172A),
+                            color = StockProColors.TextPrimary,
                             maxLines = 1,
                             modifier = Modifier.weight(1.3f),
                         )
@@ -1458,7 +1462,7 @@ private fun TopReorderPrioritiesCard(
                             style = StockProCodeTextStyle.copy(
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF2563EB),
+                                color = StockProColors.Primary,
                             ),
                             modifier = Modifier.weight(0.9f),
                         )
@@ -1467,14 +1471,14 @@ private fun TopReorderPrioritiesCard(
                             style = StockProCodeTextStyle.copy(
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.ExtraBold,
-                                color = Color(0xFFEF4444),
+                                color = StockProColors.Danger,
                             ),
                             textAlign = TextAlign.End,
                             modifier = Modifier.weight(0.8f),
                         )
                         Text(
                             text = item.reorderLevel.toUnitsDouble.toLong().toString(),
-                            style = StockProCodeTextStyle.copy(fontSize = 11.sp, color = Color(0xFF64748B)),
+                            style = StockProCodeTextStyle.copy(fontSize = 11.sp, color = StockProColors.TextSecondary),
                             textAlign = TextAlign.End,
                             modifier = Modifier.weight(0.9f),
                         )
@@ -1485,7 +1489,7 @@ private fun TopReorderPrioritiesCard(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(0.5.dp)
-                                .background(Color(0xFFF1F5F9)),
+                                .background(StockProColors.OutlineSubtle),
                         )
                     }
                 }
@@ -1506,7 +1510,7 @@ private fun ExportReportPacksCard(
             style = StockProCodeTextStyle.copy(
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF64748B),
+                color = StockProColors.TextSecondary,
             ),
         )
         Spacer(modifier = Modifier.height(10.dp))
@@ -1522,20 +1526,20 @@ private fun ExportReportPacksCard(
                 ReportActionTile(
                     title = "Valuation\nLedger",
                     icon = Icons.Default.Description,
-                    color = Color(0xFF2563EB),
-                    containerColor = Color(0xFFEFF6FF),
-                    borderColor = Color(0xFFDBEAFE),
-                    textColor = Color(0xFF1E3A8A),
+                    color = StockProColors.Primary,
+                    containerColor = StockProColors.PrimaryContainer,
+                    borderColor = StockProColors.Primary.copy(alpha = 0.25f),
+                    textColor = StockProColors.TextPrimary,
                     onClick = { onExportReportClick("Valuation Ledger") },
                     modifier = Modifier.weight(1f),
                 )
                 ReportActionTile(
                     title = "Purchase\nHistory",
                     icon = Icons.Default.ShoppingCart,
-                    color = Color(0xFF16A34A),
-                    containerColor = Color(0xFFDCFCE7),
-                    borderColor = Color(0xFFBBF7D0),
-                    textColor = Color(0xFF065F46),
+                    color = StockProColors.Success,
+                    containerColor = StockProColors.SuccessContainer,
+                    borderColor = StockProColors.Success.copy(alpha = 0.25f),
+                    textColor = StockProColors.TextPrimary,
                     onClick = { onExportReportClick("Purchase History") },
                     modifier = Modifier.weight(1f),
                 )
@@ -1547,20 +1551,20 @@ private fun ExportReportPacksCard(
                 ReportActionTile(
                     title = "Usage &\nIssues",
                     icon = Icons.Default.BarChart,
-                    color = Color(0xFFF59E0B),
-                    containerColor = Color(0xFFFFFBEB),
-                    borderColor = Color(0xFFFEF3C7),
-                    textColor = Color(0xFF92400E),
+                    color = StockProColors.Warning,
+                    containerColor = StockProColors.WarningContainer,
+                    borderColor = StockProColors.Warning.copy(alpha = 0.25f),
+                    textColor = StockProColors.TextPrimary,
                     onClick = { onExportReportClick("Usage & Issues") },
                     modifier = Modifier.weight(1f),
                 )
                 ReportActionTile(
                     title = "Reorder\nAudit",
                     icon = Icons.Default.PieChart,
-                    color = Color(0xFF9333EA),
-                    containerColor = Color(0xFFF3E8FF),
-                    borderColor = Color(0xFFE9D5FF),
-                    textColor = Color(0xFF581C87),
+                    color = StockProColors.Reserved,
+                    containerColor = StockProColors.ReservedContainer,
+                    borderColor = StockProColors.Reserved.copy(alpha = 0.25f),
+                    textColor = StockProColors.TextPrimary,
                     onClick = { onExportReportClick("Reorder Audit") },
                     modifier = Modifier.weight(1f),
                 )

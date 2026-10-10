@@ -1070,8 +1070,8 @@ private fun HeroProfileCard(
 
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = Color.White,
-        border = BorderStroke(1.dp, Color(0xFFF1F5F9)),
+        color = StockProColors.Surface,
+        border = BorderStroke(1.dp, StockProColors.OutlineSubtle),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
@@ -1092,7 +1092,7 @@ private fun HeroProfileCard(
                         modifier = Modifier
                             .size(62.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFF2563EB)),
+                            .background(StockProColors.Primary),
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
@@ -1119,14 +1119,14 @@ private fun HeroProfileCard(
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 18.sp,
                                 ),
-                                color = Color(0xFF0F172A),
+                                color = StockProColors.TextPrimary,
                             )
 
                             // Edit Pill Button
                             Surface(
                                 shape = RoundedCornerShape(16.dp),
-                                color = Color.White,
-                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                color = StockProColors.SurfaceAlt,
+                                border = BorderStroke(1.dp, StockProColors.Outline),
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(16.dp))
                                     .clickable(onClick = onEditClick),
@@ -1138,7 +1138,7 @@ private fun HeroProfileCard(
                                     Icon(
                                         imageVector = Icons.Default.Edit,
                                         contentDescription = "Edit Profile",
-                                        tint = Color(0xFF0F172A),
+                                        tint = StockProColors.TextPrimary,
                                         modifier = Modifier.size(12.dp),
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
@@ -1147,7 +1147,7 @@ private fun HeroProfileCard(
                                         style = MaterialTheme.typography.bodySmall.copy(
                                             fontSize = 12.sp,
                                             fontWeight = FontWeight.SemiBold,
-                                            color = Color(0xFF0F172A),
+                                            color = StockProColors.TextPrimary,
                                         ),
                                     )
                                 }
@@ -1159,7 +1159,7 @@ private fun HeroProfileCard(
                         // Role Badge
                         Surface(
                             shape = RoundedCornerShape(6.dp),
-                            color = Color(0xFFEFF6FF),
+                            color = StockProColors.PrimaryContainer,
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -1168,7 +1168,7 @@ private fun HeroProfileCard(
                                 Icon(
                                     imageVector = Icons.Default.Shield,
                                     contentDescription = null,
-                                    tint = Color(0xFF2563EB),
+                                    tint = StockProColors.Primary,
                                     modifier = Modifier.size(11.dp),
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
@@ -1177,7 +1177,7 @@ private fun HeroProfileCard(
                                     style = StockProCodeTextStyle.copy(
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF2563EB),
+                                        color = StockProColors.Primary,
                                     ),
                                 )
                             }
@@ -1192,7 +1192,7 @@ private fun HeroProfileCard(
                             Icon(
                                 imageVector = Icons.Default.LocationOn,
                                 contentDescription = null,
-                                tint = Color(0xFFEF4444),
+                                tint = StockProColors.Danger,
                                 modifier = Modifier.size(13.dp),
                             )
                             Spacer(modifier = Modifier.width(4.dp))
@@ -1201,7 +1201,7 @@ private fun HeroProfileCard(
                                 text = displayPlant.ifBlank { "Pune Plant 1 · North Wing" },
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     fontSize = 11.sp,
-                                    color = Color(0xFF64748B),
+                                    color = StockProColors.TextSecondary,
                                 ),
                             )
                         }
@@ -1213,8 +1213,8 @@ private fun HeroProfileCard(
                 // Detail Credentials & Last Login
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = Color(0xFFF8FAFC),
-                    border = BorderStroke(0.5.dp, Color(0xFFF1F5F9)),
+                    color = StockProColors.SurfaceAlt,
+                    border = BorderStroke(0.5.dp, StockProColors.OutlineSubtle),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Column(
@@ -1230,7 +1230,7 @@ private fun HeroProfileCard(
                             Icon(
                                 imageVector = Icons.Default.MailOutline,
                                 contentDescription = null,
-                                tint = Color(0xFF64748B),
+                                tint = StockProColors.TextSecondary,
                                 modifier = Modifier.size(14.dp),
                             )
                             Spacer(modifier = Modifier.width(6.dp))
@@ -1239,14 +1239,14 @@ private fun HeroProfileCard(
                                 style = StockProCodeTextStyle.copy(
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = Color(0xFF0F172A),
+                                    color = StockProColors.TextPrimary,
                                 ),
                             )
                             Spacer(modifier = Modifier.width(10.dp))
                             Icon(
                                 imageVector = Icons.Default.Phone,
                                 contentDescription = null,
-                                tint = Color(0xFF64748B),
+                                tint = StockProColors.TextSecondary,
                                 modifier = Modifier.size(13.dp),
                             )
                             Spacer(modifier = Modifier.width(4.dp))
@@ -1255,7 +1255,7 @@ private fun HeroProfileCard(
                                 style = StockProCodeTextStyle.copy(
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = Color(0xFF0F172A),
+                                    color = StockProColors.TextPrimary,
                                 ),
                             )
                         }
@@ -1264,7 +1264,7 @@ private fun HeroProfileCard(
                             Icon(
                                 imageVector = Icons.Default.AccessTime,
                                 contentDescription = null,
-                                tint = Color(0xFF64748B),
+                                tint = StockProColors.TextSecondary,
                                 modifier = Modifier.size(13.dp),
                             )
                             Spacer(modifier = Modifier.width(6.dp))
@@ -1272,7 +1272,7 @@ private fun HeroProfileCard(
                                 text = "Last Login: $formattedLastLogin · ${company.ifBlank { "StockPro Ltd" }}",
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     fontSize = 10.sp,
-                                    color = Color(0xFF64748B),
+                                    color = StockProColors.TextSecondary,
                                 ),
                             )
                         }
@@ -1285,8 +1285,9 @@ private fun HeroProfileCard(
 
 @Composable
 private fun FactoryWatermarkBackground(modifier: Modifier = Modifier) {
+    val watermarkColor = StockProColors.Outline.copy(alpha = 0.5f)
     Canvas(modifier = modifier.size(width = 110.dp, height = 55.dp)) {
-        val color = Color(0xFFE2E8F0).copy(alpha = 0.5f)
+        val color = watermarkColor
         val w = size.width
         val h = size.height
 
@@ -1336,7 +1337,7 @@ private fun SettingsSectionHeader(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = Color(0xFF475569),
+                tint = StockProColors.TextSecondary,
                 modifier = Modifier.size(16.dp),
             )
             Spacer(modifier = Modifier.width(6.dp))
@@ -1345,7 +1346,7 @@ private fun SettingsSectionHeader(
                 style = StockProCodeTextStyle.copy(
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF475569),
+                    color = StockProColors.TextSecondary,
                 ),
             )
         }
@@ -1353,7 +1354,7 @@ private fun SettingsSectionHeader(
             text = subtitle,
             style = MaterialTheme.typography.bodySmall.copy(
                 fontSize = 10.sp,
-                color = Color(0xFF64748B),
+                color = StockProColors.TextTertiary,
             ),
         )
     }
@@ -1364,8 +1365,8 @@ private fun SettingsGroupCard(content: @Composable ColumnScope.() -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
-        color = Color.White,
-        border = BorderStroke(1.dp, Color(0xFFF1F5F9)),
+        color = StockProColors.Surface,
+        border = BorderStroke(1.dp, StockProColors.OutlineSubtle),
         content = {
             Column(content = content)
         },
@@ -1415,22 +1416,22 @@ private fun SettingsRowItem(
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 13.sp,
                 ),
-                color = Color(0xFF0F172A),
+                color = StockProColors.TextPrimary,
             )
             Spacer(modifier = Modifier.height(1.dp))
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall.copy(
                     fontSize = 11.sp,
-                    color = Color(0xFF64748B),
+                    color = StockProColors.TextSecondary,
                 ),
             )
         }
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (trailingValue != null) {
-                val pillBg = if (isTrailingPillBlue) Color(0xFFEFF6FF) else Color(0xFFF1F5F9)
-                val pillText = if (isTrailingPillBlue) Color(0xFF2563EB) else Color(0xFF475569)
+                val pillBg = if (isTrailingPillBlue) StockProColors.PrimaryContainer else StockProColors.SurfaceAlt
+                val pillText = if (isTrailingPillBlue) StockProColors.Primary else StockProColors.TextSecondary
 
                 Surface(
                     shape = RoundedCornerShape(6.dp),
@@ -1599,17 +1600,17 @@ private fun ProfileDetailSection(
 ) {
     Surface(
         shape = RoundedCornerShape(10.dp),
-        color = Color(0xFFF8FAFC),
-        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        color = StockProColors.SurfaceAlt,
+        border = BorderStroke(1.dp, StockProColors.Outline),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(imageVector = icon, contentDescription = null, tint = Color(0xFF64748B), modifier = Modifier.size(13.dp))
+                Icon(imageVector = icon, contentDescription = null, tint = StockProColors.TextSecondary, modifier = Modifier.size(13.dp))
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = title,
-                    style = StockProCodeTextStyle.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF64748B)),
+                    style = StockProCodeTextStyle.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold, color = StockProColors.TextSecondary),
                 )
             }
             Spacer(modifier = Modifier.height(6.dp))
@@ -1626,10 +1627,10 @@ private fun ProfileDetailRow(label: String, value: String) {
             .padding(vertical = 2.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Text(text = label, style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, color = Color(0xFF64748B)))
+        Text(text = label, style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, color = StockProColors.TextSecondary))
         Text(
             text = value.ifBlank { "—" },
-            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, fontWeight = FontWeight.Medium, color = Color(0xFF0F172A)),
+            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, fontWeight = FontWeight.Medium, color = StockProColors.TextPrimary),
         )
     }
 }
@@ -1706,13 +1707,13 @@ private fun EditProfileDialog(
                 // Plant Dropdown Selector
                 Text(
                     text = "Assigned Plant",
-                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold, color = Color(0xFF475569)),
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold, color = StockProColors.TextSecondary),
                 )
                 Box(modifier = Modifier.fillMaxWidth()) {
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
-                        color = Color.White,
+                        border = BorderStroke(1.dp, StockProColors.Outline),
+                        color = StockProColors.SurfaceAlt,
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { plantDropdownExpanded = true }
@@ -1726,13 +1727,13 @@ private fun EditProfileDialog(
                             Text(
                                 text = selectedPlant.ifBlank { "Select Plant" },
                                 style = MaterialTheme.typography.bodyMedium.copy(
-                                    color = if (selectedPlant.isNotBlank()) Color(0xFF0F172A) else Color(0xFF94A3B8),
+                                    color = if (selectedPlant.isNotBlank()) StockProColors.TextPrimary else StockProColors.TextTertiary,
                                 ),
                             )
                             Icon(
                                 imageVector = Icons.Default.ArrowDropDown,
                                 contentDescription = null,
-                                tint = Color(0xFF64748B),
+                                tint = StockProColors.TextSecondary,
                             )
                         }
                     }
@@ -1765,7 +1766,7 @@ private fun EditProfileDialog(
                 Text(
                     text = "Save Changes",
                     fontWeight = FontWeight.Bold,
-                    color = if (isFormValid) StockProColors.Primary else Color(0xFF94A3B8),
+                    color = if (isFormValid) StockProColors.Primary else StockProColors.TextDisabled,
                 )
             }
         },
@@ -1797,10 +1798,10 @@ private fun ExportDatabaseDialog(
                     val isSelected = format == selectedFormat
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = if (isSelected) Color(0xFFEFF6FF) else Color(0xFFF8FAFC),
+                        color = if (isSelected) StockProColors.PrimaryContainer else StockProColors.SurfaceAlt,
                         border = BorderStroke(
                             1.dp,
-                            if (isSelected) StockProColors.Primary else Color(0xFFE2E8F0),
+                            if (isSelected) StockProColors.Primary else StockProColors.Outline,
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -1814,7 +1815,7 @@ private fun ExportDatabaseDialog(
                             Icon(
                                 imageVector = if (isSelected) Icons.Default.RadioButtonChecked else Icons.Default.RadioButtonUnchecked,
                                 contentDescription = null,
-                                tint = if (isSelected) StockProColors.Primary else Color(0xFF94A3B8),
+                                tint = if (isSelected) StockProColors.Primary else StockProColors.TextTertiary,
                                 modifier = Modifier.size(18.dp),
                             )
                             Spacer(modifier = Modifier.width(10.dp))
@@ -1823,7 +1824,7 @@ private fun ExportDatabaseDialog(
                                     text = format.label,
                                     style = MaterialTheme.typography.bodyMedium.copy(
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (isSelected) StockProColors.Primary else Color(0xFF0F172A),
+                                        color = if (isSelected) StockProColors.Primary else StockProColors.TextPrimary,
                                     ),
                                 )
                                 val desc = when (format) {
@@ -1835,7 +1836,7 @@ private fun ExportDatabaseDialog(
                                     text = desc,
                                     style = MaterialTheme.typography.bodySmall.copy(
                                         fontSize = 11.sp,
-                                        color = Color(0xFF64748B),
+                                        color = StockProColors.TextSecondary,
                                     ),
                                 )
                             }
@@ -1893,14 +1894,14 @@ private fun RemovePlantSelectionDialog(
                 if (!canDelete) {
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = Color(0xFFFEF2F2),
-                        border = BorderStroke(1.dp, Color(0xFFFECACA)),
+                        color = StockProColors.DangerContainer,
+                        border = BorderStroke(1.dp, StockProColors.Outline),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(
                             text = "Cannot remove plant: StockPro requires at least one active plant facility.",
                             style = MaterialTheme.typography.bodySmall.copy(
-                                color = Color(0xFFB91C1C),
+                                color = StockProColors.OnDangerContainer,
                                 fontWeight = FontWeight.Medium,
                             ),
                             modifier = Modifier.padding(10.dp),
@@ -1918,8 +1919,8 @@ private fun RemovePlantSelectionDialog(
                     val isActive = plant.name.equals(activePlantName, ignoreCase = true)
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = Color(0xFFF8FAFC),
-                        border = BorderStroke(1.dp, if (isActive) Color(0xFFBFDBFE) else Color(0xFFE2E8F0)),
+                        color = StockProColors.SurfaceAlt,
+                        border = BorderStroke(1.dp, if (isActive) StockProColors.Primary else StockProColors.Outline),
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(10.dp))
@@ -1943,14 +1944,14 @@ private fun RemovePlantSelectionDialog(
                                         Spacer(modifier = Modifier.width(6.dp))
                                         Surface(
                                             shape = RoundedCornerShape(4.dp),
-                                            color = Color(0xFFDBEAFE),
+                                            color = StockProColors.PrimaryContainer,
                                         ) {
                                             Text(
                                                 text = "ACTIVE",
                                                 style = MaterialTheme.typography.labelSmall.copy(
                                                     fontWeight = FontWeight.Bold,
                                                     fontSize = 9.sp,
-                                                    color = Color(0xFF1E40AF),
+                                                    color = StockProColors.Primary,
                                                 ),
                                                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
                                             )
@@ -2021,14 +2022,14 @@ private fun RemovePlantConfirmDialog(
                 if (itemCount > 0) {
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = Color(0xFFFEF3C7),
-                        border = BorderStroke(1.dp, Color(0xFFFDE68A)),
+                        color = StockProColors.WarningContainer,
+                        border = BorderStroke(1.dp, StockProColors.Outline),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(
                             text = "⚠️ Warning: This plant has $itemCount inventory item(s) associated with it in local database.",
                             style = MaterialTheme.typography.bodySmall.copy(
-                                color = Color(0xFF92400E),
+                                color = StockProColors.OnWarningContainer,
                                 fontWeight = FontWeight.Medium,
                             ),
                             modifier = Modifier.padding(10.dp),

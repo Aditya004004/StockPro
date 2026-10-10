@@ -55,14 +55,14 @@ fun StockProButton(
                 shape = Radius.sm,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = StockProColors.Primary,
-                    contentColor = StockProColors.Surface,
+                    contentColor = Color.White,
                     disabledContainerColor = StockProColors.Primary.copy(alpha = 0.4f),
-                    disabledContentColor = StockProColors.Surface.copy(alpha = 0.7f),
+                    disabledContentColor = Color.White.copy(alpha = 0.7f),
                 ),
                 contentPadding = PaddingValues(horizontal = Spacing.x4, vertical = Spacing.x2),
                 modifier = buttonModifier,
             ) {
-                ButtonContent(text = text, isLoading = isLoading, contentColor = StockProColors.Surface)
+                ButtonContent(text = text, isLoading = isLoading, contentColor = Color.White)
             }
         }
 
@@ -90,14 +90,14 @@ fun StockProButton(
                 shape = Radius.sm,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = StockProColors.Danger,
-                    contentColor = StockProColors.Surface,
+                    contentColor = Color.White,
                     disabledContainerColor = StockProColors.Danger.copy(alpha = 0.4f),
-                    disabledContentColor = StockProColors.Surface.copy(alpha = 0.7f),
+                    disabledContentColor = Color.White.copy(alpha = 0.7f),
                 ),
                 contentPadding = PaddingValues(horizontal = Spacing.x4, vertical = Spacing.x2),
                 modifier = buttonModifier,
             ) {
-                ButtonContent(text = text, isLoading = isLoading, contentColor = StockProColors.Surface)
+                ButtonContent(text = text, isLoading = isLoading, contentColor = Color.White)
             }
         }
 

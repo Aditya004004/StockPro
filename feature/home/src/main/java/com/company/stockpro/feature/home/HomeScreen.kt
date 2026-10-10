@@ -388,7 +388,7 @@ private fun HomeContent(
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = Color(0xFF64748B),
+                                    color = StockProColors.TextSecondary,
                                 ),
                             )
                         }
@@ -560,7 +560,7 @@ private fun HomeContent(
                             Icon(
                                 imageVector = Icons.Default.Notifications,
                                 contentDescription = "Notifications",
-                                tint = Color(0xFF1E293B),
+                                tint = StockProColors.TextPrimary,
                                 modifier = Modifier.size(24.dp),
                             )
                         }
@@ -580,7 +580,7 @@ private fun HomeContent(
                         modifier = Modifier
                             .size(38.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFEFF6FF))
+                            .background(StockProColors.PrimaryContainer)
                             .border(1.5.dp, StockProColors.Primary, CircleShape),
                         contentAlignment = Alignment.Center,
                     ) {
@@ -964,7 +964,7 @@ private fun HomeContent(
                     style = StockProCodeTextStyle.copy(
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF475569),
+                        color = StockProColors.TextSecondary,
                         letterSpacing = 0.5.sp,
                     ),
                 )
@@ -987,7 +987,7 @@ private fun HomeContent(
                     sub = "+ Inbound",
                     icon = Icons.Default.ArrowDownward,
                     iconColor = StockProColors.Success,
-                    containerColor = Color(0xFFDCFCE7),
+                    containerColor = StockProColors.SuccessContainer,
                     onClick = onReceiveStockClick,
                     modifier = Modifier.weight(1f),
                 )
@@ -996,7 +996,7 @@ private fun HomeContent(
                     sub = "- Outbound",
                     icon = Icons.Default.ArrowUpward,
                     iconColor = StockProColors.Primary,
-                    containerColor = Color(0xFFEFF6FF),
+                    containerColor = StockProColors.PrimaryContainer,
                     onClick = onIssueStockClick,
                     modifier = Modifier.weight(1f),
                 )
@@ -1004,8 +1004,8 @@ private fun HomeContent(
                     title = "Catalog",
                     sub = "Inventory",
                     icon = Icons.Default.Inventory2,
-                    iconColor = Color(0xFF334155),
-                    containerColor = Color(0xFFF1F5F9),
+                    iconColor = StockProColors.TextPrimary,
+                    containerColor = StockProColors.SurfaceAlt,
                     onClick = onNavigateToInventory,
                     modifier = Modifier.weight(1f),
                 )
@@ -1014,7 +1014,7 @@ private fun HomeContent(
                     sub = "Analytics",
                     icon = Icons.Default.BarChart,
                     iconColor = StockProColors.Production,
-                    containerColor = Color(0xFFF3E8FF),
+                    containerColor = StockProColors.ProductionContainer,
                     onClick = onNavigateToReports,
                     modifier = Modifier.weight(1f),
                 )

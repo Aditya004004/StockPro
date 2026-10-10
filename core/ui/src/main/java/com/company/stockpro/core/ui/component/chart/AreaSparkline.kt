@@ -66,6 +66,7 @@ fun AreaSparkline(
     val minVal = dataPoints.minOrNull() ?: 0f
     val maxVal = dataPoints.maxOrNull() ?: 1f
     val range = if (maxVal - minVal > 0.001f) maxVal - minVal else 1f
+    val dotBorderColor = StockProColors.Canvas
 
     Column(
         modifier = modifier
@@ -152,7 +153,7 @@ fun AreaSparkline(
             // Terminal dot (6 dp diameter = 3 dp radius)
             val lastPoint = points.last()
             drawCircle(
-                color = StockProColors.Canvas,
+                color = dotBorderColor,
                 radius = 4.dp.toPx(),
                 center = lastPoint,
             )

@@ -81,12 +81,12 @@ import com.company.stockpro.core.designsystem.theme.StockProColors
 
 private val BrandGreen = Color(0xFF00875A)
 private val BrandDarkGreen = Color(0xFF006D44)
-private val BrandNavy = StockProColors.TextPrimary
-private val TextSecondary = StockProColors.TextSecondary
-private val TextMuted = StockProColors.TextTertiary
-private val FieldBorder = StockProColors.Outline
-private val FieldBg = StockProColors.SurfaceAlt
-private val CanvasMint = StockProColors.Canvas
+private val BrandNavy: Color @Composable get() = StockProColors.TextPrimary
+private val TextSecondary: Color @Composable get() = StockProColors.TextSecondary
+private val TextMuted: Color @Composable get() = StockProColors.TextTertiary
+private val FieldBorder: Color @Composable get() = StockProColors.Outline
+private val FieldBg: Color @Composable get() = StockProColors.SurfaceAlt
+private val CanvasMint: Color @Composable get() = StockProColors.Canvas
 private val ErrorRed = StockProColors.Danger
 
 @Composable
