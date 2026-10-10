@@ -151,6 +151,14 @@ interface StockProStringsDefinition {
     val managePlants: String
     val floorAlerts: String
     val operatorProfile: String
+    val editProfileTitle: String
+    val editProfileSubtitle: String
+    val fullNameLabel: String
+    val emailAddressLabel: String
+    val phoneNumberLabel: String
+    val companyNameLabel: String
+    val assignedPlantLabel: String
+    val saveChangesButton: String
 
     // Movement Dialog
     val postMovementTitle: String
@@ -305,6 +313,14 @@ object EnglishStockProStrings : StockProStringsDefinition {
     override val managePlants = "Manage Plants"
     override val floorAlerts = "Plant Floor Alerts"
     override val operatorProfile = "Operator Profile"
+    override val editProfileTitle = "Edit Operator Profile"
+    override val editProfileSubtitle = "Update your personal and plant details"
+    override val fullNameLabel = "Full Name"
+    override val emailAddressLabel = "Email Address"
+    override val phoneNumberLabel = "Phone Number"
+    override val companyNameLabel = "Company Name"
+    override val assignedPlantLabel = "Assigned Plant"
+    override val saveChangesButton = "Save Changes"
 
     override val postMovementTitle = "Post Stock Movement"
     override val movementReceipt = "Stock In (Receipt)"
@@ -458,6 +474,14 @@ object HindiStockProStrings : StockProStringsDefinition {
     override val managePlants = "प्लांट प्रबंधित करें"
     override val floorAlerts = "प्लांट फ़्लोर अलर्ट"
     override val operatorProfile = "ऑपरेटर प्रोफ़ाइल"
+    override val editProfileTitle = "ऑपरेटर प्रोफ़ाइल संपादित करें"
+    override val editProfileSubtitle = "अपने व्यक्तिगत और प्लांट विवरण अपडेट करें"
+    override val fullNameLabel = "पूरा नाम"
+    override val emailAddressLabel = "ईमेल पता"
+    override val phoneNumberLabel = "फ़ोन नंबर"
+    override val companyNameLabel = "कंपनी का नाम"
+    override val assignedPlantLabel = "निर्दिष्ट प्लांट"
+    override val saveChangesButton = "परिवर्तन सहेजें"
 
     override val postMovementTitle = "स्टॉक गतिविधि दर्ज करें"
     override val movementReceipt = "स्टॉक आवक (प्राप्ति)"

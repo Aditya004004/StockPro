@@ -53,15 +53,26 @@ import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.BasicAlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -1647,6 +1658,7 @@ private fun ProfileDetailRow(label: String, value: String) {
     }
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun EditProfileDialog(
     profile: UserProfile,
@@ -1654,6 +1666,8 @@ private fun EditProfileDialog(
     onSave: (name: String, email: String, phone: String, company: String, plant: String) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val strings = StockProStrings.current
+
     var name by remember { mutableStateOf(profile.displayName) }
     var email by remember { mutableStateOf(profile.email) }
     var phone by remember { mutableStateOf(profile.phone) }
@@ -1668,84 +1682,199 @@ private fun EditProfileDialog(
     val isPlantValid = selectedPlant.trim().isNotBlank()
     val isFormValid = isNameValid && isEmailValid && isPhoneValid && isCompanyValid && isPlantValid
 
-    AlertDialog(
+    BasicAlertDialog(
         onDismissRequest = onDismiss,
-        title = {
-            Text("Edit Operator Profile", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-        },
-        text = {
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+        modifier = Modifier.padding(horizontal = 16.dp),
+    ) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = Color.White,
+            shadowElevation = 10.dp,
+            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .padding(20.dp)
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                // Name
-                StockProTextField(
+                // 1. Header with Badge, Title/Subtitle, and Circular Close Button
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(46.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFE8F1FC)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = null,
+                                tint = Color(0xFF2563EB),
+                                modifier = Modifier.size(24.dp),
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = strings.editProfileTitle,
+                                style = TextStyle(
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0F172A),
+                                ),
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = strings.editProfileSubtitle,
+                                style = TextStyle(
+                                    fontSize = 12.sp,
+                                    color = Color(0xFF64748B),
+                                ),
+                            )
+                        }
+                    }
+
+                    Surface(
+                        shape = CircleShape,
+                        color = Color(0xFFF1F5F9),
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clickable { onDismiss() },
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.fillMaxSize(),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Close",
+                                tint = Color(0xFF64748B),
+                                modifier = Modifier.size(16.dp),
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                // 2. Full Name
+                ProfileFieldLabel(label = strings.fullNameLabel)
+                Spacer(modifier = Modifier.height(6.dp))
+                ProfileTextInput(
                     value = name,
                     onValueChange = { name = it },
-                    label = "Full Name",
+                    icon = Icons.Default.Person,
+                    placeholder = "Aditya",
                     errorMessage = if (!isNameValid && name.isNotBlank()) "Minimum 2 characters required" else null,
-                    modifier = Modifier.fillMaxWidth(),
                 )
 
-                // Email
-                StockProTextField(
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // 3. Email Address
+                ProfileFieldLabel(label = strings.emailAddressLabel)
+                Spacer(modifier = Modifier.height(6.dp))
+                ProfileTextInput(
                     value = email,
                     onValueChange = { email = it },
-                    label = "Email Address",
+                    icon = Icons.Default.MailOutline,
+                    placeholder = "12345@gmail.com",
+                    keyboardType = KeyboardType.Email,
                     errorMessage = if (!isEmailValid && email.isNotBlank()) "Valid email required (e.g. user@org.com)" else null,
-                    modifier = Modifier.fillMaxWidth(),
                 )
 
-                // Phone
-                StockProTextField(
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // 4. Phone Number
+                ProfileFieldLabel(label = strings.phoneNumberLabel)
+                Spacer(modifier = Modifier.height(6.dp))
+                ProfileTextInput(
                     value = phone,
                     onValueChange = { phone = it },
-                    label = "Phone Number",
+                    icon = Icons.Default.Phone,
+                    placeholder = "+91 98765 43210",
+                    keyboardType = KeyboardType.Phone,
                     errorMessage = if (!isPhoneValid && phone.isNotBlank()) "Minimum 8 digits required" else null,
-                    modifier = Modifier.fillMaxWidth(),
                 )
 
-                // Company
-                StockProTextField(
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // 5. Company Name
+                ProfileFieldLabel(label = strings.companyNameLabel)
+                Spacer(modifier = Modifier.height(6.dp))
+                ProfileTextInput(
                     value = company,
                     onValueChange = { company = it },
-                    label = "Company Name",
+                    icon = Icons.Default.Apartment,
+                    placeholder = "StockPro Manufacturing Ltd",
                     errorMessage = if (!isCompanyValid && company.isNotBlank()) "Company name cannot be blank" else null,
-                    modifier = Modifier.fillMaxWidth(),
                 )
 
-                // Plant Dropdown Selector
-                Text(
-                    text = "Assigned Plant",
-                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold, color = StockProColors.TextSecondary),
-                )
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // 6. Assigned Plant Dropdown Selector
+                ProfileFieldLabel(label = strings.assignedPlantLabel)
+                Spacer(modifier = Modifier.height(6.dp))
                 Box(modifier = Modifier.fillMaxWidth()) {
                     Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        border = BorderStroke(1.dp, StockProColors.Outline),
-                        color = StockProColors.SurfaceAlt,
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color.White,
+                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { plantDropdownExpanded = true }
-                            .padding(horizontal = 12.dp, vertical = 12.dp),
+                            .height(52.dp)
+                            .clickable { plantDropdownExpanded = true },
                     ) {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 10.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text(
-                                text = selectedPlant.ifBlank { "Select Plant" },
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    color = if (selectedPlant.isNotBlank()) StockProColors.TextPrimary else StockProColors.TextTertiary,
-                                ),
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(34.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color(0xFFF1F5F9)),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Apartment,
+                                        contentDescription = null,
+                                        tint = Color(0xFF64748B),
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Text(
+                                    text = selectedPlant.ifBlank { "Select Plant" },
+                                    style = TextStyle(
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = if (selectedPlant.isNotBlank()) Color(0xFF1E293B) else Color(0xFF94A3B8),
+                                    ),
+                                    maxLines = 1,
+                                )
+                            }
                             Icon(
                                 imageVector = Icons.Default.ArrowDropDown,
                                 contentDescription = null,
-                                tint = StockProColors.TextSecondary,
+                                tint = Color(0xFF64748B),
                             )
                         }
                     }
@@ -1766,26 +1895,148 @@ private fun EditProfileDialog(
                         }
                     }
                 }
+
+                Spacer(modifier = Modifier.height(22.dp))
+
+                // 7. Action Buttons (Cancel & Save Changes)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.5.dp, Color(0xFF2563EB)),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color(0xFF2563EB),
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                    ) {
+                        Text(
+                            text = strings.cancel,
+                            style = TextStyle(
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF2563EB),
+                            ),
+                        )
+                    }
+
+                    Button(
+                        onClick = {
+                            onSave(name.trim(), email.trim(), phone.trim(), company.trim(), selectedPlant.trim())
+                        },
+                        enabled = isFormValid,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF1D4ED8),
+                            contentColor = Color.White,
+                            disabledContainerColor = Color(0xFF93C5FD),
+                            disabledContentColor = Color.White,
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = strings.saveChangesButton,
+                                style = TextStyle(
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White,
+                                ),
+                            )
+                        }
+                    }
+                }
             }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    onSave(name.trim(), email.trim(), phone.trim(), company.trim(), selectedPlant.trim())
-                },
-                enabled = isFormValid,
-            ) {
-                Text(
-                    text = "Save Changes",
-                    fontWeight = FontWeight.Bold,
-                    color = if (isFormValid) StockProColors.Primary else StockProColors.TextDisabled,
-                )
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
-        },
+        }
+    }
+}
+
+@Composable
+private fun ProfileFieldLabel(label: String) {
+    Text(
+        text = label,
+        style = TextStyle(
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF1E293B),
+        ),
     )
+}
+
+@Composable
+private fun ProfileTextInput(
+    value: String,
+    onValueChange: (String) -> Unit,
+    icon: ImageVector,
+    placeholder: String = "",
+    keyboardType: KeyboardType = KeyboardType.Text,
+    errorMessage: String? = null,
+    modifier: Modifier = Modifier,
+) {
+    val inputColors = OutlinedTextFieldDefaults.colors(
+        focusedContainerColor = Color.White,
+        unfocusedContainerColor = Color.White,
+        disabledContainerColor = Color.White,
+        focusedBorderColor = Color(0xFF2563EB),
+        unfocusedBorderColor = Color(0xFFE2E8F0),
+        cursorColor = Color(0xFF2563EB),
+        focusedTextColor = Color(0xFF1E293B),
+        unfocusedTextColor = Color(0xFF1E293B),
+    )
+
+    Column(modifier = modifier) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            placeholder = { Text(placeholder, color = Color(0xFF94A3B8), fontSize = 13.sp) },
+            leadingIcon = {
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFFF1F5F9)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = Color(0xFF64748B),
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            },
+            shape = RoundedCornerShape(10.dp),
+            colors = inputColors,
+            singleLine = true,
+            isError = !errorMessage.isNullOrBlank(),
+            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        if (!errorMessage.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = errorMessage,
+                color = Color(0xFFEF4444),
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+            )
+        }
+    }
 }
 
 @Composable
