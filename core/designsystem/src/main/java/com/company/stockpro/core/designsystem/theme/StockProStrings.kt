@@ -78,6 +78,24 @@ interface StockProStringsDefinition {
     val noItemsYet: String
     val addItem: String
     val scanBarcode: String
+    val addNewItemTitle: String
+    val createMasterDataSubtitle: String
+    val itemCodeLabel: String
+    val itemNameLabel: String
+    val itemClassLabel: String
+    val categoryLabel: String
+    val uomLabel: String
+    val locationBinLabel: String
+    val onHandLabel: String
+    val parLevelLabel: String
+    val unitCostLabel: String
+    val createItemButton: String
+    val enterItemCodePlaceholder: String
+    val enterItemNamePlaceholder: String
+    val selectCategoryPlaceholder: String
+    val enterLocationBinPlaceholder: String
+    val lowStockTooltipDesc: String
+    val parLevelTooltipDesc: String
 
     // Reports Screen
     val reportsTitle: String
@@ -216,6 +234,24 @@ object EnglishStockProStrings : StockProStringsDefinition {
     override val noItemsYet = "No items yet"
     override val addItem = "Add Item"
     override val scanBarcode = "Scan Barcode"
+    override val addNewItemTitle = "Add New Item"
+    override val createMasterDataSubtitle = "Create master data entry for inventory tracking"
+    override val itemCodeLabel = "Item Code"
+    override val itemNameLabel = "Item Name"
+    override val itemClassLabel = "Item Class"
+    override val categoryLabel = "Category"
+    override val uomLabel = "UOM"
+    override val locationBinLabel = "Location / Bin"
+    override val onHandLabel = "On Hand"
+    override val parLevelLabel = "Par Level"
+    override val unitCostLabel = "Unit Cost"
+    override val createItemButton = "Create Item"
+    override val enterItemCodePlaceholder = "Enter item code"
+    override val enterItemNamePlaceholder = "Enter item name"
+    override val selectCategoryPlaceholder = "Select category"
+    override val enterLocationBinPlaceholder = "Enter location or bin"
+    override val lowStockTooltipDesc = "Low Stock: Alert trigger threshold (min stock level)"
+    override val parLevelTooltipDesc = "Par Level: Target inventory level to restore on replenishment"
 
     override val reportsTitle = "REPORTS & ANALYTICS"
     override val monthlyTurnover = "Monthly material turnover velocity"
@@ -351,6 +387,24 @@ object HindiStockProStrings : StockProStringsDefinition {
     override val noItemsYet = "अभी कोई वस्तु नहीं है"
     override val addItem = "वस्तु जोड़ें"
     override val scanBarcode = "बारकोड स्कैन करें"
+    override val addNewItemTitle = "नया आइटम जोड़ें"
+    override val createMasterDataSubtitle = "इन्वेंटरी ट्रैकिंग के लिए मास्टर डेटा एंट्री बनाएं"
+    override val itemCodeLabel = "आइटम कोड"
+    override val itemNameLabel = "आइटम का नाम"
+    override val itemClassLabel = "आइटम वर्ग"
+    override val categoryLabel = "श्रेणी"
+    override val uomLabel = "इकाई (UOM)"
+    override val locationBinLabel = "स्थान / बिन"
+    override val onHandLabel = "हाथ में स्टॉक"
+    override val parLevelLabel = "पार स्तर"
+    override val unitCostLabel = "इकाई लागत"
+    override val createItemButton = "आइटम बनाएं"
+    override val enterItemCodePlaceholder = "आइटम कोड दर्ज करें"
+    override val enterItemNamePlaceholder = "आइटम का नाम दर्ज करें"
+    override val selectCategoryPlaceholder = "श्रेणी चुनें"
+    override val enterLocationBinPlaceholder = "स्थान या बिन दर्ज करें"
+    override val lowStockTooltipDesc = "कम स्टॉक: अलर्ट ट्रिगर सीमा (न्यूनतम स्टॉक स्तर)"
+    override val parLevelTooltipDesc = "पार स्तर: पुनःपूर्ति पर पुनर्स्थापित करने के लिए लक्षित स्तर"
 
     override val reportsTitle = "रिपोर्ट्स और विश्लेषण"
     override val monthlyTurnover = "मासिक सामग्री टर्नओवर गति"
