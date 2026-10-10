@@ -11,23 +11,23 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ItemDao {
 
-    @Query("SELECT * FROM items WHERE is_active = 1 ORDER BY name ASC")
-    fun observeActiveItems(): Flow<List<ItemEntity>>
+    @Query("SELECT * FROM items WHERE is_active = 1 AND (:plantId IS NULL OR :plantId = '' OR location_id = :plantId OR location_code LIKE '%' || :plantId || '%') ORDER BY name ASC")
+    fun observeActiveItems(plantId: String? = null): Flow<List<ItemEntity>>
 
-    @Query("SELECT * FROM items WHERE is_active = 1 AND item_class = :itemClass ORDER BY name ASC")
-    fun observeItemsByClassOrderByName(itemClass: String): Flow<List<ItemEntity>>
+    @Query("SELECT * FROM items WHERE is_active = 1 AND item_class = :itemClass AND (:plantId IS NULL OR :plantId = '' OR location_id = :plantId OR location_code LIKE '%' || :plantId || '%') ORDER BY name ASC")
+    fun observeItemsByClassOrderByName(itemClass: String, plantId: String? = null): Flow<List<ItemEntity>>
 
-    @Query("SELECT * FROM items WHERE is_active = 1 AND item_class = :itemClass ORDER BY code ASC")
-    fun observeItemsByClassOrderByCode(itemClass: String): Flow<List<ItemEntity>>
+    @Query("SELECT * FROM items WHERE is_active = 1 AND item_class = :itemClass AND (:plantId IS NULL OR :plantId = '' OR location_id = :plantId OR location_code LIKE '%' || :plantId || '%') ORDER BY code ASC")
+    fun observeItemsByClassOrderByCode(itemClass: String, plantId: String? = null): Flow<List<ItemEntity>>
 
-    @Query("SELECT * FROM items WHERE is_active = 1 AND item_class = :itemClass ORDER BY on_hand_milli DESC")
-    fun observeItemsByClassOrderByQuantityDesc(itemClass: String): Flow<List<ItemEntity>>
+    @Query("SELECT * FROM items WHERE is_active = 1 AND item_class = :itemClass AND (:plantId IS NULL OR :plantId = '' OR location_id = :plantId OR location_code LIKE '%' || :plantId || '%') ORDER BY on_hand_milli DESC")
+    fun observeItemsByClassOrderByQuantityDesc(itemClass: String, plantId: String? = null): Flow<List<ItemEntity>>
 
-    @Query("SELECT * FROM items WHERE is_active = 1 AND item_class = :itemClass ORDER BY on_hand_milli ASC")
-    fun observeItemsByClassOrderByQuantityAsc(itemClass: String): Flow<List<ItemEntity>>
+    @Query("SELECT * FROM items WHERE is_active = 1 AND item_class = :itemClass AND (:plantId IS NULL OR :plantId = '' OR location_id = :plantId OR location_code LIKE '%' || :plantId || '%') ORDER BY on_hand_milli ASC")
+    fun observeItemsByClassOrderByQuantityAsc(itemClass: String, plantId: String? = null): Flow<List<ItemEntity>>
 
-    @Query("SELECT * FROM items WHERE is_active = 1 AND item_class = :itemClass ORDER BY last_movement_at DESC")
-    fun observeItemsByClassOrderByLastMoved(itemClass: String): Flow<List<ItemEntity>>
+    @Query("SELECT * FROM items WHERE is_active = 1 AND item_class = :itemClass AND (:plantId IS NULL OR :plantId = '' OR location_id = :plantId OR location_code LIKE '%' || :plantId || '%') ORDER BY last_movement_at DESC")
+    fun observeItemsByClassOrderByLastMoved(itemClass: String, plantId: String? = null): Flow<List<ItemEntity>>
 
     @Query(
         """
@@ -42,19 +42,21 @@ interface ItemDao {
             COALESCE(SUM(in_production_milli / 1000), 0) as inProductionCount
         FROM items
         WHERE is_active = 1
+          AND (:plantId IS NULL OR :plantId = '' OR location_id = :plantId OR location_code LIKE '%' || :plantId || '%')
         """
     )
-    fun observeSummary(): Flow<com.company.stockpro.core.database.entity.InventorySummaryEntity>
+    fun observeSummary(plantId: String? = null): Flow<com.company.stockpro.core.database.entity.InventorySummaryEntity>
 
     @Query(
         """
         SELECT * FROM items 
         WHERE is_active = 1 AND on_hand_milli <= reorder_level_milli 
+          AND (:plantId IS NULL OR :plantId = '' OR location_id = :plantId OR location_code LIKE '%' || :plantId || '%')
         ORDER BY on_hand_milli ASC 
         LIMIT :limit
         """
     )
-    fun observeTopLowStock(limit: Int): Flow<List<ItemEntity>>
+    fun observeTopLowStock(limit: Int, plantId: String? = null): Flow<List<ItemEntity>>
 
     @Query("SELECT * FROM items WHERE id = :itemId")
     fun observeItem(itemId: String): Flow<ItemEntity?>
@@ -75,10 +77,14 @@ interface ItemDao {
         JOIN items_fts ON items.rowid = items_fts.rowid
         WHERE items_fts MATCH :query
         AND items.is_active = 1
+        AND (:plantId IS NULL OR :plantId = '' OR items.location_id = :plantId OR items.location_code LIKE '%' || :plantId || '%')
         ORDER BY items.name ASC
         """
     )
-    fun searchItems(query: String): Flow<List<ItemEntity>>
+    fun searchItems(query: String, plantId: String? = null): Flow<List<ItemEntity>>
+
+    @Query("SELECT COUNT(*) FROM items WHERE is_active = 1 AND (location_id = :plantId OR location_code LIKE '%' || :plantId || '%')")
+    suspend fun countItemsByPlant(plantId: String): Int
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(item: ItemEntity)
@@ -91,4 +97,71 @@ interface ItemDao {
 
     @Query("UPDATE items SET on_hand_milli = :balanceMilli, last_movement_at = :timestamp WHERE id = :itemId")
     suspend fun reconcileBalance(itemId: String, balanceMilli: Long, timestamp: Long)
+
+    @Query(
+        """
+        SELECT * FROM items 
+        WHERE is_active = 1 
+          AND (:plantId IS NULL OR :plantId = '' OR location_id = :plantId OR location_code LIKE '%' || :plantId || '%')
+          AND id > :lastId 
+        ORDER BY id ASC 
+        LIMIT :limit
+        """
+    )
+    suspend fun getItemsKeyset(limit: Int, lastId: String, plantId: String? = null): List<ItemEntity>
+
+    @Query(
+        """
+        SELECT * FROM items 
+        WHERE is_active = 1 
+          AND (:plantId IS NULL OR :plantId = '' OR location_id = :plantId OR location_code LIKE '%' || :plantId || '%')
+        ORDER BY name ASC 
+        LIMIT :limit OFFSET :offset
+        """
+    )
+    suspend fun getItemsPaged(limit: Int, offset: Int, plantId: String? = null): List<ItemEntity>
+
+    @Query(
+        """
+        SELECT COUNT(*) FROM items 
+        WHERE is_active = 1 
+          AND (:plantId IS NULL OR :plantId = '' OR location_id = :plantId OR location_code LIKE '%' || :plantId || '%')
+        """
+    )
+    suspend fun getActiveItemsCount(plantId: String? = null): Int
+
+    @Query(
+        """
+        SELECT * FROM items 
+        WHERE is_active = 1 
+          AND on_hand_milli <= reorder_level_milli 
+          AND (:plantId IS NULL OR :plantId = '' OR location_id = :plantId OR location_code LIKE '%' || :plantId || '%')
+          AND id > :lastId 
+        ORDER BY id ASC 
+        LIMIT :limit
+        """
+    )
+    suspend fun getLowStockKeyset(limit: Int, lastId: String, plantId: String? = null): List<ItemEntity>
+
+    @Query(
+        """
+        SELECT * FROM items 
+        WHERE is_active = 1 
+          AND on_hand_milli <= reorder_level_milli 
+          AND (:plantId IS NULL OR :plantId = '' OR location_id = :plantId OR location_code LIKE '%' || :plantId || '%')
+        ORDER BY on_hand_milli ASC 
+        LIMIT :limit OFFSET :offset
+        """
+    )
+    suspend fun getLowStockPaged(limit: Int, offset: Int, plantId: String? = null): List<ItemEntity>
+
+    @Query(
+        """
+        SELECT COUNT(*) FROM items 
+        WHERE is_active = 1 
+          AND on_hand_milli <= reorder_level_milli 
+          AND (:plantId IS NULL OR :plantId = '' OR location_id = :plantId OR location_code LIKE '%' || :plantId || '%')
+        """
+    )
+    suspend fun getLowStockCount(plantId: String? = null): Int
 }

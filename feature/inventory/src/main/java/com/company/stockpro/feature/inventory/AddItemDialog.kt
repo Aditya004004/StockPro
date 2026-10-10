@@ -217,7 +217,7 @@ fun AddItemDialog(
 
                 Spacer(modifier = Modifier.height(Spacing.x3))
 
-                // Quantities Row (Initial On Hand, Reorder Level, Par Level)
+                // Quantities Row (Initial On Hand, Low Stock Threshold, Par Level)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(Spacing.x2),
@@ -231,7 +231,7 @@ fun AddItemDialog(
                     StockProTextField(
                         value = reorderLevelText,
                         onValueChange = { reorderLevelText = it },
-                        label = "Reorder",
+                        label = "Low Stock",
                         modifier = Modifier.weight(1f),
                     )
                     StockProTextField(
@@ -241,6 +241,14 @@ fun AddItemDialog(
                         modifier = Modifier.weight(1f),
                     )
                 }
+
+                Spacer(modifier = Modifier.height(Spacing.x1))
+
+                Text(
+                    text = "• Low Stock: Alert trigger threshold (min stock level)\n• Par Level: Target inventory level to restore on replenishment",
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                    color = StockProColors.TextSecondary,
+                )
 
                 Spacer(modifier = Modifier.height(Spacing.x3))
 

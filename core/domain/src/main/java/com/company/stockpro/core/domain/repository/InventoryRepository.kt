@@ -123,11 +123,37 @@ interface InventoryRepository {
         plantName: String,
     ): DataResult<Unit> = updateUserProfile(displayName)
 
-    /** Switch active plant. */
+    /** Switch active plant by plant name or identifier. */
     suspend fun selectPlant(plantName: String): DataResult<Unit> = DataResult.Success(Unit)
 
     /** Add a new plant to available plants and select it. */
     suspend fun addPlant(plantName: String): DataResult<Unit> = DataResult.Success(Unit)
+
+    /** Add a new plant with full metadata (name, code, location) and persist it. */
+    suspend fun addPlant(name: String, code: String, location: String): DataResult<com.company.stockpro.core.domain.model.Plant> =
+        DataResult.Error(com.company.stockpro.core.domain.util.UiText.Dynamic("Not implemented"))
+
+    /** Reactive stream of all configured plants. */
+    fun observePlants(): Flow<List<com.company.stockpro.core.domain.model.Plant>> = kotlinx.coroutines.flow.flowOf(emptyList())
+
+    /** Delete a plant with enterprise safety checks (minimum 1 plant). */
+    suspend fun deletePlant(plantId: String): DataResult<Unit> = DataResult.Success(Unit)
+
+    /** Count active inventory items belonging to a plant. */
+    suspend fun getPlantItemCount(plantId: String): Int = 0
+
+    /**
+     * Update an item's low-stock threshold (reorder level), recording an audit event.
+     */
+    suspend fun updateItemThreshold(
+        itemId: String,
+        newThresholdMilli: Long,
+        operator: String,
+    ): DataResult<Unit> = DataResult.Success(Unit)
+
+    /** Reactive stream of threshold modification audits for an item. */
+    fun observeThresholdAudits(itemId: String): Flow<List<com.company.stockpro.core.domain.model.ThresholdAudit>> =
+        kotlin.run { kotlinx.coroutines.flow.emptyFlow() }
 
     /** Update app theme preference. */
     suspend fun updateThemeMode(themeMode: com.company.stockpro.core.domain.model.ThemeMode)

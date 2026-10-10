@@ -37,6 +37,8 @@ sealed interface SettingsDialog {
     data object TermsOfService : SettingsDialog
     data object HelpFaq : SettingsDialog
     data object Feedback : SettingsDialog
+    data object RemovePlant : SettingsDialog
+    data class RemovePlantConfirm(val plant: com.company.stockpro.core.domain.model.Plant, val itemCount: Int) : SettingsDialog
 }
 
 sealed interface SettingsUiState {
@@ -52,6 +54,7 @@ sealed interface SettingsUiState {
         val exportedCsv: String? = null,
         val exportedPayload: ExportPayload? = null,
         val statusBannerMessage: UiText? = null,
+        val configuredPlants: List<com.company.stockpro.core.domain.model.Plant> = emptyList(),
     ) : SettingsUiState
 
     data class Error(val message: UiText) : SettingsUiState

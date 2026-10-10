@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.company.stockpro.core.domain.model.AppLanguage
 import com.company.stockpro.core.domain.model.NotificationPreferences
+import com.company.stockpro.core.domain.model.Plant
 import com.company.stockpro.core.domain.model.ThemeMode
 import com.company.stockpro.core.domain.model.UnitSystem
 import com.company.stockpro.core.domain.repository.InventoryRepository
@@ -33,6 +34,7 @@ class SettingsViewModel @Inject constructor(
     val uiState: StateFlow<SettingsUiState> = combine(
         repository.observeUserSettings(),
         repository.observeSyncStatus(),
+        repository.observePlants(),
         combine(
             activeDialogFlow,
             cacheSizeBytesFlow,
@@ -42,7 +44,7 @@ class SettingsViewModel @Inject constructor(
         ) { dialog: SettingsDialog?, cache: Long, csv: String?, payload: ExportPayload?, banner: UiText? ->
             IntermediateUiState(dialog, cache, csv, payload, banner)
         },
-    ) { userSettings, syncStatus, intermediate ->
+    ) { userSettings, syncStatus, plants, intermediate ->
         SettingsUiState.Content(
             userSettings = userSettings,
             syncStatus = syncStatus,
@@ -51,6 +53,7 @@ class SettingsViewModel @Inject constructor(
             exportedCsv = intermediate.csv,
             exportedPayload = intermediate.payload,
             statusBannerMessage = intermediate.banner,
+            configuredPlants = plants,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -251,5 +254,28 @@ class SettingsViewModel @Inject constructor(
 
     fun dismissStatusBanner() {
         statusBannerMessageFlow.value = null
+    }
+
+    fun requestRemovePlantConfirm(plant: Plant) {
+        viewModelScope.launch {
+            val count = repository.getPlantItemCount(plant.id)
+            showDialog(SettingsDialog.RemovePlantConfirm(plant, count))
+        }
+    }
+
+    fun removePlant(plantId: String, onSuccess: () -> Unit = {}, onError: (String) -> Unit = {}) {
+        viewModelScope.launch {
+            when (val result = repository.deletePlant(plantId)) {
+                is DataResult.Success -> {
+                    statusBannerMessageFlow.value = UiText.Dynamic("Plant removed successfully.")
+                    dismissDialog()
+                    onSuccess()
+                }
+                is DataResult.Error -> {
+                    val msg = (result.message as? UiText.Dynamic)?.value ?: "Failed to remove plant."
+                    onError(msg)
+                }
+            }
+        }
     }
 }

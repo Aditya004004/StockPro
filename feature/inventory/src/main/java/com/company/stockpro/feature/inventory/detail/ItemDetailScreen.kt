@@ -38,7 +38,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,6 +54,7 @@ import androidx.compose.ui.unit.sp
 import com.company.stockpro.core.designsystem.component.ButtonVariant
 import com.company.stockpro.core.designsystem.component.StatusBadge
 import com.company.stockpro.core.designsystem.component.StockProButton
+import com.company.stockpro.core.designsystem.component.StockProTextField
 import com.company.stockpro.core.designsystem.theme.Radius
 import com.company.stockpro.core.designsystem.theme.Spacing
 import com.company.stockpro.core.designsystem.theme.StockProCodeTextStyle
@@ -59,6 +65,8 @@ import com.company.stockpro.core.domain.model.MovementType
 import com.company.stockpro.core.domain.model.StockLevel
 import com.company.stockpro.core.domain.model.StockMovement
 import com.company.stockpro.core.domain.model.ToolCustody
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.AlertDialog
 
 /**
  * Precision Industrial Item Detail Screen.
@@ -79,8 +87,10 @@ fun ItemDetailScreen(
     onIssueTool: (operatorName: String, notes: String?) -> Unit = { _, _ -> },
     onReturnTool: (notes: String?) -> Unit = {},
     onLogCalibration: (calibratedAt: Long, nextDueAt: Long, notes: String?) -> Unit = { _, _, _ -> },
+    onUpdateThreshold: ((newThresholdMilli: Long) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
+    var showEditThresholdDialog by remember { mutableStateOf(false) }
     val currentUnits = item.onHand.toUnitsDouble
     val parUnits = item.parLevel.toUnitsDouble
     val ratio = if (parUnits > 0) (currentUnits / (parUnits * 1.5)).toFloat().coerceIn(0f, 1f) else 0.5f
@@ -365,9 +375,22 @@ fun ItemDetailScreen(
                             Spacer(modifier = Modifier.height(Spacing.x2))
                             Row(
                                 horizontalArrangement = Arrangement.SpaceBetween,
-                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(Radius.sm)
+                                    .clickable { showEditThresholdDialog = true },
                             ) {
-                                Text("Reorder Point", style = MaterialTheme.typography.bodyMedium, color = StockProColors.TextSecondary)
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("Low Stock Threshold", style = MaterialTheme.typography.bodyMedium, color = StockProColors.TextSecondary)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Icon(
+                                        imageVector = Icons.Default.Edit,
+                                        contentDescription = "Edit Threshold",
+                                        tint = StockProColors.Primary,
+                                        modifier = Modifier.size(14.dp),
+                                    )
+                                }
                                 Text(
                                     "${item.reorderLevel.formatted()} ${item.unitOfMeasure.lowercase()}",
                                     style = StockProCodeTextStyle.copy(fontWeight = FontWeight.SemiBold, fontSize = 13.sp),
@@ -474,6 +497,69 @@ fun ItemDetailScreen(
             item {
                 Spacer(modifier = Modifier.height(80.dp)) // Clearance for bottom bar
             }
+        }
+
+        if (showEditThresholdDialog) {
+            val initialVal = item.reorderLevel.toUnitsDouble.let { if (it % 1.0 == 0.0) it.toLong().toString() else it.toString() }
+            var thresholdInput by remember { mutableStateOf(initialVal) }
+            var errorMsg by remember { mutableStateOf<String?>(null) }
+
+            AlertDialog(
+                onDismissRequest = { showEditThresholdDialog = false },
+                title = {
+                    Text(
+                        text = "Edit Low-Stock Threshold",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = StockProColors.TextPrimary,
+                    )
+                },
+                text = {
+                    Column {
+                        Text(
+                            text = "Set minimum stock threshold (T). When available stock (Q) drops to or below this level, a low-stock alert is generated.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = StockProColors.TextSecondary,
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        StockProTextField(
+                            value = thresholdInput,
+                            onValueChange = {
+                                thresholdInput = it
+                                errorMsg = null
+                            },
+                            label = "Minimum Threshold (${item.unitOfMeasure})",
+                            placeholder = "e.g. 20",
+                            errorMessage = errorMsg,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                },
+                confirmButton = {
+                    StockProButton(
+                        text = "Save Threshold",
+                        onClick = {
+                            val parsed = thresholdInput.toDoubleOrNull()
+                            if (parsed == null || parsed < 0) {
+                                errorMsg = "Please enter a valid non-negative number"
+                            } else {
+                                val milli = (parsed * 1000).toLong()
+                                onUpdateThreshold?.invoke(milli)
+                                showEditThresholdDialog = false
+                            }
+                        },
+                        variant = ButtonVariant.PRIMARY,
+                    )
+                },
+                dismissButton = {
+                    StockProButton(
+                        text = "Cancel",
+                        onClick = { showEditThresholdDialog = false },
+                        variant = ButtonVariant.GHOST,
+                    )
+                },
+                containerColor = StockProColors.Surface,
+                shape = Radius.lg,
+            )
         }
     }
 }

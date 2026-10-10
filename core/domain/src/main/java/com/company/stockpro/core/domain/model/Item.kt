@@ -20,7 +20,7 @@ data class Item(
     val lastMovementAt: Long = 0L
 ) {
     val stockLevel: StockLevel
-        get() = StockLevel.derive(onHand, reorderLevel)
+        get() = StockLevel.derive(available, reorderLevel)
 
     val available: Quantity
         get() = Quantity((onHand.milli - reserved.milli).coerceAtLeast(0L))

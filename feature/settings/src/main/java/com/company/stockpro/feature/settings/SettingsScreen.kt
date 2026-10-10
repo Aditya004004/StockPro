@@ -52,6 +52,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Straighten
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -88,6 +89,7 @@ import com.company.stockpro.core.designsystem.theme.StockProCodeTextStyle
 import com.company.stockpro.core.designsystem.theme.StockProColors
 import com.company.stockpro.core.domain.model.AppLanguage
 import com.company.stockpro.core.domain.model.NotificationPreferences
+import com.company.stockpro.core.domain.model.Plant
 import com.company.stockpro.core.domain.model.ThemeMode
 import com.company.stockpro.core.domain.model.UnitSystem
 import com.company.stockpro.core.domain.model.UserProfile
@@ -104,6 +106,7 @@ import java.util.Locale
 fun SettingsRoute(
     viewModel: SettingsViewModel,
     onNavigateToTeam: () -> Unit,
+    onNavigateToExportDatabase: () -> Unit = {},
     onLogoutClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -172,7 +175,17 @@ fun SettingsRoute(
                 onExportDatabase = { viewModel.exportDatabase(it) },
                 onImportDatabase = { viewModel.importDatabase() },
                 onDismissStatusBanner = { viewModel.dismissStatusBanner() },
+                onRequestRemovePlantConfirm = { viewModel.requestRemovePlantConfirm(it) },
+                onRemovePlant = { plantId ->
+                    viewModel.removePlant(
+                        plantId = plantId,
+                        onError = { msg ->
+                            android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_LONG).show()
+                        },
+                    )
+                },
                 onNavigateToTeam = onNavigateToTeam,
+                onNavigateToExportDatabase = onNavigateToExportDatabase,
                 onLogoutClick = { viewModel.logout(onLogoutClick) },
                 onDeleteAccountClick = {
                     viewModel.deleteAccount(
@@ -215,8 +228,11 @@ fun SettingsScreen(
     onDeleteAccountClick: () -> Unit = {},
     onUpdateFullProfile: (name: String, email: String, phone: String, company: String, plant: String) -> Unit = { _, _, _, _, _ -> },
     onExportDatabase: (ExportFormat) -> Unit = {},
+    onNavigateToExportDatabase: (() -> Unit)? = null,
     onImportDatabase: () -> Unit = {},
     onDismissStatusBanner: () -> Unit = {},
+    onRequestRemovePlantConfirm: (Plant) -> Unit = {},
+    onRemovePlant: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val profile = content.userSettings.profile
@@ -334,14 +350,12 @@ fun SettingsScreen(
                 )
                 HorizontalDivider(color = Color(0xFFF1F5F9))
                 SettingsRowItem(
-                    icon = Icons.Default.Group,
-                    iconBg = Color(0xFFF3E8FF),
-                    iconTint = Color(0xFF9333EA),
-                    title = "Team & Floor Operators",
-                    subtitle = "Manage team roles, permissions and access",
-                    trailingValue = "Team Portal",
-                    isTrailingPillBlue = true,
-                    onClick = onNavigateToTeam,
+                    icon = Icons.Default.Delete,
+                    iconBg = Color(0xFFFEE2E2),
+                    iconTint = Color(0xFFDC2626),
+                    title = "Plant Remove",
+                    subtitle = "Decommission and remove an existing plant",
+                    onClick = { onShowDialog(SettingsDialog.RemovePlant) },
                 )
             }
 
@@ -423,17 +437,7 @@ fun SettingsScreen(
                     title = "Export Database",
                     subtitle = "Download master records as JSON, CSV or Excel",
                     trailingValue = "Export",
-                    onClick = { onShowDialog(SettingsDialog.ExportDatabaseSelectFormat) },
-                )
-                HorizontalDivider(color = Color(0xFFF1F5F9))
-                SettingsRowItem(
-                    icon = Icons.Default.CloudUpload,
-                    iconBg = Color(0xFFF3E8FF),
-                    iconTint = Color(0xFF9333EA),
-                    title = "Import Database",
-                    subtitle = "Restore inventory master records from backup",
-                    trailingValue = "Import",
-                    onClick = { onShowDialog(SettingsDialog.ImportDatabaseConfirm) },
+                    onClick = { onNavigateToExportDatabase?.invoke() ?: onShowDialog(SettingsDialog.ExportDatabaseSelectFormat) },
                 )
                 HorizontalDivider(color = Color(0xFFF1F5F9))
                 SettingsRowItem(
@@ -555,37 +559,60 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Wide blue outline Sign Out of Plant button
+            // Sign Out Account Action
             Surface(
-                shape = RoundedCornerShape(10.dp),
-                color = Color(0xFFF8FAFC),
-                border = BorderStroke(1.5.dp, Color(0xFF2563EB)),
+                shape = RoundedCornerShape(14.dp),
+                color = Color.White,
+                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(10.dp))
+                    .clip(RoundedCornerShape(14.dp))
                     .clickable { onShowDialog(SettingsDialog.LogoutConfirm) },
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 12.dp),
-                    horizontalArrangement = Arrangement.Center,
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFFEFF6FF)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Logout,
+                            contentDescription = null,
+                            tint = Color(0xFF2563EB),
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Sign Out",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = Color(0xFF2563EB),
+                            ),
+                        )
+                        Spacer(modifier = Modifier.height(1.dp))
+                        Text(
+                            text = "Sign out of your active session on this device",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontSize = 11.sp,
+                                color = Color(0xFF64748B),
+                            ),
+                        )
+                    }
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Logout,
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                         contentDescription = null,
-                        tint = Color(0xFF2563EB),
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Sign Out of Plant",
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp,
-                            color = Color(0xFF2563EB),
-                        ),
+                        tint = Color(0xFF94A3B8),
+                        modifier = Modifier.size(16.dp),
                     )
                 }
             }
@@ -617,23 +644,6 @@ fun SettingsScreen(
                     onExportDatabase(format)
                 },
                 onDismiss = onDismissDialog,
-            )
-        }
-        SettingsDialog.ImportDatabaseConfirm -> {
-            AlertDialog(
-                onDismissRequest = onDismissDialog,
-                title = { Text("Import Database Backup?") },
-                text = {
-                    Text("Restoring backup will synchronize inventory items, warehouses, and plant records with the local SQLite engine. Existing unchanged data is securely preserved.")
-                },
-                confirmButton = {
-                    TextButton(onClick = onImportDatabase) {
-                        Text("Import Backup", fontWeight = FontWeight.Bold, color = StockProColors.Primary)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = onDismissDialog) { Text("Cancel") }
-                },
             )
         }
         SettingsDialog.ChangePassword -> {
@@ -930,6 +940,40 @@ fun SettingsScreen(
                 },
             )
         }
+        SettingsDialog.RemovePlant -> {
+            val plantsToDisplay = if (content.configuredPlants.isNotEmpty()) {
+                content.configuredPlants
+            } else {
+                settings.availablePlants.mapIndexed { idx, name ->
+                    Plant(
+                        id = "plant_${idx + 1}",
+                        code = name.take(3).uppercase() + "-${(idx + 1).toString().padStart(2, '0')}",
+                        name = name,
+                        location = name,
+                    )
+                }
+            }
+            RemovePlantSelectionDialog(
+                plants = plantsToDisplay,
+                activePlantName = profile.plantName,
+                onSelectPlantToDelete = { plant ->
+                    onRequestRemovePlantConfirm(plant)
+                },
+                onDismiss = onDismissDialog,
+            )
+        }
+        is SettingsDialog.RemovePlantConfirm -> {
+            RemovePlantConfirmDialog(
+                plant = dialog.plant,
+                itemCount = dialog.itemCount,
+                isActivePlant = dialog.plant.id == profile.plantId || dialog.plant.name.equals(profile.plantName, ignoreCase = true),
+                onConfirmDelete = {
+                    onRemovePlant(dialog.plant.id)
+                },
+                onDismiss = onDismissDialog,
+            )
+        }
+        SettingsDialog.ImportDatabaseConfirm -> {}
         null -> {}
     }
 }
@@ -1809,6 +1853,210 @@ private fun ExportDatabaseDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
+}
+
+@Composable
+private fun RemovePlantSelectionDialog(
+    plants: List<Plant>,
+    activePlantName: String,
+    onSelectPlantToDelete: (Plant) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val canDelete = plants.size > 1
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = null,
+                    tint = StockProColors.Danger,
+                    modifier = Modifier.size(22.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Plant Remove",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = StockProColors.TextPrimary,
+                )
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                if (!canDelete) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFFFEF2F2),
+                        border = BorderStroke(1.dp, Color(0xFFFECACA)),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            text = "Cannot remove plant: StockPro requires at least one active plant facility.",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = Color(0xFFB91C1C),
+                                fontWeight = FontWeight.Medium,
+                            ),
+                            modifier = Modifier.padding(10.dp),
+                        )
+                    }
+                } else {
+                    Text(
+                        text = "Select a plant facility to decommission and remove from this device:",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = StockProColors.TextSecondary,
+                    )
+                }
+
+                plants.forEach { plant ->
+                    val isActive = plant.name.equals(activePlantName, ignoreCase = true)
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color(0xFFF8FAFC),
+                        border = BorderStroke(1.dp, if (isActive) Color(0xFFBFDBFE) else Color(0xFFE2E8F0)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .clickable(enabled = canDelete) { onSelectPlantToDelete(plant) },
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = plant.name,
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = StockProColors.TextPrimary,
+                                    )
+                                    if (isActive) {
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = Color(0xFFDBEAFE),
+                                        ) {
+                                            Text(
+                                                text = "ACTIVE",
+                                                style = MaterialTheme.typography.labelSmall.copy(
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 9.sp,
+                                                    color = Color(0xFF1E40AF),
+                                                ),
+                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                                            )
+                                        }
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "${plant.code} • ${plant.location.ifBlank { "Default Location" }}",
+                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                    color = StockProColors.TextSecondary,
+                                )
+                            }
+                            if (canDelete) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Remove ${plant.name}",
+                                    tint = StockProColors.Danger,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close", fontWeight = FontWeight.SemiBold)
+            }
+        },
+    )
+}
+
+@Composable
+private fun RemovePlantConfirmDialog(
+    plant: Plant,
+    itemCount: Int,
+    isActivePlant: Boolean,
+    onConfirmDelete: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = StockProColors.Danger,
+                    modifier = Modifier.size(22.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Decommission Plant?",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = StockProColors.Danger,
+                )
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = "Are you sure you want to remove plant '${plant.name}' (${plant.code})?",
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = StockProColors.TextPrimary,
+                )
+                if (itemCount > 0) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFFFEF3C7),
+                        border = BorderStroke(1.dp, Color(0xFFFDE68A)),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            text = "⚠️ Warning: This plant has $itemCount inventory item(s) associated with it in local database.",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = Color(0xFF92400E),
+                                fontWeight = FontWeight.Medium,
+                            ),
+                            modifier = Modifier.padding(10.dp),
+                        )
+                    }
+                }
+                if (isActivePlant) {
+                    Text(
+                        text = "Because this is your currently active plant, your session will automatically switch to another available plant facility.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = StockProColors.TextSecondary,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirmDelete) {
+                Text(
+                    text = "Remove Plant",
+                    color = StockProColors.Danger,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
         },
     )
 }

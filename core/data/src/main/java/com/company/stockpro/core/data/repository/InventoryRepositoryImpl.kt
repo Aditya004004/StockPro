@@ -3,8 +3,10 @@ package com.company.stockpro.core.data.repository
 import com.company.stockpro.core.database.StockProDatabase
 import com.company.stockpro.core.database.entity.NotificationEntity
 import com.company.stockpro.core.database.entity.OutboxEntity
+import com.company.stockpro.core.database.entity.PlantEntity
 import com.company.stockpro.core.database.entity.StockLedgerEntity
 import com.company.stockpro.core.database.entity.TeamMemberEntity
+import com.company.stockpro.core.database.entity.ThresholdAuditEntity
 import com.company.stockpro.core.database.entity.ToolCustodyEntity
 import com.company.stockpro.core.domain.model.AppLanguage
 import com.company.stockpro.core.domain.model.AppNotification
@@ -15,11 +17,13 @@ import com.company.stockpro.core.domain.model.Money
 import com.company.stockpro.core.domain.model.MovementType
 import com.company.stockpro.core.domain.model.NotificationPreferences
 import com.company.stockpro.core.domain.model.NotificationType
+import com.company.stockpro.core.domain.model.Plant
 import com.company.stockpro.core.domain.model.Quantity
 import com.company.stockpro.core.domain.model.Role
 import com.company.stockpro.core.domain.model.StockMovement
 import com.company.stockpro.core.domain.model.TeamMember
 import com.company.stockpro.core.domain.model.ThemeMode
+import com.company.stockpro.core.domain.model.ThresholdAudit
 import com.company.stockpro.core.domain.model.ToolCustody
 import com.company.stockpro.core.domain.model.ToolStatus
 import com.company.stockpro.core.domain.model.UnitSystem
@@ -36,6 +40,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
@@ -63,9 +68,33 @@ class InventoryRepositoryImpl(
     private val notificationDao get() = database.notificationDao()
     private val toolCustodyDao get() = database.toolCustodyDao()
     private val teamMemberDao get() = database.teamMemberDao()
+    private val plantDao get() = database.plantDao()
+    private val thresholdAuditDao get() = database.thresholdAuditDao()
 
-    private val userSettingsFlow = MutableStateFlow(
-        UserSettings(
+    private val prefs by lazy {
+        context?.getSharedPreferences("stockpro_user_prefs", android.content.Context.MODE_PRIVATE)
+    }
+
+    private fun persistSettings(settings: UserSettings) {
+        prefs?.edit()?.apply {
+            putString("uid", settings.profile.uid)
+            putString("display_name", settings.profile.displayName)
+            putString("email", settings.profile.email)
+            putString("phone", settings.profile.phone)
+            putString("company", settings.profile.company)
+            putString("plant_id", settings.profile.plantId)
+            putString("plant_name", settings.profile.plantName)
+            putString("warehouse_name", settings.profile.warehouseName)
+            putString("theme_mode", settings.themeMode.name)
+            putString("language", settings.language.name)
+            putString("unit_system", settings.unitSystem.name)
+            putString("currency", settings.currency.name)
+            apply()
+        }
+    }
+
+    private fun loadInitialSettings(): UserSettings {
+        val p = prefs ?: return UserSettings(
             profile = UserProfile(
                 uid = "usr_aditya",
                 displayName = "Aditya Maurya",
@@ -78,8 +107,51 @@ class InventoryRepositoryImpl(
             language = AppLanguage.ENGLISH,
             unitSystem = UnitSystem.METRIC,
             notificationPreferences = NotificationPreferences(),
-        ),
-    )
+        )
+
+        val uid = p.getString("uid", null) ?: "usr_aditya"
+        val displayName = p.getString("display_name", null) ?: "Aditya Maurya"
+        val email = p.getString("email", null) ?: "aditya@company.com"
+        val phone = p.getString("phone", null) ?: "+91 98765 43210"
+        val company = p.getString("company", null) ?: "StockPro Manufacturing Ltd"
+        val plantId = p.getString("plant_id", null) ?: "plant_01"
+        val plantName = p.getString("plant_name", null) ?: "Pune Plant 1"
+        val warehouseName = p.getString("warehouse_name", null) ?: "Main Warehouse"
+        val themeModeStr = p.getString("theme_mode", null) ?: ThemeMode.LIGHT.name
+        val languageStr = p.getString("language", null) ?: AppLanguage.ENGLISH.name
+        val unitSystemStr = p.getString("unit_system", null) ?: UnitSystem.METRIC.name
+        val currencyStr = p.getString("currency", null) ?: Currency.INR.name
+
+        val themeMode = runCatching { ThemeMode.valueOf(themeModeStr) }.getOrDefault(ThemeMode.LIGHT)
+        val language = runCatching { AppLanguage.valueOf(languageStr) }.getOrDefault(AppLanguage.ENGLISH)
+        val unitSystem = runCatching { UnitSystem.valueOf(unitSystemStr) }.getOrDefault(UnitSystem.METRIC)
+        val currency = runCatching { Currency.valueOf(currencyStr) }.getOrDefault(Currency.INR)
+
+        return UserSettings(
+            profile = UserProfile(
+                uid = uid,
+                displayName = displayName,
+                email = email,
+                role = Role.INVENTORY_MANAGER,
+                plantId = plantId,
+                plantName = plantName,
+                warehouseName = warehouseName,
+                phone = phone,
+                company = company,
+            ),
+            themeMode = themeMode,
+            language = language,
+            unitSystem = unitSystem,
+            currency = currency,
+            notificationPreferences = NotificationPreferences(),
+        )
+    }
+
+    private val userSettingsFlow = MutableStateFlow(loadInitialSettings())
+
+    private val activePlantIdFlow: Flow<String> = userSettingsFlow
+        .map { it.profile.plantId }
+        .distinctUntilChanged()
 
     /** Reads the current plant ID from user settings to avoid hardcoding. */
     private val currentPlantId: String get() = userSettingsFlow.value.profile.plantId
@@ -90,6 +162,39 @@ class InventoryRepositoryImpl(
     init {
         appScope.launch {
             seedDefaultsIfEmpty()
+        }
+        appScope.launch {
+            // Keep availablePlants and active plant aligned with Room plants table
+            plantDao.observeAllPlants().collect { plants ->
+                if (plants.isNotEmpty()) {
+                    val plantNames = plants.map { it.name }
+                    userSettingsFlow.update { current ->
+                        val matchedPlant = plants.find {
+                            it.id == current.profile.plantId || it.name.equals(current.profile.plantName, ignoreCase = true)
+                        }
+                        val next = if (matchedPlant != null) {
+                            current.copy(
+                                profile = current.profile.copy(
+                                    plantId = matchedPlant.id,
+                                    plantName = matchedPlant.name,
+                                ),
+                                availablePlants = plantNames,
+                            )
+                        } else {
+                            val first = plants.first()
+                            current.copy(
+                                profile = current.profile.copy(
+                                    plantId = first.id,
+                                    plantName = first.name,
+                                ),
+                                availablePlants = plantNames,
+                            )
+                        }
+                        persistSettings(next)
+                        next
+                    }
+                }
+            }
         }
         appScope.launch {
             observeAndReconcileNotifications()
@@ -131,6 +236,17 @@ class InventoryRepositoryImpl(
     }
 
     private suspend fun seedDefaultsIfEmpty() {
+        if (plantDao.count() == 0) {
+            val now = System.currentTimeMillis()
+            plantDao.upsertPlants(
+                listOf(
+                    PlantEntity("plant_01", "PUN-01", "Pune Plant 1", "Pune, Maharashtra", true, now),
+                    PlantEntity("plant_02", "PRD-01", "Plant 01 Production", "Bhosari MIDC, Pune", true, now),
+                    PlantEntity("plant_03", "CHK-01", "Chakan Assembly", "Chakan Phase II, Pune", true, now),
+                ),
+            )
+        }
+
         if (teamMemberDao.count() == 0) {
             val now = System.currentTimeMillis()
             teamMemberDao.insertAll(
@@ -175,50 +291,53 @@ class InventoryRepositoryImpl(
 
         val desiredIds = mutableSetOf<String>()
 
-        // 1. Check Out of Stock items
-        if (prefs.isTypeEnabled(NotificationType.OUT_OF_STOCK)) {
-            for (item in items) {
-                if (item.onHandMilli <= 0) {
+        for (item in items) {
+            val availableMilli = item.onHandMilli - item.reservedMilli
+            val thresholdMilli = item.reorderLevelMilli
+
+            if (availableMilli <= 0L) {
+                // Out of Stock condition: Q <= 0
+                if (prefs.isTypeEnabled(NotificationType.OUT_OF_STOCK)) {
                     val notifId = "out_of_stock_${item.id}"
                     desiredIds.add(notifId)
                     val existing = existingNotifications[notifId]
-                    notificationDao.insert(
-                        NotificationEntity(
-                            id = notifId,
-                            plantId = currentPlant,
-                            type = NotificationType.OUT_OF_STOCK.name,
-                            title = "Out of Stock: ${item.name}",
-                            body = "${item.name} (${item.code}) is completely out of stock.",
-                            entityRef = item.code,
-                            isRead = existing?.isRead ?: false,
-                            createdAt = existing?.createdAt ?: now,
-                        ),
-                    )
+                    if (existing == null) {
+                        notificationDao.insert(
+                            NotificationEntity(
+                                id = notifId,
+                                plantId = currentPlant,
+                                type = NotificationType.OUT_OF_STOCK.name,
+                                title = "Out of Stock: ${item.name}",
+                                body = "${item.name} (${item.code}) is completely out of stock.",
+                                entityRef = item.code,
+                                isRead = false,
+                                createdAt = now,
+                            ),
+                        )
+                    }
                 }
-            }
-        }
-
-        // 2. Check Low Stock items
-        if (prefs.isTypeEnabled(NotificationType.LOW_STOCK)) {
-            for (item in items) {
-                if (item.onHandMilli > 0 && item.reorderLevelMilli > 0 && item.onHandMilli <= item.reorderLevelMilli) {
+            } else if (availableMilli <= thresholdMilli) {
+                // Low Stock condition: 0 < Q <= T
+                if (prefs.isTypeEnabled(NotificationType.LOW_STOCK)) {
                     val notifId = "low_stock_${item.id}"
                     desiredIds.add(notifId)
                     val existing = existingNotifications[notifId]
-                    val onHandQty = Quantity(item.onHandMilli).formatted()
-                    val reorderQty = Quantity(item.reorderLevelMilli).formatted()
-                    notificationDao.insert(
-                        NotificationEntity(
-                            id = notifId,
-                            plantId = currentPlant,
-                            type = NotificationType.LOW_STOCK.name,
-                            title = "Low Stock: ${item.name}",
-                            body = "${item.name} (${item.code}) is below reorder level ($onHandQty vs $reorderQty).",
-                            entityRef = item.code,
-                            isRead = existing?.isRead ?: false,
-                            createdAt = existing?.createdAt ?: now,
-                        ),
-                    )
+                    if (existing == null) {
+                        val availQty = Quantity(availableMilli).formatted()
+                        val reorderQty = Quantity(thresholdMilli).formatted()
+                        notificationDao.insert(
+                            NotificationEntity(
+                                id = notifId,
+                                plantId = currentPlant,
+                                type = NotificationType.LOW_STOCK.name,
+                                title = "Low Stock: ${item.name}",
+                                body = "${item.name} (${item.code}) is below threshold ($availQty vs $reorderQty).",
+                                entityRef = item.code,
+                                isRead = false,
+                                createdAt = now,
+                            ),
+                        )
+                    }
                 }
             }
         }
@@ -228,21 +347,23 @@ class InventoryRepositoryImpl(
             val notifId = "sync_failure"
             desiredIds.add(notifId)
             val existing = existingNotifications[notifId]
-            notificationDao.insert(
-                NotificationEntity(
-                    id = notifId,
-                    plantId = currentPlant,
-                    type = NotificationType.SYNC_FAILURE.name,
-                    title = "Sync Alert",
-                    body = "${failedEntries.size} offline update(s) failed to sync. Tap to review.",
-                    entityRef = null,
-                    isRead = existing?.isRead ?: false,
-                    createdAt = existing?.createdAt ?: now,
-                ),
-            )
+            if (existing == null) {
+                notificationDao.insert(
+                    NotificationEntity(
+                        id = notifId,
+                        plantId = currentPlant,
+                        type = NotificationType.SYNC_FAILURE.name,
+                        title = "Sync Alert",
+                        body = "${failedEntries.size} offline update(s) failed to sync. Tap to review.",
+                        entityRef = null,
+                        isRead = false,
+                        createdAt = now,
+                    ),
+                )
+            }
         }
 
-        // 4. Remove any automated notifications that are no longer valid
+        // 4. Remove any automated notifications that are no longer valid (e.g. stock restored > threshold)
         for (existing in existingNotifications.values) {
             if (existing.id.startsWith("low_stock_") ||
                 existing.id.startsWith("out_of_stock_") ||
@@ -256,54 +377,70 @@ class InventoryRepositoryImpl(
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeItems(): Flow<List<Item>> =
-        itemDao.observeActiveItems().map { entities -> entities.map { it.toDomain() } }
+        activePlantIdFlow.flatMapLatest { plantId ->
+            itemDao.observeActiveItems(plantId).map { entities -> entities.map { it.toDomain() } }
+        }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeItemsByClass(
         itemClass: ItemClass,
         sortOrder: com.company.stockpro.core.domain.model.SortOrder,
-    ): Flow<List<Item>> {
-        val flow = when (sortOrder) {
-            com.company.stockpro.core.domain.model.SortOrder.NAME_ASC ->
-                itemDao.observeItemsByClassOrderByName(itemClass.name)
-            com.company.stockpro.core.domain.model.SortOrder.CODE_ASC ->
-                itemDao.observeItemsByClassOrderByCode(itemClass.name)
-            com.company.stockpro.core.domain.model.SortOrder.QUANTITY_DESC ->
-                itemDao.observeItemsByClassOrderByQuantityDesc(itemClass.name)
-            com.company.stockpro.core.domain.model.SortOrder.QUANTITY_ASC ->
-                itemDao.observeItemsByClassOrderByQuantityAsc(itemClass.name)
-            com.company.stockpro.core.domain.model.SortOrder.LAST_MOVED_DESC ->
-                itemDao.observeItemsByClassOrderByLastMoved(itemClass.name)
+    ): Flow<List<Item>> =
+        activePlantIdFlow.flatMapLatest { plantId ->
+            val flow = when (sortOrder) {
+                com.company.stockpro.core.domain.model.SortOrder.NAME_ASC ->
+                    itemDao.observeItemsByClassOrderByName(itemClass.name, plantId)
+                com.company.stockpro.core.domain.model.SortOrder.CODE_ASC ->
+                    itemDao.observeItemsByClassOrderByCode(itemClass.name, plantId)
+                com.company.stockpro.core.domain.model.SortOrder.QUANTITY_DESC ->
+                    itemDao.observeItemsByClassOrderByQuantityDesc(itemClass.name, plantId)
+                com.company.stockpro.core.domain.model.SortOrder.QUANTITY_ASC ->
+                    itemDao.observeItemsByClassOrderByQuantityAsc(itemClass.name, plantId)
+                com.company.stockpro.core.domain.model.SortOrder.LAST_MOVED_DESC ->
+                    itemDao.observeItemsByClassOrderByLastMoved(itemClass.name, plantId)
+            }
+            flow.map { entities -> entities.map { it.toDomain() } }
         }
-        return flow.map { entities -> entities.map { it.toDomain() } }
-    }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeSummary(): Flow<com.company.stockpro.core.domain.model.InventorySummary> =
-        itemDao.observeSummary().map { it.toDomain() }
+        activePlantIdFlow.flatMapLatest { plantId ->
+            itemDao.observeSummary(plantId).map { it.toDomain() }
+        }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeTopLowStock(limit: Int): Flow<List<Item>> =
-        itemDao.observeTopLowStock(limit).map { entities -> entities.map { it.toDomain() } }
+        activePlantIdFlow.flatMapLatest { plantId ->
+            itemDao.observeTopLowStock(limit, plantId).map { entities -> entities.map { it.toDomain() } }
+        }
 
     override fun observeItem(itemId: String): Flow<Item?> =
         itemDao.observeItem(itemId).map { it?.toDomain() }
 
-    override fun searchItems(query: String): Flow<List<Item>> {
-        val sanitized = query.trim()
-            .split(Regex("[^a-zA-Z0-9]+"))
-            .filter { it.isNotBlank() }
-            .joinToString(" ") { "$it*" }
-        return if (sanitized.isBlank()) {
-            itemDao.observeActiveItems().map { entities -> entities.map { it.toDomain() } }
-        } else {
-            itemDao.searchItems(sanitized).map { entities -> entities.map { it.toDomain() } }
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override fun searchItems(query: String): Flow<List<Item>> =
+        activePlantIdFlow.flatMapLatest { plantId ->
+            val sanitized = query.trim()
+                .split(Regex("[^a-zA-Z0-9]+"))
+                .filter { it.isNotBlank() }
+                .joinToString(" ") { "$it*" }
+            if (sanitized.isBlank()) {
+                itemDao.observeActiveItems(plantId).map { entities -> entities.map { it.toDomain() } }
+            } else {
+                itemDao.searchItems(sanitized, plantId).map { entities -> entities.map { it.toDomain() } }
+            }
         }
-    }
 
     override fun observeLedger(itemId: String): Flow<List<StockMovement>> =
         ledgerDao.observeByItem(itemId).map { entities -> entities.map { it.toDomain() } }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeRecentMovements(limit: Int): Flow<List<StockMovement>> =
-        ledgerDao.observeRecent(limit).map { entities -> entities.map { it.toDomain() } }
+        activePlantIdFlow.flatMapLatest { plantId ->
+            ledgerDao.observeRecent(limit, plantId).map { entities -> entities.map { it.toDomain() } }
+        }
 
     override suspend fun getItem(itemId: String): DataResult<Item> {
         val entity = itemDao.getItem(itemId)
@@ -319,9 +456,10 @@ class InventoryRepositoryImpl(
 
     override suspend fun createItem(item: Item): DataResult<Item> {
         return try {
+            val plantId = currentPlantId
             val existing = itemDao.getItemByCode(item.code.trim())
-            if (existing != null) {
-                return DataResult.Error(UiText.Dynamic("An item with code '${item.code}' already exists."))
+            if (existing != null && (existing.locationId == plantId || existing.locationId.isBlank())) {
+                return DataResult.Error(UiText.Dynamic("An item with code '${item.code}' already exists in this plant."))
             }
             val now = System.currentTimeMillis()
             val entity = com.company.stockpro.core.database.entity.ItemEntity(
@@ -340,8 +478,8 @@ class InventoryRepositoryImpl(
                 reorderLevelMilli = item.reorderLevel.milli,
                 parLevelMilli = item.parLevel.milli,
                 unitCostPaise = item.unitCost.paise,
-                locationId = "",
-                locationCode = item.locationCode.trim(),
+                locationId = plantId,
+                locationCode = item.locationCode.trim().ifBlank { userSettingsFlow.value.profile.plantName },
                 barcode = item.barcode,
                 imagePath = item.imagePath,
                 isActive = item.isActive,
@@ -408,8 +546,8 @@ class InventoryRepositoryImpl(
                     reference = movement.reference,
                     reasonCode = movement.reasonCode,
                     note = movement.note,
-                    fromLocationId = movement.fromLocationId,
-                    toLocationId = movement.toLocationId,
+                    fromLocationId = movement.fromLocationId?.ifBlank { null } ?: currentPlantId,
+                    toLocationId = movement.toLocationId?.ifBlank { null } ?: currentPlantId,
                     actorUid = movement.actorUid,
                     actorName = movement.actorName,
                     idempotencyKey = movement.idempotencyKey,
@@ -548,7 +686,11 @@ class InventoryRepositoryImpl(
         userSettingsFlow.asStateFlow()
 
     override suspend fun updateUserProfile(displayName: String): DataResult<Unit> {
-        userSettingsFlow.update { it.copy(profile = it.profile.copy(displayName = displayName.trim())) }
+        userSettingsFlow.update { current ->
+            val next = current.copy(profile = current.profile.copy(displayName = displayName.trim()))
+            persistSettings(next)
+            next
+        }
         return DataResult.Success(Unit)
     }
 
@@ -560,18 +702,23 @@ class InventoryRepositoryImpl(
         plantName: String,
     ): DataResult<Unit> {
         val cleanPlant = plantName.trim()
-        val plantId = if (cleanPlant.isNotBlank()) {
+        val plant = if (cleanPlant.isNotBlank()) {
+            plantDao.getPlantByName(cleanPlant) ?: plantDao.getPlantById(cleanPlant)
+        } else null
+
+        val plantId = plant?.id ?: if (cleanPlant.isNotBlank()) {
             "plant_" + cleanPlant.lowercase().replace("[^a-z0-9]".toRegex(), "_")
         } else {
             userSettingsFlow.value.profile.plantId
         }
+
         userSettingsFlow.update { current ->
             val updatedPlants = if (cleanPlant.isNotBlank() && !current.availablePlants.contains(cleanPlant)) {
                 current.availablePlants + cleanPlant
             } else {
                 current.availablePlants
             }
-            current.copy(
+            val next = current.copy(
                 profile = current.profile.copy(
                     displayName = displayName.trim(),
                     email = email.trim(),
@@ -582,6 +729,8 @@ class InventoryRepositoryImpl(
                 ),
                 availablePlants = updatedPlants,
             )
+            persistSettings(next)
+            next
         }
         return DataResult.Success(Unit)
     }
@@ -589,14 +738,21 @@ class InventoryRepositoryImpl(
     override suspend fun selectPlant(plantName: String): DataResult<Unit> {
         val cleanName = plantName.trim()
         if (cleanName.isBlank()) return DataResult.Error(UiText.Dynamic("Plant name cannot be empty"))
-        val plantId = "plant_" + cleanName.lowercase().replace("[^a-z0-9]".toRegex(), "_")
+        val plant = plantDao.getPlantByName(cleanName)
+            ?: plantDao.getPlantById(cleanName)
+            ?: plantDao.getPlantByCode(cleanName)
+        val plantId = plant?.id ?: ("plant_" + cleanName.lowercase().replace("[^a-z0-9]".toRegex(), "_"))
+        val resolvedName = plant?.name ?: cleanName
+
         userSettingsFlow.update { current ->
-            current.copy(
+            val next = current.copy(
                 profile = current.profile.copy(
-                    plantName = cleanName,
+                    plantName = resolvedName,
                     plantId = plantId,
                 ),
             )
+            persistSettings(next)
+            next
         }
         return DataResult.Success(Unit)
     }
@@ -604,59 +760,238 @@ class InventoryRepositoryImpl(
     override suspend fun addPlant(plantName: String): DataResult<Unit> {
         val cleanName = plantName.trim()
         if (cleanName.isBlank()) return DataResult.Error(UiText.Dynamic("Plant name cannot be empty"))
-        val plantId = "plant_" + cleanName.lowercase().replace("[^a-z0-9]".toRegex(), "_")
-        userSettingsFlow.update { current ->
-            val updatedList = if (current.availablePlants.contains(cleanName)) {
-                current.availablePlants
-            } else {
-                current.availablePlants + cleanName
-            }
-            current.copy(
-                profile = current.profile.copy(
-                    plantName = cleanName,
-                    plantId = plantId,
-                ),
-                availablePlants = updatedList,
-            )
+        val code = cleanName.take(3).uppercase() + "-" + (plantDao.count() + 1).toString().padStart(2, '0')
+        return when (val result = addPlant(name = cleanName, code = code, location = cleanName)) {
+            is DataResult.Success -> DataResult.Success(Unit)
+            is DataResult.Error -> DataResult.Error(result.message)
         }
+    }
+
+    override suspend fun addPlant(name: String, code: String, location: String): DataResult<Plant> {
+        val cleanName = name.trim()
+        val cleanCode = code.trim().uppercase()
+        val cleanLocation = location.trim()
+
+        if (cleanName.isBlank()) return DataResult.Error(UiText.Dynamic("Plant name is required."))
+        if (cleanCode.isBlank()) return DataResult.Error(UiText.Dynamic("Plant code is required."))
+        if (cleanLocation.isBlank()) return DataResult.Error(UiText.Dynamic("Plant location is required."))
+
+        val existingByCode = plantDao.getPlantByCode(cleanCode)
+        if (existingByCode != null) {
+            return DataResult.Error(UiText.Dynamic("Plant code '$cleanCode' already exists."))
+        }
+        val existingByName = plantDao.getPlantByName(cleanName)
+        if (existingByName != null) {
+            return DataResult.Error(UiText.Dynamic("Plant named '$cleanName' already exists."))
+        }
+
+        val plantId = "plant_" + cleanCode.lowercase().replace("[^a-z0-9]".toRegex(), "_")
+        val now = System.currentTimeMillis()
+        val entity = PlantEntity(
+            id = plantId,
+            code = cleanCode,
+            name = cleanName,
+            location = cleanLocation,
+            isActive = true,
+            createdAt = now,
+        )
+        plantDao.insertPlant(entity)
+
+        userSettingsFlow.update { current ->
+            val updatedPlants = if (current.availablePlants.contains(cleanName)) current.availablePlants else current.availablePlants + cleanName
+            val next = current.copy(
+                profile = current.profile.copy(
+                    plantId = plantId,
+                    plantName = cleanName,
+                ),
+                availablePlants = updatedPlants,
+            )
+            persistSettings(next)
+            next
+        }
+
+        return DataResult.Success(
+            Plant(
+                id = entity.id,
+                code = entity.code,
+                name = entity.name,
+                location = entity.location,
+                isActive = entity.isActive,
+                createdAt = entity.createdAt,
+            ),
+        )
+    }
+
+    override fun observePlants(): Flow<List<Plant>> =
+        plantDao.observeAllPlants().map { entities ->
+            entities.map {
+                Plant(
+                    id = it.id,
+                    code = it.code,
+                    name = it.name,
+                    location = it.location,
+                    isActive = it.isActive,
+                    createdAt = it.createdAt,
+                )
+            }
+        }
+
+    override suspend fun getPlantItemCount(plantId: String): Int {
+        val clean = plantId.trim()
+        val plant = plantDao.getPlantById(clean)
+            ?: plantDao.getPlantByName(clean)
+            ?: plantDao.getPlantByCode(clean)
+        val targetId = plant?.id ?: clean
+        return itemDao.countItemsByPlant(targetId)
+    }
+
+    override suspend fun deletePlant(plantId: String): DataResult<Unit> {
+        val clean = plantId.trim()
+        if (clean.isBlank()) {
+            return DataResult.Error(UiText.Dynamic("Invalid plant identifier."))
+        }
+
+        val activeCount = plantDao.countActivePlants()
+        if (activeCount <= 1) {
+            return DataResult.Error(UiText.Dynamic("Cannot delete the only remaining plant. StockPro requires at least one active plant."))
+        }
+
+        val plant = plantDao.getPlantById(clean)
+            ?: plantDao.getPlantByName(clean)
+            ?: plantDao.getPlantByCode(clean)
+            ?: return DataResult.Error(UiText.Dynamic("Plant not found."))
+
+        plantDao.deletePlantById(plant.id)
+
+        val remainingPlants = plantDao.getAllPlants()
+        val remainingNames = remainingPlants.map { it.name }
+
+        userSettingsFlow.update { current ->
+            val isCurrent = current.profile.plantId == plant.id ||
+                current.profile.plantName.equals(plant.name, ignoreCase = true)
+            val fallbackPlant = if (isCurrent) remainingPlants.firstOrNull() else null
+
+            val next = current.copy(
+                profile = if (fallbackPlant != null) {
+                    current.profile.copy(
+                        plantId = fallbackPlant.id,
+                        plantName = fallbackPlant.name,
+                    )
+                } else {
+                    current.profile
+                },
+                availablePlants = remainingNames,
+            )
+            persistSettings(next)
+            next
+        }
+
         return DataResult.Success(Unit)
     }
 
+    override suspend fun updateItemThreshold(
+        itemId: String,
+        newThresholdMilli: Long,
+        operator: String,
+    ): DataResult<Unit> {
+        if (newThresholdMilli < 0) {
+            return DataResult.Error(UiText.Dynamic("Threshold must be a non-negative number."))
+        }
+        val item = itemDao.getItem(itemId)
+            ?: return DataResult.Error(UiText.Dynamic("Item not found."))
+
+        val oldThreshold = item.reorderLevelMilli
+        val now = System.currentTimeMillis()
+
+        // 1. Audit trail record
+        val auditEntity = ThresholdAuditEntity(
+            id = UUID.randomUUID().toString(),
+            itemId = item.id,
+            sku = item.code,
+            plantId = item.locationId.ifBlank { currentPlantId },
+            oldThresholdMilli = oldThreshold,
+            newThresholdMilli = newThresholdMilli,
+            operator = operator.ifBlank { userSettingsFlow.value.profile.displayName },
+            timestamp = now,
+        )
+        thresholdAuditDao.insert(auditEntity)
+
+        // 2. Persist updated threshold to ItemEntity
+        val updatedItem = item.copy(
+            reorderLevelMilli = newThresholdMilli,
+            updatedAt = now,
+        )
+        itemDao.upsert(updatedItem)
+
+        return DataResult.Success(Unit)
+    }
+
+    override fun observeThresholdAudits(itemId: String): Flow<List<ThresholdAudit>> =
+        thresholdAuditDao.observeAuditsByItem(itemId).map { entities ->
+            entities.map {
+                ThresholdAudit(
+                    id = it.id,
+                    itemId = it.itemId,
+                    sku = it.sku,
+                    plantId = it.plantId,
+                    oldThreshold = Quantity(it.oldThresholdMilli),
+                    newThreshold = Quantity(it.newThresholdMilli),
+                    operator = it.operator,
+                    timestamp = it.timestamp,
+                )
+            }
+        }
+
     override suspend fun updateThemeMode(themeMode: ThemeMode) {
-        userSettingsFlow.update { it.copy(themeMode = themeMode) }
+        userSettingsFlow.update { current ->
+            val next = current.copy(themeMode = themeMode)
+            persistSettings(next)
+            next
+        }
     }
 
     override suspend fun updateLanguage(language: AppLanguage) {
-        userSettingsFlow.update { it.copy(language = language) }
+        userSettingsFlow.update { current ->
+            val next = current.copy(language = language)
+            persistSettings(next)
+            next
+        }
     }
 
     override suspend fun updateUnitSystem(unitSystem: UnitSystem) {
-        userSettingsFlow.update { it.copy(unitSystem = unitSystem) }
+        userSettingsFlow.update { current ->
+            val next = current.copy(unitSystem = unitSystem)
+            persistSettings(next)
+            next
+        }
     }
 
     override suspend fun updateCurrency(currency: Currency) {
-        userSettingsFlow.update { it.copy(currency = currency) }
+        userSettingsFlow.update { current ->
+            val next = current.copy(currency = currency)
+            persistSettings(next)
+            next
+        }
     }
 
     override suspend fun clearCache(): DataResult<Long> {
-        // No real cache to clear in Room-only architecture
         return DataResult.Success(0L)
     }
 
     override suspend fun logout(): DataResult<Unit> = kotlinx.coroutines.withContext(Dispatchers.IO) {
         try {
-            database.clearAllTables()
-            userSettingsFlow.update { current ->
-                current.copy(
+            prefs?.edit()?.clear()?.apply()
+            userSettingsFlow.update {
+                loadInitialSettings().copy(
                     profile = UserProfile(
                         uid = "",
                         displayName = "User",
                         email = "",
                         role = Role.INVENTORY_MANAGER,
                         plantId = "plant_01",
-                        plantName = "Plant 1",
+                        plantName = "Pune Plant 1",
                         orgId = "org_demo",
-                    )
+                    ),
                 )
             }
             try {
@@ -852,47 +1187,6 @@ class InventoryRepositoryImpl(
 
 // ── Mappers ──
 
-private fun com.company.stockpro.core.database.entity.ItemEntity.toDomain(): Item = Item(
-    id = id,
-    code = code,
-    name = name,
-    itemClass = ItemClass.fromString(itemClass),
-    categoryName = categoryName,
-    unitOfMeasure = unitOfMeasure,
-    onHand = Quantity(onHandMilli),
-    reserved = Quantity(reservedMilli),
-    inProduction = Quantity(inProductionMilli),
-    reorderLevel = Quantity(reorderLevelMilli),
-    parLevel = Quantity(parLevelMilli),
-    unitCost = Money(unitCostPaise),
-    locationCode = locationCode,
-    barcode = barcode,
-    imagePath = imagePath,
-    isActive = isActive,
-    lastMovementAt = lastMovementAt,
-)
-
-private fun StockLedgerEntity.toDomain(): StockMovement = StockMovement(
-    id = id,
-    itemId = itemId,
-    itemCode = itemCode,
-    itemName = itemName,
-    type = MovementType.fromString(type),
-    delta = Quantity(deltaMilli),
-    balanceAfter = Quantity(balanceAfterMilli),
-    unitCost = Money(unitCostPaise),
-    reference = reference,
-    reasonCode = reasonCode,
-    note = note,
-    fromLocationId = fromLocationId,
-    toLocationId = toLocationId,
-    actorUid = actorUid,
-    actorName = actorName,
-    idempotencyKey = idempotencyKey,
-    clientCreatedAt = clientCreatedAt,
-    createdAt = createdAt,
-    isPending = isPending,
-)
 
 private fun com.company.stockpro.core.database.entity.InventorySummaryEntity.toDomain(): com.company.stockpro.core.domain.model.InventorySummary =
     com.company.stockpro.core.domain.model.InventorySummary(

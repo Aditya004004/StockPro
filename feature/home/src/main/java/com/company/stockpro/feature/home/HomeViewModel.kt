@@ -160,6 +160,33 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    fun addPlant(
+        name: String,
+        code: String,
+        location: String,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {},
+    ) {
+        viewModelScope.launch {
+            try {
+                when (val result = repository.addPlant(name = name, code = code, location = location)) {
+                    is com.company.stockpro.core.domain.util.DataResult.Success -> {
+                        savedStateHandle[KEY_ACTIVE_PLANT] = result.data.name
+                        onSuccess()
+                    }
+                    is com.company.stockpro.core.domain.util.DataResult.Error -> {
+                        val msg = (result.message as? com.company.stockpro.core.domain.util.UiText.Dynamic)?.value
+                            ?: result.message.toString()
+                        onError(msg)
+                    }
+                }
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                onError(e.localizedMessage ?: "Failed to add plant")
+            }
+        }
+    }
+
     fun selectCurrency(currency: Currency) {
         viewModelScope.launch {
             try {

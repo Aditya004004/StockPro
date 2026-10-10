@@ -13,5 +13,5 @@ sealed interface StockProRoute {
     @Serializable data object Reports : StockProRoute
     @Serializable data object Settings : StockProRoute
     @Serializable data class ItemDetail(val itemId: String) : StockProRoute
-    @Serializable data object TeamManagement : StockProRoute
+    @Serializable data object ExportDatabase : StockProRoute
 }

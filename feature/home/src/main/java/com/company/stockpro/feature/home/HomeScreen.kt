@@ -114,6 +114,9 @@ fun HomeRoute(
         onToggleValuation = { viewModel.toggleValuationVisibility() },
         onSelectPlant = { viewModel.selectPlant(it) },
         onAddPlant = { viewModel.addPlant(it) },
+        onAddPlantFull = { name, code, location, onSuccess, onError ->
+            viewModel.addPlant(name, code, location, onSuccess, onError)
+        },
         onSelectCurrency = { viewModel.selectCurrency(it) },
         onNavigateToInventory = onNavigateToInventory,
         onNavigateToReports = onNavigateToReports,
@@ -133,6 +136,7 @@ fun HomeScreen(
     onToggleValuation: () -> Unit,
     onSelectPlant: (String) -> Unit,
     onAddPlant: (String) -> Unit = {},
+    onAddPlantFull: (name: String, code: String, location: String, onSuccess: () -> Unit, onError: (String) -> Unit) -> Unit = { _, _, _, _, _ -> },
     onSelectCurrency: (Currency) -> Unit = {},
     onNavigateToInventory: () -> Unit,
     onNavigateToReports: () -> Unit,
@@ -200,6 +204,7 @@ fun HomeScreen(
                     onToggleValuation = onToggleValuation,
                     onSelectPlant = onSelectPlant,
                     onAddPlant = onAddPlant,
+                    onAddPlantFull = onAddPlantFull,
                     onSelectCurrency = onSelectCurrency,
                     onNavigateToInventory = onNavigateToInventory,
                     onNavigateToReports = onNavigateToReports,
@@ -220,6 +225,7 @@ private fun HomeContent(
     onToggleValuation: () -> Unit,
     onSelectPlant: (String) -> Unit,
     onAddPlant: (String) -> Unit,
+    onAddPlantFull: (name: String, code: String, location: String, onSuccess: () -> Unit, onError: (String) -> Unit) -> Unit = { _, _, _, _, _ -> },
     onSelectCurrency: (Currency) -> Unit,
     onNavigateToInventory: () -> Unit,
     onNavigateToReports: () -> Unit,
@@ -391,10 +397,17 @@ private fun HomeContent(
 
                 if (showAddPlantDialog) {
                     var newPlantName by rememberSaveable { mutableStateOf("") }
+                    var newPlantCode by rememberSaveable { mutableStateOf("") }
+                    var newPlantLocation by rememberSaveable { mutableStateOf("") }
+                    var isSaving by rememberSaveable { mutableStateOf(false) }
                     var errorMessage by rememberSaveable { mutableStateOf<String?>(null) }
 
                     AlertDialog(
-                        onDismissRequest = { showAddPlantDialog = false },
+                        onDismissRequest = {
+                            if (!isSaving) {
+                                showAddPlantDialog = false
+                            }
+                        },
                         title = {
                             Text(
                                 text = "Add New Plant",
@@ -405,7 +418,7 @@ private fun HomeContent(
                         text = {
                             Column {
                                 Text(
-                                    text = "Enter the name of the new plant or facility:",
+                                    text = "Register an enterprise facility or warehouse location:",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = StockProColors.TextSecondary,
                                 )
@@ -416,33 +429,99 @@ private fun HomeContent(
                                         newPlantName = it
                                         if (errorMessage != null) errorMessage = null
                                     },
-                                    label = "Plant Name",
+                                    label = "Plant Name *",
                                     placeholder = "e.g. Chakan Warehouse B",
                                     singleLine = true,
-                                    errorMessage = errorMessage,
                                     modifier = Modifier.fillMaxWidth(),
                                 )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                StockProTextField(
+                                    value = newPlantCode,
+                                    onValueChange = {
+                                        newPlantCode = it.uppercase()
+                                        if (errorMessage != null) errorMessage = null
+                                    },
+                                    label = "Plant Code / Identifier *",
+                                    placeholder = "e.g. CHK-02",
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                StockProTextField(
+                                    value = newPlantLocation,
+                                    onValueChange = {
+                                        newPlantLocation = it
+                                        if (errorMessage != null) errorMessage = null
+                                    },
+                                    label = "Facility Location *",
+                                    placeholder = "e.g. Pune, Maharashtra",
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                                if (errorMessage != null) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = errorMessage.orEmpty(),
+                                        style = MaterialTheme.typography.bodySmall.copy(
+                                            color = StockProColors.Danger,
+                                            fontWeight = FontWeight.Medium,
+                                        ),
+                                    )
+                                }
+                                if (isSaving) {
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    LinearProgressIndicator(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        color = StockProColors.Primary,
+                                    )
+                                }
                             }
                         },
                         confirmButton = {
                             StockProButton(
                                 text = "Add Plant",
                                 onClick = {
-                                    val trimmed = newPlantName.trim()
-                                    if (trimmed.isBlank()) {
+                                    val trimmedName = newPlantName.trim()
+                                    val trimmedCode = newPlantCode.trim()
+                                    val trimmedLoc = newPlantLocation.trim()
+                                    if (trimmedName.isBlank()) {
                                         errorMessage = "Plant name cannot be empty"
+                                    } else if (trimmedCode.isBlank()) {
+                                        errorMessage = "Plant code cannot be empty"
+                                    } else if (trimmedLoc.isBlank()) {
+                                        errorMessage = "Plant location cannot be empty"
                                     } else {
-                                        onAddPlant(trimmed)
-                                        showAddPlantDialog = false
+                                        isSaving = true
+                                        errorMessage = null
+                                        onAddPlantFull(
+                                            trimmedName,
+                                            trimmedCode,
+                                            trimmedLoc,
+                                            {
+                                                isSaving = false
+                                                showAddPlantDialog = false
+                                            },
+                                            { err ->
+                                                isSaving = false
+                                                errorMessage = err
+                                            }
+                                        )
                                     }
                                 },
+                                enabled = !isSaving,
+                                isLoading = isSaving,
                                 variant = ButtonVariant.PRIMARY,
                             )
                         },
                         dismissButton = {
                             StockProButton(
                                 text = "Cancel",
-                                onClick = { showAddPlantDialog = false },
+                                onClick = {
+                                    if (!isSaving) {
+                                        showAddPlantDialog = false
+                                    }
+                                },
+                                enabled = !isSaving,
                                 variant = ButtonVariant.GHOST,
                             )
                         },

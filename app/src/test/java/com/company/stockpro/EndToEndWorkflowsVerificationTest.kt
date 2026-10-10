@@ -129,6 +129,50 @@ class EndToEndWorkflowsVerificationTest {
         assertEquals("Bhosari Warehouse C", settingsState.userSettings.profile.plantName)
     }
 
+    @Test
+    fun `Workflow 1b - Plant removal in settings enforces safety guards and auto-fallbacks active plant`() = runTest {
+        backgroundScope.launch { homeViewModel.uiState.collect() }
+        backgroundScope.launch { settingsViewModel.uiState.collect() }
+        advanceUntilIdle()
+
+        // 1. Initially 2 plants: Pune Plant 1 (active) and Chakan Assembly
+        val settingsState = settingsViewModel.uiState.value as SettingsUiState.Content
+        assertEquals("Pune Plant 1", settingsState.userSettings.profile.plantName)
+
+        // 2. Request removal confirmation for active plant
+        val punePlant = com.company.stockpro.core.domain.model.Plant("plant_01", "PUN-01", "Pune Plant 1", "Pune, Maharashtra")
+        settingsViewModel.requestRemovePlantConfirm(punePlant)
+        advanceUntilIdle()
+
+        val confirmState = settingsViewModel.uiState.value as SettingsUiState.Content
+        assertTrue(confirmState.activeDialog is SettingsDialog.RemovePlantConfirm)
+        val confirmDialog = confirmState.activeDialog as SettingsDialog.RemovePlantConfirm
+        assertEquals("plant_01", confirmDialog.plant.id)
+
+        // 3. Confirm deletion of Pune Plant 1
+        var successMessage = false
+        settingsViewModel.removePlant("plant_01", onSuccess = { successMessage = true })
+        advanceUntilIdle()
+
+        assertTrue(successMessage)
+        val postDeleteSettings = settingsViewModel.uiState.value as SettingsUiState.Content
+        // Active plant automatically falls back to Chakan Assembly
+        assertEquals("Chakan Assembly", postDeleteSettings.userSettings.profile.plantName)
+        assertEquals(1, postDeleteSettings.configuredPlants.size)
+
+        // Verify HomeViewModel also reactively switches to Chakan Assembly
+        val postDeleteHome = homeViewModel.uiState.value as HomeUiState.Content
+        assertEquals("Chakan Assembly", postDeleteHome.activePlant)
+
+        // 4. Try to delete the only remaining plant -> fails enterprise minimum 1 plant rule
+        var failedMessage: String? = null
+        settingsViewModel.removePlant("plant_02", onError = { failedMessage = it })
+        advanceUntilIdle()
+
+        assertNotNull(failedMessage)
+        assertTrue(failedMessage!!.contains("Cannot delete the only remaining plant"))
+    }
+
     // =========================================================================
     // WORKFLOW 2: Inventory Catalog, Search, Filtering & Sorting
     // =========================================================================
@@ -579,9 +623,45 @@ private class DynamicWorkflowTestRepository : InventoryRepository {
         return DataResult.Success(Unit)
     }
 
+    private val plantsFlow = MutableStateFlow(
+        listOf(
+            com.company.stockpro.core.domain.model.Plant("plant_01", "PUN-01", "Pune Plant 1", "Pune, Maharashtra"),
+            com.company.stockpro.core.domain.model.Plant("plant_02", "CHK-01", "Chakan Assembly", "Chakan, Pune"),
+        )
+    )
+
+    override fun observePlants(): Flow<List<com.company.stockpro.core.domain.model.Plant>> = plantsFlow.asStateFlow()
+
+    override suspend fun getPlantItemCount(plantId: String): Int =
+        itemsMap.values.count { it.locationCode == plantId || plantId.contains("01") }
+
+    override suspend fun deletePlant(plantId: String): DataResult<Unit> {
+        val currentPlants = plantsFlow.value
+        if (currentPlants.size <= 1) {
+            return DataResult.Error(com.company.stockpro.core.domain.util.UiText.Dynamic("Cannot delete the only remaining plant. StockPro requires at least one active plant."))
+        }
+        val target = currentPlants.find { it.id == plantId || it.name == plantId }
+            ?: return DataResult.Error(com.company.stockpro.core.domain.util.UiText.Dynamic("Plant not found."))
+        val remaining = currentPlants.filter { it.id != target.id }
+        plantsFlow.value = remaining
+        userSettingsFlow.update { current ->
+            val wasCurrent = current.profile.plantId == target.id || current.profile.plantName == target.name
+            val fallback = if (wasCurrent) remaining.first() else null
+            current.copy(
+                profile = if (fallback != null) current.profile.copy(plantId = fallback.id, plantName = fallback.name) else current.profile,
+                availablePlants = remaining.map { it.name },
+            )
+        }
+        return DataResult.Success(Unit)
+    }
+
     override suspend fun addPlant(plantName: String): DataResult<Unit> {
         userSettingsFlow.update {
             val list = if (it.availablePlants.contains(plantName)) it.availablePlants else it.availablePlants + plantName
+            plantsFlow.update { current ->
+                if (current.any { p -> p.name == plantName }) current
+                else current + com.company.stockpro.core.domain.model.Plant("plant_" + plantName.lowercase().replace(" ", "_"), plantName.take(3).uppercase() + "-01", plantName, plantName)
+            }
             it.copy(
                 profile = it.profile.copy(plantName = plantName, plantId = "plant_" + plantName.lowercase().replace(" ", "_")),
                 availablePlants = list,

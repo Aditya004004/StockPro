@@ -64,6 +64,51 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideStreamingDataFetcher(
+        database: StockProDatabase,
+    ): com.company.stockpro.core.domain.repository.StreamingDataFetcher =
+        com.company.stockpro.core.data.repository.StreamingDataFetcherImpl(database)
+
+    @Provides
+    @Singleton
+    fun provideExportHistoryRepository(
+        database: StockProDatabase,
+    ): com.company.stockpro.core.domain.repository.ExportHistoryRepository =
+        com.company.stockpro.core.data.repository.ExportHistoryRepositoryImpl(database)
+
+    @Provides
+    @Singleton
+    fun provideExportFileManager(
+        @ApplicationContext context: Context,
+    ): com.company.stockpro.core.data.export.ExportFileManager =
+        com.company.stockpro.core.data.export.ExportFileManager(context)
+
+    @Provides
+    @Singleton
+    fun provideExportScheduler(
+        @ApplicationContext context: Context,
+    ): com.company.stockpro.core.data.export.ExportScheduler =
+        com.company.stockpro.core.data.export.ExportScheduler(context)
+
+    @Provides
+    @Singleton
+    fun provideExportManager(
+        @ApplicationContext context: Context,
+        fetcher: com.company.stockpro.core.domain.repository.StreamingDataFetcher,
+        fileManager: com.company.stockpro.core.data.export.ExportFileManager,
+        historyRepository: com.company.stockpro.core.domain.repository.ExportHistoryRepository,
+        scheduler: com.company.stockpro.core.data.export.ExportScheduler,
+    ): com.company.stockpro.core.domain.repository.ExportManager =
+        com.company.stockpro.core.data.export.ExportManagerImpl(
+            context = context,
+            fetcher = fetcher,
+            fileManager = fileManager,
+            historyRepository = historyRepository,
+            scheduler = scheduler,
+        )
+
+    @Provides
+    @Singleton
     fun provideFirebaseAuth(
         @ApplicationContext context: Context,
     ): FirebaseAuth {

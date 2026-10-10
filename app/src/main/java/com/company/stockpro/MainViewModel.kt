@@ -12,21 +12,65 @@ import com.company.stockpro.core.domain.model.UserProfile
 import com.company.stockpro.core.domain.model.UserSettings
 import com.company.stockpro.core.domain.repository.InventoryRepository
 import com.company.stockpro.core.domain.usecase.PostMovementUseCase
+import com.company.stockpro.core.domain.model.ThresholdAudit
 import com.company.stockpro.core.domain.util.DataResult
 import com.company.stockpro.core.domain.util.UiText
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+sealed interface AppAuthState {
+    data object Loading : AppAuthState
+    data class Authenticated(val userId: String, val email: String) : AppAuthState
+    data object Unauthenticated : AppAuthState
+}
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val repository: InventoryRepository,
     private val postMovementUseCase: PostMovementUseCase,
+    private val auth: FirebaseAuth,
 ) : ViewModel() {
+
+    private val _authState = MutableStateFlow<AppAuthState>(AppAuthState.Loading)
+    val authState: StateFlow<AppAuthState> = _authState.asStateFlow()
+
+    init {
+        checkAuthSession()
+        try {
+            auth.addAuthStateListener { firebaseAuth ->
+                val user = firebaseAuth.currentUser
+                if (user != null) {
+                    _authState.value = AppAuthState.Authenticated(user.uid, user.email ?: "")
+                } else {
+                    _authState.value = AppAuthState.Unauthenticated
+                }
+            }
+        } catch (_: Exception) {}
+    }
+
+    fun checkAuthSession() {
+        val user = try { auth.currentUser } catch (_: Exception) { null }
+        if (user != null) {
+            _authState.value = AppAuthState.Authenticated(user.uid, user.email ?: "")
+        } else {
+            _authState.value = AppAuthState.Unauthenticated
+        }
+    }
+
+    fun onAuthenticated() {
+        val user = try { auth.currentUser } catch (_: Exception) { null }
+        if (user != null) {
+            _authState.value = AppAuthState.Authenticated(user.uid, user.email ?: "")
+        }
+    }
 
     val userSettings: StateFlow<UserSettings> = repository
         .observeUserSettings()
@@ -220,13 +264,41 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    fun updateItemThreshold(
+        itemId: String,
+        newThresholdMilli: Long,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {},
+    ) {
+        viewModelScope.launch {
+            try {
+                val operator = userSettings.value.profile.displayName
+                when (val result = repository.updateItemThreshold(itemId, newThresholdMilli, operator)) {
+                    is DataResult.Success -> onSuccess()
+                    is DataResult.Error -> {
+                        val msg = (result.message as? UiText.Dynamic)?.value ?: result.message.toString()
+                        onError(msg)
+                    }
+                }
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                onError(e.localizedMessage ?: "Failed to update threshold")
+            }
+        }
+    }
+
+    fun observeThresholdAudits(itemId: String): Flow<List<ThresholdAudit>> =
+        repository.observeThresholdAudits(itemId)
+
     fun logout(onComplete: () -> Unit) {
         viewModelScope.launch {
             try {
                 repository.logout()
+                auth.signOut()
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
             }
+            _authState.value = AppAuthState.Unauthenticated
             onComplete()
         }
     }

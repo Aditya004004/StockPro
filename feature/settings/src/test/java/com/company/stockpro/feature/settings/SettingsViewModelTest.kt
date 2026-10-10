@@ -242,6 +242,38 @@ class SettingsViewModelTest {
         advanceUntilIdle()
         assertNull((viewModel.uiState.value as SettingsUiState.Content).statusBannerMessage)
     }
+
+    @Test
+    fun `requestRemovePlantConfirm queries plant item count and presents confirmation dialog`() = runTest {
+        backgroundScope.launch { viewModel.uiState.collect() }
+        advanceUntilIdle()
+
+        val plant = com.company.stockpro.core.domain.model.Plant("plant_02", "PRD-01", "Plant 02 Production", "Bhosari")
+        viewModel.requestRemovePlantConfirm(plant)
+        advanceUntilIdle()
+
+        val content = viewModel.uiState.value as SettingsUiState.Content
+        assertTrue(content.activeDialog is SettingsDialog.RemovePlantConfirm)
+        val dialog = content.activeDialog as SettingsDialog.RemovePlantConfirm
+        assertEquals(plant.id, dialog.plant.id)
+        assertEquals(5, dialog.itemCount)
+    }
+
+    @Test
+    fun `removePlant executes deletion and emits status banner`() = runTest {
+        backgroundScope.launch { viewModel.uiState.collect() }
+        advanceUntilIdle()
+
+        var successCalled = false
+        viewModel.removePlant("plant_02", onSuccess = { successCalled = true })
+        advanceUntilIdle()
+
+        assertTrue(successCalled)
+        val content = viewModel.uiState.value as SettingsUiState.Content
+        assertNull(content.activeDialog)
+        assertNotNull(content.statusBannerMessage)
+        assertEquals(1, content.configuredPlants.size)
+    }
 }
 
 private class FakeSettingsRepository : InventoryRepository {
@@ -343,6 +375,20 @@ private class FakeSettingsRepository : InventoryRepository {
         DataResult.Success(com.company.stockpro.core.domain.model.TeamMember("m1", displayName, email, role, plantId))
     override suspend fun updateMemberRole(memberId: String, newRole: Role) = DataResult.Success(Unit)
     override suspend fun deactivateMember(memberId: String) = DataResult.Success(Unit)
+    private val plantsFlow = MutableStateFlow(
+        listOf(
+            com.company.stockpro.core.domain.model.Plant("plant_01", "PUN-01", "Pune Plant 1", "Pune"),
+            com.company.stockpro.core.domain.model.Plant("plant_02", "PRD-01", "Plant 02 Production", "Bhosari"),
+        )
+    )
+
+    override fun observePlants(): Flow<List<com.company.stockpro.core.domain.model.Plant>> = plantsFlow.asStateFlow()
+    override suspend fun getPlantItemCount(plantId: String): Int = 5
+    override suspend fun deletePlant(plantId: String): DataResult<Unit> {
+        plantsFlow.update { it.filter { p -> p.id != plantId } }
+        return DataResult.Success(Unit)
+    }
+
     override fun observeToolCustody(itemId: String) = emptyFlow<com.company.stockpro.core.domain.model.ToolCustody?>()
     override suspend fun issueTool(itemId: String, operatorName: String, notes: String?) = DataResult.Success(Unit)
     override suspend fun returnTool(itemId: String, notes: String?) = DataResult.Success(Unit)

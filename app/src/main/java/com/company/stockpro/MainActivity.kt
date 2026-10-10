@@ -10,10 +10,23 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -21,8 +34,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -34,6 +52,9 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.company.stockpro.core.designsystem.component.StockProBottomNav
 import com.company.stockpro.core.designsystem.component.StockProTopLevelDestination
+import com.company.stockpro.core.designsystem.theme.Radius
+import com.company.stockpro.core.designsystem.theme.Spacing
+import com.company.stockpro.core.designsystem.theme.StockProColors
 import com.company.stockpro.core.designsystem.theme.StockProTheme
 import com.company.stockpro.core.domain.model.Item
 import com.company.stockpro.core.domain.model.MovementType
@@ -52,7 +73,6 @@ import com.company.stockpro.feature.reports.ReportsRoute
 import com.company.stockpro.feature.reports.ReportsViewModel
 import com.company.stockpro.feature.settings.SettingsRoute
 import com.company.stockpro.feature.settings.SettingsViewModel
-import com.company.stockpro.feature.settings.team.TeamManagementScreen
 import com.company.stockpro.navigation.StockProRoute
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -108,16 +128,30 @@ fun StockProApp(
             StockProRoute.Inventory::class.qualifiedName -> StockProTopLevelDestination.INVENTORY
             StockProRoute.Reports::class.qualifiedName -> StockProTopLevelDestination.REPORTS
             StockProRoute.Settings::class.qualifiedName,
-            StockProRoute.TeamManagement::class.qualifiedName -> StockProTopLevelDestination.SETTINGS
+            StockProRoute.ExportDatabase::class.qualifiedName -> StockProTopLevelDestination.SETTINGS
             else -> null
         }
     }
 
+    val authState by mainViewModel.authState.collectAsStateWithLifecycle()
     val userSettings by mainViewModel.userSettings.collectAsStateWithLifecycle()
     val isDarkTheme = when (userSettings.themeMode) {
         com.company.stockpro.core.domain.model.ThemeMode.LIGHT -> false
         com.company.stockpro.core.domain.model.ThemeMode.DARK -> true
         com.company.stockpro.core.domain.model.ThemeMode.SYSTEM -> androidx.compose.foundation.isSystemInDarkTheme()
+    }
+
+    if (authState is AppAuthState.Loading) {
+        StockProTheme(darkTheme = isDarkTheme) {
+            StockProSplashScreen()
+        }
+        return
+    }
+
+    val startDestination = if (authState is AppAuthState.Authenticated) {
+        StockProRoute.Home
+    } else {
+        StockProRoute.Auth
     }
 
     StockProTheme(darkTheme = isDarkTheme) {
@@ -149,11 +183,10 @@ fun StockProApp(
             val modifier = Modifier
                 .padding(innerPadding)
                 .consumeWindowInsets(innerPadding)
-            val userSettings by mainViewModel.userSettings.collectAsStateWithLifecycle()
 
             NavHost(
                 navController = navController,
-                startDestination = StockProRoute.Auth,
+                startDestination = startDestination,
             ) {
                 // ── Auth ──
                 composable<StockProRoute.Auth> {
@@ -161,6 +194,7 @@ fun StockProApp(
                     AuthRoute(
                         viewModel = authViewModel,
                         onAuthenticated = {
+                            mainViewModel.onAuthenticated()
                             navController.navigate(StockProRoute.Home) {
                                 popUpTo(StockProRoute.Auth) { inclusive = true }
                             }
@@ -255,8 +289,9 @@ fun StockProApp(
                     val settingsViewModel = hiltViewModel<SettingsViewModel>()
                     SettingsRoute(
                         viewModel = settingsViewModel,
-                        onNavigateToTeam = {
-                            navController.navigate(StockProRoute.TeamManagement)
+                        onNavigateToTeam = {},
+                        onNavigateToExportDatabase = {
+                            navController.navigate(StockProRoute.ExportDatabase)
                         },
                         onLogoutClick = {
                             mainViewModel.logout {
@@ -269,9 +304,9 @@ fun StockProApp(
                     )
                 }
 
-                // ── Team Management ──
-                composable<StockProRoute.TeamManagement> {
-                    TeamManagementScreen(
+                // ── Export Database Hub ──
+                composable<StockProRoute.ExportDatabase> {
+                    com.company.stockpro.feature.settings.ExportDatabaseRoute(
                         onBackClick = { navController.popBackStack() },
                         modifier = modifier,
                     )
@@ -313,6 +348,9 @@ fun StockProApp(
                             },
                             onLogCalibration = { cal, next, notes ->
                                 mainViewModel.logCalibration(currentItem.id, cal, next, notes)
+                            },
+                            onUpdateThreshold = { newThreshold ->
+                                mainViewModel.updateItemThreshold(currentItem.id, newThreshold)
                             },
                             modifier = modifier,
                         )
@@ -415,3 +453,61 @@ fun StockProApp(
         }
     }
 }
+
+/**
+ * Enterprise startup splash screen displayed while authentication session and
+ * persistent active plant context are being restored. Prevents UI flashing.
+ */
+@Composable
+fun StockProSplashScreen() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(StockProColors.Canvas),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(72.dp)
+                    .clip(Radius.md)
+                    .background(StockProColors.Primary),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Home,
+                    contentDescription = null,
+                    tint = StockProColors.Surface,
+                    modifier = Modifier.size(40.dp),
+                )
+            }
+            Spacer(modifier = Modifier.height(Spacing.x3))
+            Text(
+                text = "StockPro",
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = StockProColors.TextPrimary,
+                    letterSpacing = (-0.5).sp,
+                ),
+            )
+            Spacer(modifier = Modifier.height(Spacing.x1))
+            Text(
+                text = "Enterprise Inventory Intelligence",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = StockProColors.TextSecondary,
+                    fontWeight = FontWeight.Medium,
+                ),
+            )
+            Spacer(modifier = Modifier.height(Spacing.x4))
+            CircularProgressIndicator(
+                modifier = Modifier.size(24.dp),
+                color = StockProColors.Primary,
+                strokeWidth = 2.5.dp,
+            )
+        }
+    }
+}
+
