@@ -100,6 +100,11 @@ object StockProColors {
     val Reserved = Color(0xFF0F766E)
     val Production = Color(0xFF9333EA)
 
+    val isDark: Boolean
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalStockProPalette.current.isDark
+
     // Dynamic, theme-aware palette tokens (automatically adapt to light / dark mode)
     val Canvas: Color
         @Composable

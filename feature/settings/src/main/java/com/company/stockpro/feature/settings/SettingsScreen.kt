@@ -1534,6 +1534,7 @@ private fun ProfileInfoDialog(
     onDismiss: () -> Unit,
 ) {
     val strings = StockProStrings.current
+    val isDark = StockProColors.isDark
     val dateFormat = remember { SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()) }
     val formattedLastLogin = remember(profile.lastLoginMillis) {
         if (profile.lastLoginMillis > 0L) dateFormat.format(Date(profile.lastLoginMillis)) else "01 Apr 2024, 01:30 PM"
@@ -1546,9 +1547,9 @@ private fun ProfileInfoDialog(
     ) {
         Surface(
             shape = RoundedCornerShape(24.dp),
-            color = Color.White,
+            color = StockProColors.Surface,
             shadowElevation = 10.dp,
-            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+            border = BorderStroke(1.dp, StockProColors.Outline),
             modifier = Modifier.fillMaxWidth(),
         ) {
             Column(
@@ -1572,14 +1573,14 @@ private fun ProfileInfoDialog(
                             modifier = Modifier
                                 .size(64.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFFE8F1FC)),
+                                .background(if (isDark) Color(0xFF1E3A8A).copy(alpha = 0.5f) else Color(0xFFE8F1FC)),
                             contentAlignment = Alignment.Center,
                         ) {
                             Box(
                                 modifier = Modifier
                                     .size(52.dp)
                                     .clip(CircleShape)
-                                    .background(Color(0xFF2563EB)),
+                                    .background(StockProColors.Primary),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Text(
@@ -1601,7 +1602,7 @@ private fun ProfileInfoDialog(
                                 style = TextStyle(
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF0F172A),
+                                    color = StockProColors.TextPrimary,
                                 ),
                             )
                             Spacer(modifier = Modifier.height(2.dp))
@@ -1610,7 +1611,7 @@ private fun ProfileInfoDialog(
                                 style = TextStyle(
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = Color(0xFF2563EB),
+                                    color = if (isDark) Color(0xFF93C5FD) else Color(0xFF2563EB),
                                 ),
                             )
                             Spacer(modifier = Modifier.height(6.dp))
@@ -1618,7 +1619,7 @@ private fun ProfileInfoDialog(
                             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Surface(
                                     shape = RoundedCornerShape(12.dp),
-                                    color = Color(0xFFE8F1FC),
+                                    color = if (isDark) Color(0xFF1E3A8A).copy(alpha = 0.5f) else Color(0xFFE8F1FC),
                                 ) {
                                     Row(
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
@@ -1627,7 +1628,7 @@ private fun ProfileInfoDialog(
                                         Icon(
                                             imageVector = Icons.Default.CheckCircle,
                                             contentDescription = null,
-                                            tint = Color(0xFF2563EB),
+                                            tint = if (isDark) Color(0xFF93C5FD) else Color(0xFF2563EB),
                                             modifier = Modifier.size(12.dp),
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
@@ -1636,7 +1637,7 @@ private fun ProfileInfoDialog(
                                             style = TextStyle(
                                                 fontSize = 11.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = Color(0xFF2563EB),
+                                                color = if (isDark) Color(0xFF93C5FD) else Color(0xFF2563EB),
                                             ),
                                         )
                                     }
@@ -1644,7 +1645,7 @@ private fun ProfileInfoDialog(
 
                                 Surface(
                                     shape = RoundedCornerShape(12.dp),
-                                    color = Color(0xFFE8F8F0),
+                                    color = if (isDark) Color(0xFF064E3B).copy(alpha = 0.5f) else Color(0xFFE8F8F0),
                                 ) {
                                     Row(
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
@@ -1653,7 +1654,7 @@ private fun ProfileInfoDialog(
                                         Icon(
                                             imageVector = Icons.Default.Shield,
                                             contentDescription = null,
-                                            tint = Color(0xFF10B981),
+                                            tint = if (isDark) Color(0xFF6EE7B7) else Color(0xFF10B981),
                                             modifier = Modifier.size(12.dp),
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
@@ -1662,7 +1663,7 @@ private fun ProfileInfoDialog(
                                             style = TextStyle(
                                                 fontSize = 11.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = Color(0xFF10B981),
+                                                color = if (isDark) Color(0xFF6EE7B7) else Color(0xFF10B981),
                                             ),
                                         )
                                     }
@@ -1674,7 +1675,7 @@ private fun ProfileInfoDialog(
                     // Circular Close Button
                     Surface(
                         shape = CircleShape,
-                        color = Color(0xFFF1F5F9),
+                        color = if (isDark) StockProColors.SurfaceAlt else Color(0xFFF1F5F9),
                         modifier = Modifier
                             .size(32.dp)
                             .clickable { onDismiss() },
@@ -1686,7 +1687,7 @@ private fun ProfileInfoDialog(
                             Icon(
                                 imageVector = Icons.Default.Close,
                                 contentDescription = "Close",
-                                tint = Color(0xFF64748B),
+                                tint = StockProColors.TextSecondary,
                                 modifier = Modifier.size(16.dp),
                             )
                         }
@@ -1699,13 +1700,13 @@ private fun ProfileInfoDialog(
                 ProfileDetailSection(
                     title = "USER DETAILS",
                     icon = Icons.Default.Person,
-                    badgeBackground = Color(0xFFE8F1FC),
-                    iconTint = Color(0xFF2563EB),
+                    badgeBackground = if (isDark) Color(0xFF1E3A8A).copy(alpha = 0.5f) else Color(0xFFE8F1FC),
+                    iconTint = if (isDark) Color(0xFF93C5FD) else Color(0xFF2563EB),
                     headerAction = {
                         Surface(
                             shape = RoundedCornerShape(14.dp),
-                            color = Color(0xFFE8F1FC),
-                            border = BorderStroke(1.dp, Color(0xFFBFDBFE)),
+                            color = if (isDark) Color(0xFF1E3A8A).copy(alpha = 0.5f) else Color(0xFFE8F1FC),
+                            border = BorderStroke(1.dp, if (isDark) Color(0xFF3B82F6).copy(alpha = 0.5f) else Color(0xFFBFDBFE)),
                             modifier = Modifier.clickable {
                                 onDismiss()
                                 onEditClick()
@@ -1718,7 +1719,7 @@ private fun ProfileInfoDialog(
                                 Icon(
                                     imageVector = Icons.Default.Edit,
                                     contentDescription = null,
-                                    tint = Color(0xFF2563EB),
+                                    tint = if (isDark) Color(0xFF93C5FD) else Color(0xFF2563EB),
                                     modifier = Modifier.size(12.dp),
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
@@ -1727,7 +1728,7 @@ private fun ProfileInfoDialog(
                                     style = TextStyle(
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF2563EB),
+                                        color = if (isDark) Color(0xFF93C5FD) else Color(0xFF2563EB),
                                     ),
                                 )
                             }
@@ -1747,8 +1748,8 @@ private fun ProfileInfoDialog(
                 ProfileDetailSection(
                     title = "COMPANY DETAILS",
                     icon = Icons.Default.Apartment,
-                    badgeBackground = Color(0xFFE8F8F0),
-                    iconTint = Color(0xFF10B981),
+                    badgeBackground = if (isDark) Color(0xFF064E3B).copy(alpha = 0.5f) else Color(0xFFE8F8F0),
+                    iconTint = if (isDark) Color(0xFF6EE7B7) else Color(0xFF10B981),
                 ) {
                     ProfileDetailRow(icon = Icons.Default.Apartment, label = "Company Name", value = profile.company)
                     ProfileDetailRow(icon = Icons.Default.Description, label = "Organization ID", value = profile.orgId.ifBlank { "org_demo" }, isCode = true)
@@ -1760,8 +1761,8 @@ private fun ProfileInfoDialog(
                 ProfileDetailSection(
                     title = "ACTIVE PLANT & FACILITY",
                     icon = Icons.Default.LocationOn,
-                    badgeBackground = Color(0xFFF3E8FF),
-                    iconTint = Color(0xFF9333EA),
+                    badgeBackground = if (isDark) Color(0xFF581C87).copy(alpha = 0.5f) else Color(0xFFF3E8FF),
+                    iconTint = if (isDark) Color(0xFFD8B4FE) else Color(0xFF9333EA),
                 ) {
                     ProfileDetailRow(icon = Icons.Default.Apartment, label = "Plant Name", value = profile.plantName.ifBlank { "Pune Plant 1" })
                     ProfileDetailRow(icon = Icons.Default.QrCode, label = "Plant Code", value = profile.plantId.ifBlank { "plant_01" }, isCode = true)
@@ -1774,8 +1775,8 @@ private fun ProfileInfoDialog(
                 ProfileDetailSection(
                     title = "SESSION & SECURITY",
                     icon = Icons.Default.Shield,
-                    badgeBackground = Color(0xFFFEF3C7),
-                    iconTint = Color(0xFFD97706),
+                    badgeBackground = if (isDark) Color(0xFF78350F).copy(alpha = 0.5f) else Color(0xFFFEF3C7),
+                    iconTint = if (isDark) Color(0xFFFDE68A) else Color(0xFFD97706),
                 ) {
                     ProfileDetailRow(icon = Icons.Default.AccessTime, label = "Last Login", value = formattedLastLogin)
                     ProfileDetailRow(
@@ -1788,7 +1789,7 @@ private fun ProfileInfoDialog(
                                     modifier = Modifier
                                         .size(8.dp)
                                         .clip(CircleShape)
-                                        .background(Color(0xFF10B981)),
+                                        .background(if (isDark) Color(0xFF34D399) else Color(0xFF10B981)),
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
@@ -1796,7 +1797,7 @@ private fun ProfileInfoDialog(
                                     style = TextStyle(
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF0F172A),
+                                        color = StockProColors.TextPrimary,
                                     ),
                                 )
                             }
@@ -1814,9 +1815,9 @@ private fun ProfileInfoDialog(
                     OutlinedButton(
                         onClick = onDismiss,
                         shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.5.dp, Color(0xFF2563EB)),
+                        border = BorderStroke(1.5.dp, StockProColors.Primary),
                         colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color(0xFF2563EB),
+                            contentColor = StockProColors.Primary,
                         ),
                         modifier = Modifier
                             .weight(1f)
@@ -1827,7 +1828,7 @@ private fun ProfileInfoDialog(
                             style = TextStyle(
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF2563EB),
+                                color = StockProColors.Primary,
                             ),
                         )
                     }
@@ -1839,7 +1840,7 @@ private fun ProfileInfoDialog(
                         },
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF1D4ED8),
+                            containerColor = StockProColors.Primary,
                             contentColor = Color.White,
                         ),
                         modifier = Modifier
@@ -1882,10 +1883,11 @@ private fun ProfileDetailSection(
     headerAction: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val isDark = StockProColors.isDark
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = Color(0xFFF8FAFC),
-        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        color = if (isDark) StockProColors.SurfaceAlt else Color(0xFFF8FAFC),
+        border = BorderStroke(1.dp, StockProColors.Outline),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
@@ -1915,7 +1917,7 @@ private fun ProfileDetailSection(
                         style = TextStyle(
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1E293B),
+                            color = StockProColors.TextPrimary,
                             letterSpacing = 0.5.sp,
                         ),
                     )
@@ -1951,7 +1953,7 @@ private fun ProfileDetailRow(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = Color(0xFF64748B),
+                tint = StockProColors.TextSecondary,
                 modifier = Modifier.size(16.dp),
             )
             Spacer(modifier = Modifier.width(10.dp))
@@ -1959,7 +1961,7 @@ private fun ProfileDetailRow(
                 text = label,
                 style = TextStyle(
                     fontSize = 12.sp,
-                    color = Color(0xFF64748B),
+                    color = StockProColors.TextSecondary,
                 ),
             )
         }
@@ -1972,7 +1974,7 @@ private fun ProfileDetailRow(
                 style = TextStyle(
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A),
+                    color = StockProColors.TextPrimary,
                     fontFamily = if (isCode) FontFamily.Monospace else null,
                 ),
                 maxLines = 1,
@@ -1990,6 +1992,7 @@ private fun EditProfileDialog(
     onDismiss: () -> Unit,
 ) {
     val strings = StockProStrings.current
+    val isDark = StockProColors.isDark
 
     var name by remember { mutableStateOf(profile.displayName) }
     var email by remember { mutableStateOf(profile.email) }
@@ -2012,9 +2015,9 @@ private fun EditProfileDialog(
     ) {
         Surface(
             shape = RoundedCornerShape(24.dp),
-            color = Color.White,
+            color = StockProColors.Surface,
             shadowElevation = 10.dp,
-            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+            border = BorderStroke(1.dp, StockProColors.Outline),
             modifier = Modifier.fillMaxWidth(),
         ) {
             Column(
@@ -2037,13 +2040,13 @@ private fun EditProfileDialog(
                             modifier = Modifier
                                 .size(46.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFFE8F1FC)),
+                                .background(if (isDark) Color(0xFF1E3A8A).copy(alpha = 0.5f) else Color(0xFFE8F1FC)),
                             contentAlignment = Alignment.Center,
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Person,
                                 contentDescription = null,
-                                tint = Color(0xFF2563EB),
+                                tint = if (isDark) Color(0xFF93C5FD) else Color(0xFF2563EB),
                                 modifier = Modifier.size(24.dp),
                             )
                         }
@@ -2054,7 +2057,7 @@ private fun EditProfileDialog(
                                 style = TextStyle(
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF0F172A),
+                                    color = StockProColors.TextPrimary,
                                 ),
                             )
                             Spacer(modifier = Modifier.height(2.dp))
@@ -2062,7 +2065,7 @@ private fun EditProfileDialog(
                                 text = strings.editProfileSubtitle,
                                 style = TextStyle(
                                     fontSize = 12.sp,
-                                    color = Color(0xFF64748B),
+                                    color = StockProColors.TextSecondary,
                                 ),
                             )
                         }
@@ -2070,7 +2073,7 @@ private fun EditProfileDialog(
 
                     Surface(
                         shape = CircleShape,
-                        color = Color(0xFFF1F5F9),
+                        color = if (isDark) StockProColors.SurfaceAlt else Color(0xFFF1F5F9),
                         modifier = Modifier
                             .size(32.dp)
                             .clickable { onDismiss() },
@@ -2082,7 +2085,7 @@ private fun EditProfileDialog(
                             Icon(
                                 imageVector = Icons.Default.Close,
                                 contentDescription = "Close",
-                                tint = Color(0xFF64748B),
+                                tint = StockProColors.TextSecondary,
                                 modifier = Modifier.size(16.dp),
                             )
                         }
@@ -2151,8 +2154,8 @@ private fun EditProfileDialog(
                 Box(modifier = Modifier.fillMaxWidth()) {
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = Color.White,
-                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        color = if (isDark) StockProColors.SurfaceAlt else Color.White,
+                        border = BorderStroke(1.dp, StockProColors.Outline),
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp)
@@ -2173,13 +2176,13 @@ private fun EditProfileDialog(
                                     modifier = Modifier
                                         .size(34.dp)
                                         .clip(RoundedCornerShape(8.dp))
-                                        .background(Color(0xFFF1F5F9)),
+                                        .background(if (isDark) StockProColors.Surface else Color(0xFFF1F5F9)),
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Apartment,
                                         contentDescription = null,
-                                        tint = Color(0xFF64748B),
+                                        tint = StockProColors.TextSecondary,
                                         modifier = Modifier.size(18.dp),
                                     )
                                 }
@@ -2189,7 +2192,7 @@ private fun EditProfileDialog(
                                     style = TextStyle(
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.Medium,
-                                        color = if (selectedPlant.isNotBlank()) Color(0xFF1E293B) else Color(0xFF94A3B8),
+                                        color = if (selectedPlant.isNotBlank()) StockProColors.TextPrimary else StockProColors.TextTertiary,
                                     ),
                                     maxLines = 1,
                                 )
@@ -2197,7 +2200,7 @@ private fun EditProfileDialog(
                             Icon(
                                 imageVector = Icons.Default.ArrowDropDown,
                                 contentDescription = null,
-                                tint = Color(0xFF64748B),
+                                tint = StockProColors.TextSecondary,
                             )
                         }
                     }
@@ -2229,9 +2232,9 @@ private fun EditProfileDialog(
                     OutlinedButton(
                         onClick = onDismiss,
                         shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.5.dp, Color(0xFF2563EB)),
+                        border = BorderStroke(1.5.dp, StockProColors.Primary),
                         colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color(0xFF2563EB),
+                            contentColor = StockProColors.Primary,
                         ),
                         modifier = Modifier
                             .weight(1f)
@@ -2242,7 +2245,7 @@ private fun EditProfileDialog(
                             style = TextStyle(
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF2563EB),
+                                color = StockProColors.Primary,
                             ),
                         )
                     }
@@ -2254,10 +2257,10 @@ private fun EditProfileDialog(
                         enabled = isFormValid,
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF1D4ED8),
+                            containerColor = StockProColors.Primary,
                             contentColor = Color.White,
-                            disabledContainerColor = Color(0xFF93C5FD),
-                            disabledContentColor = Color.White,
+                            disabledContainerColor = if (isDark) Color(0xFF1E3A8A).copy(alpha = 0.5f) else Color(0xFF93C5FD),
+                            disabledContentColor = Color.White.copy(alpha = 0.7f),
                         ),
                         modifier = Modifier
                             .weight(1f)
@@ -2297,7 +2300,7 @@ private fun ProfileFieldLabel(label: String) {
         style = TextStyle(
             fontSize = 13.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF1E293B),
+            color = StockProColors.TextPrimary,
         ),
     )
 }
@@ -2312,34 +2315,36 @@ private fun ProfileTextInput(
     errorMessage: String? = null,
     modifier: Modifier = Modifier,
 ) {
+    val isDark = StockProColors.isDark
+    val fieldBg = if (isDark) StockProColors.SurfaceAlt else Color.White
     val inputColors = OutlinedTextFieldDefaults.colors(
-        focusedContainerColor = Color.White,
-        unfocusedContainerColor = Color.White,
-        disabledContainerColor = Color.White,
-        focusedBorderColor = Color(0xFF2563EB),
-        unfocusedBorderColor = Color(0xFFE2E8F0),
-        cursorColor = Color(0xFF2563EB),
-        focusedTextColor = Color(0xFF1E293B),
-        unfocusedTextColor = Color(0xFF1E293B),
+        focusedContainerColor = fieldBg,
+        unfocusedContainerColor = fieldBg,
+        disabledContainerColor = fieldBg,
+        focusedBorderColor = StockProColors.Primary,
+        unfocusedBorderColor = StockProColors.Outline,
+        cursorColor = StockProColors.Primary,
+        focusedTextColor = StockProColors.TextPrimary,
+        unfocusedTextColor = StockProColors.TextPrimary,
     )
 
     Column(modifier = modifier) {
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            placeholder = { Text(placeholder, color = Color(0xFF94A3B8), fontSize = 13.sp) },
+            placeholder = { Text(placeholder, color = StockProColors.TextTertiary, fontSize = 13.sp) },
             leadingIcon = {
                 Box(
                     modifier = Modifier
                         .size(34.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFFF1F5F9)),
+                        .background(if (isDark) StockProColors.Surface else Color(0xFFF1F5F9)),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = Color(0xFF64748B),
+                        tint = StockProColors.TextSecondary,
                         modifier = Modifier.size(18.dp),
                     )
                 }
@@ -2355,7 +2360,7 @@ private fun ProfileTextInput(
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = errorMessage,
-                color = Color(0xFFEF4444),
+                color = StockProColors.Danger,
                 style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
             )
         }

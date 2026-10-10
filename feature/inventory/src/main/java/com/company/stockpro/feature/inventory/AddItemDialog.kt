@@ -61,6 +61,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
+import com.company.stockpro.core.designsystem.theme.StockProColors
 import com.company.stockpro.core.designsystem.theme.StockProStrings
 import com.company.stockpro.core.domain.model.Currency
 import com.company.stockpro.core.domain.model.Item
@@ -71,8 +72,7 @@ import java.util.UUID
 
 /**
  * Modern Industrial Modal Dialog for creating master inventory items.
- * Matches precision Figma/design specifications with leading semantic icons,
- * dedicated KPI metric pill cards, styled definition banners, and action controls.
+ * Fully supports dynamic Light and Dark mode theming through design tokens.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -83,6 +83,8 @@ fun AddItemDialog(
     modifier: Modifier = Modifier,
 ) {
     val strings = StockProStrings.current
+    val isDark = StockProColors.isDark
+    val fieldBg = if (isDark) StockProColors.SurfaceAlt else Color.White
 
     var code by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
@@ -110,14 +112,14 @@ fun AddItemDialog(
     val isValid = codeValid && nameValid && categoryValid && onHandValid && reorderValid && parValid && unitCostValid
 
     val inputColors = OutlinedTextFieldDefaults.colors(
-        focusedContainerColor = Color.White,
-        unfocusedContainerColor = Color.White,
-        disabledContainerColor = Color.White,
-        focusedBorderColor = Color(0xFF2563EB),
-        unfocusedBorderColor = Color(0xFFE2E8F0),
-        cursorColor = Color(0xFF2563EB),
-        focusedTextColor = Color(0xFF1E293B),
-        unfocusedTextColor = Color(0xFF1E293B),
+        focusedContainerColor = fieldBg,
+        unfocusedContainerColor = fieldBg,
+        disabledContainerColor = fieldBg,
+        focusedBorderColor = StockProColors.Primary,
+        unfocusedBorderColor = StockProColors.Outline,
+        cursorColor = StockProColors.Primary,
+        focusedTextColor = StockProColors.TextPrimary,
+        unfocusedTextColor = StockProColors.TextPrimary,
     )
 
     BasicAlertDialog(
@@ -127,9 +129,9 @@ fun AddItemDialog(
     ) {
         Surface(
             shape = RoundedCornerShape(24.dp),
-            color = Color.White,
+            color = StockProColors.Surface,
             shadowElevation = 10.dp,
-            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+            border = BorderStroke(1.dp, StockProColors.Outline),
             modifier = Modifier.fillMaxWidth(),
         ) {
             Column(
@@ -152,13 +154,13 @@ fun AddItemDialog(
                             modifier = Modifier
                                 .size(44.dp)
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(Color(0xFFE8F1FC)),
+                                .background(if (isDark) Color(0xFF1E3A8A).copy(alpha = 0.5f) else Color(0xFFE8F1FC)),
                             contentAlignment = Alignment.Center,
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Inventory2,
                                 contentDescription = null,
-                                tint = Color(0xFF2563EB),
+                                tint = if (isDark) Color(0xFF60A5FA) else Color(0xFF2563EB),
                                 modifier = Modifier.size(24.dp),
                             )
                         }
@@ -169,7 +171,7 @@ fun AddItemDialog(
                                 style = TextStyle(
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF0F172A),
+                                    color = StockProColors.TextPrimary,
                                 ),
                             )
                             Spacer(modifier = Modifier.height(2.dp))
@@ -177,7 +179,7 @@ fun AddItemDialog(
                                 text = strings.createMasterDataSubtitle,
                                 style = TextStyle(
                                     fontSize = 12.sp,
-                                    color = Color(0xFF64748B),
+                                    color = StockProColors.TextSecondary,
                                 ),
                             )
                         }
@@ -185,7 +187,7 @@ fun AddItemDialog(
 
                     Surface(
                         shape = CircleShape,
-                        color = Color(0xFFF1F5F9),
+                        color = StockProColors.SurfaceAlt,
                         modifier = Modifier
                             .size(32.dp)
                             .clickable { onDismiss() },
@@ -197,7 +199,7 @@ fun AddItemDialog(
                             Icon(
                                 imageVector = Icons.Default.Close,
                                 contentDescription = "Close",
-                                tint = Color(0xFF64748B),
+                                tint = StockProColors.TextSecondary,
                                 modifier = Modifier.size(16.dp),
                             )
                         }
@@ -215,7 +217,7 @@ fun AddItemDialog(
                     placeholder = {
                         Text(
                             text = strings.enterItemCodePlaceholder,
-                            color = Color(0xFF94A3B8),
+                            color = StockProColors.TextTertiary,
                             fontSize = 14.sp,
                         )
                     },
@@ -223,7 +225,7 @@ fun AddItemDialog(
                         Icon(
                             imageVector = Icons.Default.QrCode,
                             contentDescription = null,
-                            tint = Color(0xFF64748B),
+                            tint = StockProColors.TextSecondary,
                             modifier = Modifier.size(20.dp),
                         )
                     },
@@ -244,7 +246,7 @@ fun AddItemDialog(
                     placeholder = {
                         Text(
                             text = strings.enterItemNamePlaceholder,
-                            color = Color(0xFF94A3B8),
+                            color = StockProColors.TextTertiary,
                             fontSize = 14.sp,
                         )
                     },
@@ -252,7 +254,7 @@ fun AddItemDialog(
                         Icon(
                             imageVector = Icons.Default.Description,
                             contentDescription = null,
-                            tint = Color(0xFF64748B),
+                            tint = StockProColors.TextSecondary,
                             modifier = Modifier.size(20.dp),
                         )
                     },
@@ -270,8 +272,8 @@ fun AddItemDialog(
                 Box(modifier = Modifier.fillMaxWidth()) {
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = Color.White,
-                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        color = fieldBg,
+                        border = BorderStroke(1.dp, StockProColors.Outline),
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp)
@@ -288,7 +290,7 @@ fun AddItemDialog(
                                 Icon(
                                     imageVector = Icons.Default.Layers,
                                     contentDescription = null,
-                                    tint = Color(0xFF64748B),
+                                    tint = StockProColors.TextSecondary,
                                     modifier = Modifier.size(20.dp),
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
@@ -297,14 +299,14 @@ fun AddItemDialog(
                                     style = TextStyle(
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF1E293B),
+                                        color = StockProColors.TextPrimary,
                                     ),
                                 )
                             }
                             Icon(
                                 imageVector = Icons.Default.ArrowDropDown,
                                 contentDescription = null,
-                                tint = Color(0xFF64748B),
+                                tint = StockProColors.TextSecondary,
                             )
                         }
                     }
@@ -339,8 +341,8 @@ fun AddItemDialog(
                         Box(modifier = Modifier.fillMaxWidth()) {
                             Surface(
                                 shape = RoundedCornerShape(10.dp),
-                                color = Color.White,
-                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                color = fieldBg,
+                                border = BorderStroke(1.dp, StockProColors.Outline),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(52.dp)
@@ -360,7 +362,7 @@ fun AddItemDialog(
                                         Icon(
                                             imageVector = Icons.Default.LocalOffer,
                                             contentDescription = null,
-                                            tint = Color(0xFF64748B),
+                                            tint = StockProColors.TextSecondary,
                                             modifier = Modifier.size(18.dp),
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
@@ -369,7 +371,7 @@ fun AddItemDialog(
                                             style = TextStyle(
                                                 fontSize = 13.sp,
                                                 fontWeight = if (categoryName.isBlank()) FontWeight.Normal else FontWeight.Medium,
-                                                color = if (categoryName.isBlank()) Color(0xFF94A3B8) else Color(0xFF1E293B),
+                                                color = if (categoryName.isBlank()) StockProColors.TextTertiary else StockProColors.TextPrimary,
                                             ),
                                             maxLines = 1,
                                         )
@@ -377,7 +379,7 @@ fun AddItemDialog(
                                     Icon(
                                         imageVector = Icons.Default.ArrowDropDown,
                                         contentDescription = null,
-                                        tint = Color(0xFF64748B),
+                                        tint = StockProColors.TextSecondary,
                                     )
                                 }
                             }
@@ -416,8 +418,8 @@ fun AddItemDialog(
                         Box(modifier = Modifier.fillMaxWidth()) {
                             Surface(
                                 shape = RoundedCornerShape(10.dp),
-                                color = Color.White,
-                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                color = fieldBg,
+                                border = BorderStroke(1.dp, StockProColors.Outline),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(52.dp)
@@ -434,7 +436,7 @@ fun AddItemDialog(
                                         Icon(
                                             imageVector = Icons.Default.Inventory2,
                                             contentDescription = null,
-                                            tint = Color(0xFF64748B),
+                                            tint = StockProColors.TextSecondary,
                                             modifier = Modifier.size(18.dp),
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
@@ -443,14 +445,14 @@ fun AddItemDialog(
                                             style = TextStyle(
                                                 fontSize = 13.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = Color(0xFF1E293B),
+                                                color = StockProColors.TextPrimary,
                                             ),
                                         )
                                     }
                                     Icon(
                                         imageVector = Icons.Default.ArrowDropDown,
                                         contentDescription = null,
-                                        tint = Color(0xFF64748B),
+                                        tint = StockProColors.TextSecondary,
                                     )
                                 }
                             }
@@ -484,7 +486,7 @@ fun AddItemDialog(
                     placeholder = {
                         Text(
                             text = strings.enterLocationBinPlaceholder,
-                            color = Color(0xFF94A3B8),
+                            color = StockProColors.TextTertiary,
                             fontSize = 14.sp,
                         )
                     },
@@ -492,7 +494,7 @@ fun AddItemDialog(
                         Icon(
                             imageVector = Icons.Default.LocationOn,
                             contentDescription = null,
-                            tint = Color(0xFF64748B),
+                            tint = StockProColors.TextSecondary,
                             modifier = Modifier.size(20.dp),
                         )
                     },
@@ -512,14 +514,14 @@ fun AddItemDialog(
                     MetricInputCard(
                         title = strings.onHandLabel,
                         icon = Icons.Default.Inventory2,
-                        iconTint = Color(0xFF2563EB),
+                        iconTint = if (isDark) Color(0xFF60A5FA) else Color(0xFF2563EB),
                         value = onHandText,
                         onValueChange = { onHandText = it },
                         leadingVisual = {
                             Icon(
                                 imageVector = Icons.Default.Adjust,
                                 contentDescription = null,
-                                tint = Color(0xFF94A3B8),
+                                tint = StockProColors.TextTertiary,
                                 modifier = Modifier.size(14.dp),
                             )
                         },
@@ -529,7 +531,7 @@ fun AddItemDialog(
                     MetricInputCard(
                         title = strings.lowStock,
                         icon = Icons.Default.Warning,
-                        iconTint = Color(0xFFF59E0B),
+                        iconTint = if (isDark) Color(0xFFFBBF24) else Color(0xFFF59E0B),
                         value = reorderLevelText,
                         onValueChange = { reorderLevelText = it },
                         modifier = Modifier.weight(1f),
@@ -538,7 +540,7 @@ fun AddItemDialog(
                     MetricInputCard(
                         title = strings.parLevelLabel,
                         icon = Icons.Default.TrackChanges,
-                        iconTint = Color(0xFF10B981),
+                        iconTint = if (isDark) Color(0xFF34D399) else Color(0xFF10B981),
                         value = parLevelText,
                         onValueChange = { parLevelText = it },
                         modifier = Modifier.weight(1f),
@@ -550,7 +552,8 @@ fun AddItemDialog(
                 // 8. Definition Info Banner
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFEBF3FE),
+                    color = if (isDark) StockProColors.PrimaryContainer.copy(alpha = 0.35f) else Color(0xFFEBF3FE),
+                    border = BorderStroke(1.dp, if (isDark) StockProColors.Primary.copy(alpha = 0.3f) else Color(0xFFBFDBFE)),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Row(
@@ -560,7 +563,7 @@ fun AddItemDialog(
                         Icon(
                             imageVector = Icons.Default.Info,
                             contentDescription = null,
-                            tint = Color(0xFF2563EB),
+                            tint = if (isDark) Color(0xFF60A5FA) else Color(0xFF2563EB),
                             modifier = Modifier.size(20.dp),
                         )
                         Spacer(modifier = Modifier.width(10.dp))
@@ -569,7 +572,7 @@ fun AddItemDialog(
                                 text = "• ${strings.lowStockTooltipDesc}",
                                 style = TextStyle(
                                     fontSize = 11.5.sp,
-                                    color = Color(0xFF475569),
+                                    color = StockProColors.TextSecondary,
                                     lineHeight = 16.sp,
                                 ),
                             )
@@ -578,7 +581,7 @@ fun AddItemDialog(
                                 text = "• ${strings.parLevelTooltipDesc}",
                                 style = TextStyle(
                                     fontSize = 11.5.sp,
-                                    color = Color(0xFF475569),
+                                    color = StockProColors.TextSecondary,
                                     lineHeight = 16.sp,
                                 ),
                             )
@@ -600,14 +603,14 @@ fun AddItemDialog(
                             style = TextStyle(
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF64748B),
+                                color = StockProColors.TextSecondary,
                             ),
                         )
                     },
                     placeholder = {
                         Text(
                             text = "0.00",
-                            color = Color(0xFF94A3B8),
+                            color = StockProColors.TextTertiary,
                             fontSize = 14.sp,
                         )
                     },
@@ -628,9 +631,9 @@ fun AddItemDialog(
                     OutlinedButton(
                         onClick = onDismiss,
                         shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.5.dp, Color(0xFF2563EB)),
+                        border = BorderStroke(1.5.dp, StockProColors.Primary),
                         colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color(0xFF2563EB),
+                            contentColor = StockProColors.Primary,
                         ),
                         modifier = Modifier
                             .weight(1f)
@@ -641,7 +644,7 @@ fun AddItemDialog(
                             style = TextStyle(
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF2563EB),
+                                color = StockProColors.Primary,
                             ),
                         )
                     }
@@ -673,9 +676,9 @@ fun AddItemDialog(
                         enabled = isValid,
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF1D4ED8),
+                            containerColor = StockProColors.Primary,
                             contentColor = Color.White,
-                            disabledContainerColor = Color(0xFF93C5FD),
+                            disabledContainerColor = if (isDark) Color(0xFF1E3A8A).copy(alpha = 0.5f) else Color(0xFF93C5FD),
                             disabledContentColor = Color.White,
                         ),
                         modifier = Modifier
@@ -720,7 +723,7 @@ private fun AddItemFieldLabel(
             style = TextStyle(
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1E293B),
+                color = StockProColors.TextPrimary,
             ),
         )
         if (isRequired) {
@@ -729,7 +732,7 @@ private fun AddItemFieldLabel(
                 style = TextStyle(
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFFEF4444),
+                    color = StockProColors.Danger,
                 ),
             )
         }
@@ -746,10 +749,11 @@ private fun MetricInputCard(
     modifier: Modifier = Modifier,
     leadingVisual: (@Composable () -> Unit)? = null,
 ) {
+    val isDark = StockProColors.isDark
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = Color(0xFFF0F6FE),
-        border = BorderStroke(1.dp, Color(0xFFE2EDFB)),
+        color = if (isDark) StockProColors.SurfaceAlt else Color(0xFFF0F6FE),
+        border = BorderStroke(1.dp, if (isDark) StockProColors.Outline else Color(0xFFE2EDFB)),
         modifier = modifier,
     ) {
         Column(modifier = Modifier.padding(8.dp)) {
@@ -766,7 +770,7 @@ private fun MetricInputCard(
                     style = TextStyle(
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1E293B),
+                        color = StockProColors.TextPrimary,
                     ),
                     maxLines = 1,
                 )
@@ -774,8 +778,8 @@ private fun MetricInputCard(
             Spacer(modifier = Modifier.height(6.dp))
             Surface(
                 shape = RoundedCornerShape(8.dp),
-                color = Color.White,
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                color = if (isDark) StockProColors.Surface else Color.White,
+                border = BorderStroke(1.dp, StockProColors.Outline),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(42.dp),
@@ -796,7 +800,7 @@ private fun MetricInputCard(
                         textStyle = TextStyle(
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1E293B),
+                            color = StockProColors.TextPrimary,
                         ),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
