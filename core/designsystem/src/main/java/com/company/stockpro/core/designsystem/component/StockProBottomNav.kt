@@ -106,8 +106,15 @@ fun StockProBottomNav(
 
                     Spacer(modifier = Modifier.height(2.dp))
 
+                    val destinationLabel = when (destination) {
+                        StockProTopLevelDestination.HOME -> com.company.stockpro.core.designsystem.theme.StockProStrings.current.navHome
+                        StockProTopLevelDestination.INVENTORY -> com.company.stockpro.core.designsystem.theme.StockProStrings.current.navInventory
+                        StockProTopLevelDestination.REPORTS -> com.company.stockpro.core.designsystem.theme.StockProStrings.current.navReports
+                        StockProTopLevelDestination.SETTINGS -> com.company.stockpro.core.designsystem.theme.StockProStrings.current.navSettings
+                    }
+
                     Text(
-                        text = destination.label,
+                        text = destinationLabel,
                         style = androidx.compose.ui.text.TextStyle(
                             fontSize = 11.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,

@@ -81,6 +81,7 @@ import com.company.stockpro.core.designsystem.theme.Radius
 import com.company.stockpro.core.designsystem.theme.Spacing
 import com.company.stockpro.core.designsystem.theme.StockProCodeTextStyle
 import com.company.stockpro.core.designsystem.theme.StockProColors
+import com.company.stockpro.core.designsystem.theme.StockProStrings
 import com.company.stockpro.core.domain.model.Item
 import com.company.stockpro.core.ui.component.SkeletonBox
 import com.company.stockpro.core.ui.component.chart.StockCompositionDonut
@@ -204,6 +205,7 @@ private fun ReportsContent(
     onItemClick: (String) -> Unit,
 ) {
     val scrollState = rememberScrollState()
+    val strings = StockProStrings.current
 
     Column(
         modifier = Modifier
@@ -225,7 +227,7 @@ private fun ReportsContent(
             ) {
                 Column {
                     Text(
-                        text = "REPORTS & ANALYTICS",
+                        text = strings.reportsTitle,
                         style = StockProCodeTextStyle.copy(
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
@@ -346,7 +348,7 @@ private fun ReportsContent(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     ReportsKpiCard(
-                        title = "TOTAL ITEMS",
+                        title = strings.totalItems.uppercase(),
                         value = String.format("%,d", state.totalItems),
                         deltaText = "+${state.totalItemsDeltaPercent}%",
                         subText = "active catalog",
@@ -357,7 +359,7 @@ private fun ReportsContent(
                         modifier = Modifier.weight(1f),
                     )
                     ReportsKpiCard(
-                        title = "VALUATION",
+                        title = strings.totalValuation.uppercase(),
                         value = formatCompactMoney(state.inventoryValuePaise, state.currency),
                         deltaText = "+${String.format("%.1f", state.inventoryValueDeltaPercent)}%",
                         subText = "asset value",
@@ -374,7 +376,7 @@ private fun ReportsContent(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     ReportsKpiCard(
-                        title = "INBOUND RECEIVED",
+                        title = strings.inbound.uppercase(),
                         value = String.format("%,d", state.itemsPurchased),
                         deltaText = "+${state.itemsPurchasedDeltaPercent}%",
                         subText = "units received",
@@ -386,7 +388,7 @@ private fun ReportsContent(
                         modifier = Modifier.weight(1f),
                     )
                     ReportsKpiCard(
-                        title = "DISPATCHED",
+                        title = strings.outbound.uppercase(),
                         value = String.format("%,d", state.itemsIssued),
                         deltaText = "+${state.itemsIssuedDeltaPercent}%",
                         subText = "units issued",
@@ -427,7 +429,7 @@ private fun ReportsContent(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "STOCK COMPOSITION DISTRIBUTION",
+                        text = strings.stockCompositionDist,
                         style = StockProCodeTextStyle.copy(
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,

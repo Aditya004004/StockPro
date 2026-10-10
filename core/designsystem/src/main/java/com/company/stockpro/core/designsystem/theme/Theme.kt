@@ -71,11 +71,13 @@ val LightStockProStatusColors = StockProStatusColors(
 @Composable
 fun StockProTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    language: com.company.stockpro.core.domain.model.AppLanguage = com.company.stockpro.core.domain.model.AppLanguage.ENGLISH,
     content: @Composable () -> Unit,
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
     val palette = if (darkTheme) DarkStockProPalette else LightStockProPalette
     val statusColors = if (darkTheme) DarkStockProStatusColors else LightStockProStatusColors
+    val strings = StockProStrings.from(language)
 
     val view = LocalView.current
     if (!view.isInEditMode) {
@@ -92,6 +94,7 @@ fun StockProTheme(
     CompositionLocalProvider(
         LocalStockProPalette provides palette,
         LocalStockProStatusColors provides statusColors,
+        LocalStockProStrings provides strings,
     ) {
         MaterialTheme(
             colorScheme = colorScheme,

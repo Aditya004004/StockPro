@@ -87,6 +87,7 @@ import com.company.stockpro.core.designsystem.theme.Radius
 import com.company.stockpro.core.designsystem.theme.Spacing
 import com.company.stockpro.core.designsystem.theme.StockProCodeTextStyle
 import com.company.stockpro.core.designsystem.theme.StockProColors
+import com.company.stockpro.core.designsystem.theme.StockProStrings
 import com.company.stockpro.core.domain.model.AppLanguage
 import com.company.stockpro.core.domain.model.NotificationPreferences
 import com.company.stockpro.core.domain.model.Plant
@@ -238,6 +239,7 @@ fun SettingsScreen(
     val profile = content.userSettings.profile
     val settings = content.userSettings
     val context = LocalContext.current
+    val strings = StockProStrings.current
 
     Column(
         modifier = modifier
@@ -290,7 +292,7 @@ fun SettingsScreen(
 
             // 2. Screen Header
             Text(
-                text = "Settings",
+                text = strings.settingsHeader,
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Bold,
                     fontSize = 24.sp,
@@ -300,7 +302,7 @@ fun SettingsScreen(
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = "Plant configuration & preferences",
+                text = strings.settingsSubtitle,
                 style = MaterialTheme.typography.bodySmall.copy(
                     fontSize = 12.sp,
                     color = Color(0xFF64748B),
@@ -327,7 +329,7 @@ fun SettingsScreen(
             // 4. Group 1: Plant & Access Control
             SettingsSectionHeader(
                 icon = Icons.Default.Apartment,
-                title = "PLANT & ACCESS CONTROL",
+                title = strings.plantAndAccessControl,
                 subtitle = "Manage your profile, security and team access",
             )
             SettingsGroupCard {
@@ -335,7 +337,7 @@ fun SettingsScreen(
                     icon = Icons.Default.Person,
                     iconBg = Color(0xFFEFF6FF),
                     iconTint = Color(0xFF2563EB),
-                    title = "Profile Information",
+                    title = strings.profileInformation,
                     subtitle = "View user details, company and active plant",
                     onClick = { onShowDialog(SettingsDialog.ProfileInfo) },
                 )
@@ -344,7 +346,7 @@ fun SettingsScreen(
                     icon = Icons.Default.Shield,
                     iconBg = Color(0xFFDCFCE7),
                     iconTint = Color(0xFF16A34A),
-                    title = "Security & Password",
+                    title = strings.securityAndPassword,
                     subtitle = "Change password and manage credentials",
                     onClick = { onShowDialog(SettingsDialog.ChangePassword) },
                 )
@@ -353,7 +355,7 @@ fun SettingsScreen(
                     icon = Icons.Default.Delete,
                     iconBg = Color(0xFFFEE2E2),
                     iconTint = Color(0xFFDC2626),
-                    title = "Plant Remove",
+                    title = strings.removePlant,
                     subtitle = "Decommission and remove an existing plant",
                     onClick = { onShowDialog(SettingsDialog.RemovePlant) },
                 )
@@ -364,17 +366,22 @@ fun SettingsScreen(
             // 5. Group 2: Operational Preferences
             SettingsSectionHeader(
                 icon = Icons.Default.Settings,
-                title = "OPERATIONAL PREFERENCES",
-                subtitle = "Customize system behavior",
+                title = strings.operationalPreferences,
+                subtitle = strings.appearanceSubtitle,
             )
             SettingsGroupCard {
+                val themeLabel = when (settings.themeMode) {
+                    ThemeMode.SYSTEM -> strings.systemDefault
+                    ThemeMode.LIGHT -> strings.lightMode
+                    ThemeMode.DARK -> strings.darkMode
+                }
                 SettingsRowItem(
                     icon = Icons.Default.Palette,
                     iconBg = Color(0xFFEFF6FF),
                     iconTint = Color(0xFF2563EB),
-                    title = "Appearance",
+                    title = strings.appearanceGroup,
                     subtitle = "Choose light, dark or system theme",
-                    trailingValue = settings.themeMode.displayLabel,
+                    trailingValue = themeLabel,
                     onClick = { onShowDialog(SettingsDialog.Appearance) },
                 )
                 HorizontalDivider(color = Color(0xFFF1F5F9))
@@ -382,8 +389,8 @@ fun SettingsScreen(
                     icon = Icons.Default.Language,
                     iconBg = Color(0xFFDCFCE7),
                     iconTint = Color(0xFF16A34A),
-                    title = "Display Language",
-                    subtitle = "Interface localization (English, Hindi)",
+                    title = strings.displayLanguage,
+                    subtitle = strings.displayLanguageSubtitle,
                     trailingValue = settings.language.displayLabel,
                     onClick = { onShowDialog(SettingsDialog.Language) },
                 )
@@ -392,7 +399,7 @@ fun SettingsScreen(
                     icon = Icons.Default.Notifications,
                     iconBg = Color(0xFFFEF3C7),
                     iconTint = Color(0xFFF59E0B),
-                    title = "Plant Floor Alerts",
+                    title = strings.floorAlerts,
                     subtitle = "Low stock, critical stock, expiry warning, sync",
                     trailingValue = "Configure",
                     onClick = { onShowDialog(SettingsDialog.NotificationPreferences) },
@@ -402,7 +409,7 @@ fun SettingsScreen(
                     icon = Icons.Default.Straighten,
                     iconBg = Color(0xFFF3E8FF),
                     iconTint = Color(0xFF9333EA),
-                    title = "Measurement Units",
+                    title = strings.measurementUnits,
                     subtitle = "Metric (kg, L) or Imperial (lb, gal)",
                     trailingValue = settings.unitSystem.displayLabel,
                     isMonospaceTrailing = true,
@@ -415,7 +422,7 @@ fun SettingsScreen(
             // 6. Group 3: Offline Database & Cache (Issue S4 & S5)
             SettingsSectionHeader(
                 icon = Icons.Default.Storage,
-                title = "OFFLINE DATABASE & CACHE",
+                title = strings.offlineDatabaseGroup,
                 subtitle = "Manage local data and storage",
             )
             SettingsGroupCard {
@@ -434,7 +441,7 @@ fun SettingsScreen(
                     icon = Icons.Default.CloudDownload,
                     iconBg = Color(0xFFEFF6FF),
                     iconTint = Color(0xFF2563EB),
-                    title = "Export Database",
+                    title = strings.exportDatabase,
                     subtitle = "Download master records as JSON, CSV or Excel",
                     trailingValue = "Export",
                     onClick = { onNavigateToExportDatabase?.invoke() ?: onShowDialog(SettingsDialog.ExportDatabaseSelectFormat) },
@@ -444,7 +451,7 @@ fun SettingsScreen(
                     icon = Icons.Default.Delete,
                     iconBg = Color(0xFFFEE2E2),
                     iconTint = Color(0xFFEF4444),
-                    title = "Clear Cache",
+                    title = strings.clearCache,
                     subtitle = "Free up device storage",
                     trailingValue = "${content.cacheSizeBytes / (1024 * 1024)} MB",
                     onClick = { onShowDialog(SettingsDialog.ClearCacheConfirm(content.cacheSizeBytes)) },
@@ -456,7 +463,7 @@ fun SettingsScreen(
             // 7. Group 4: Support & Enterprise Policies (Issue S5)
             SettingsSectionHeader(
                 icon = Icons.Default.Info,
-                title = "SUPPORT & ENTERPRISE POLICIES",
+                title = strings.supportAndEnterprise,
                 subtitle = "Help, feedback and system info",
             )
             SettingsGroupCard {
@@ -464,7 +471,7 @@ fun SettingsScreen(
                     icon = Icons.AutoMirrored.Filled.HelpOutline,
                     iconBg = Color(0xFFF3E8FF),
                     iconTint = Color(0xFF9333EA),
-                    title = "Shop Floor Help & FAQs",
+                    title = strings.helpAndFaqs,
                     subtitle = "SOPs, barcoding and stock flow guide",
                     onClick = { onShowDialog(SettingsDialog.HelpFaq) },
                 )
@@ -473,7 +480,7 @@ fun SettingsScreen(
                     icon = Icons.Default.Feedback,
                     iconBg = Color(0xFFDCFCE7),
                     iconTint = Color(0xFF16A34A),
-                    title = "Send Operator Feedback",
+                    title = strings.sendFeedback,
                     subtitle = "Direct line to system engineering",
                     onClick = { onShowDialog(SettingsDialog.Feedback) },
                 )
@@ -482,7 +489,7 @@ fun SettingsScreen(
                     icon = Icons.Default.Info,
                     iconBg = Color(0xFFEFF6FF),
                     iconTint = Color(0xFF2563EB),
-                    title = "StockPro Version",
+                    title = strings.appVersion,
                     subtitle = "Server-Authoritative Manufacturing",
                     trailingValue = "v${content.appVersionName} (${content.appVersionCode})",
                     isMonospaceTrailing = true,
@@ -495,7 +502,7 @@ fun SettingsScreen(
             // 8. Group 5: Account Actions
             SettingsSectionHeader(
                 icon = Icons.Default.Person,
-                title = "ACCOUNT ACTIONS",
+                title = strings.accountActions,
                 subtitle = "Manage your account",
             )
 
@@ -532,7 +539,7 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Delete Account & Purge Local Data",
+                            text = strings.deleteAccountAndData,
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 13.sp,
@@ -592,7 +599,7 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Sign Out",
+                            text = strings.signOut,
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 13.sp,
@@ -601,7 +608,7 @@ fun SettingsScreen(
                         )
                         Spacer(modifier = Modifier.height(1.dp))
                         Text(
-                            text = "Sign out of your active session on this device",
+                            text = strings.signOutSubtitle,
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontSize = 11.sp,
                                 color = Color(0xFF64748B),
@@ -666,10 +673,15 @@ fun SettingsScreen(
         SettingsDialog.Appearance -> {
             AlertDialog(
                 onDismissRequest = onDismissDialog,
-                title = { Text("Select Appearance") },
+                title = { Text(strings.selectAppearance) },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(Spacing.x2)) {
                         ThemeMode.entries.forEach { mode ->
+                            val label = when (mode) {
+                                ThemeMode.SYSTEM -> strings.systemDefault
+                                ThemeMode.LIGHT -> strings.lightMode
+                                ThemeMode.DARK -> strings.darkMode
+                            }
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -682,7 +694,7 @@ fun SettingsScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Text(
-                                    text = mode.displayLabel,
+                                    text = label,
                                     fontWeight = if (mode == settings.themeMode) FontWeight.Bold else FontWeight.Normal,
                                     color = if (mode == settings.themeMode) StockProColors.Primary else StockProColors.TextPrimary,
                                 )
@@ -692,14 +704,14 @@ fun SettingsScreen(
                 },
                 confirmButton = {},
                 dismissButton = {
-                    TextButton(onClick = onDismissDialog) { Text("Close") }
+                    TextButton(onClick = onDismissDialog) { Text(strings.close) }
                 },
             )
         }
         SettingsDialog.Language -> {
             AlertDialog(
                 onDismissRequest = onDismissDialog,
-                title = { Text("Select Language") },
+                title = { Text(strings.selectLanguage) },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(Spacing.x2)) {
                         AppLanguage.entries.forEach { lang ->
@@ -725,14 +737,14 @@ fun SettingsScreen(
                 },
                 confirmButton = {},
                 dismissButton = {
-                    TextButton(onClick = onDismissDialog) { Text("Close") }
+                    TextButton(onClick = onDismissDialog) { Text(strings.close) }
                 },
             )
         }
         SettingsDialog.Units -> {
             AlertDialog(
                 onDismissRequest = onDismissDialog,
-                title = { Text("Measurement Units") },
+                title = { Text(strings.measurementUnits) },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(Spacing.x2)) {
                         UnitSystem.entries.forEach { unit ->
@@ -758,7 +770,7 @@ fun SettingsScreen(
                 },
                 confirmButton = {},
                 dismissButton = {
-                    TextButton(onClick = onDismissDialog) { Text("Close") }
+                    TextButton(onClick = onDismissDialog) { Text(strings.close) }
                 },
             )
         }
@@ -767,7 +779,7 @@ fun SettingsScreen(
 
             AlertDialog(
                 onDismissRequest = onDismissDialog,
-                title = { Text("Plant Floor Alerts") },
+                title = { Text(strings.floorAlerts) },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(Spacing.x3)) {
                         Text(
@@ -795,7 +807,7 @@ fun SettingsScreen(
                     }
                 },
                 confirmButton = {
-                    TextButton(onClick = onDismissDialog) { Text("Done", fontWeight = FontWeight.Bold) }
+                    TextButton(onClick = onDismissDialog) { Text(strings.confirm, fontWeight = FontWeight.Bold) }
                 },
                 dismissButton = null,
             )
@@ -803,24 +815,24 @@ fun SettingsScreen(
         is SettingsDialog.ClearCacheConfirm -> {
             AlertDialog(
                 onDismissRequest = onDismissDialog,
-                title = { Text("Clear Local Cache?") },
+                title = { Text("${strings.clearCache}?") },
                 text = {
                     Text("This will clear temporary previews and free approximately ${(dialog.estimatedBytes / (1024 * 1024))} MB. Active inventory data in Room will remain intact.")
                 },
                 confirmButton = {
                     TextButton(onClick = onClearCache) {
-                        Text("Clear Cache", color = StockProColors.Danger, fontWeight = FontWeight.Bold)
+                        Text(strings.clearCache, color = StockProColors.Danger, fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = onDismissDialog) { Text("Cancel") }
+                    TextButton(onClick = onDismissDialog) { Text(strings.cancel) }
                 },
             )
         }
         SettingsDialog.LogoutConfirm -> {
             AlertDialog(
                 onDismissRequest = onDismissDialog,
-                title = { Text("Logout of StockPro?") },
+                title = { Text("${strings.signOut}?") },
                 text = {
                     Text("Your device cached data will be cleared securely and outbox entries preserved until next sign-in.")
                 },
@@ -829,18 +841,18 @@ fun SettingsScreen(
                         onDismissDialog()
                         onLogoutClick()
                     }) {
-                        Text("Logout", color = StockProColors.Danger, fontWeight = FontWeight.Bold)
+                        Text(strings.signOut, color = StockProColors.Danger, fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = onDismissDialog) { Text("Cancel") }
+                    TextButton(onClick = onDismissDialog) { Text(strings.cancel) }
                 },
             )
         }
         SettingsDialog.DeleteAccountConfirm -> {
             AlertDialog(
                 onDismissRequest = onDismissDialog,
-                title = { Text("Delete Account Permanently?") },
+                title = { Text("${strings.deleteAccount}?") },
                 text = {
                     Text("This action cannot be undone. Per Google Play and data privacy policies, your account and all associated personal data will be completely deleted.")
                 },
@@ -849,11 +861,11 @@ fun SettingsScreen(
                         onDismissDialog()
                         onDeleteAccountClick()
                     }) {
-                        Text("Delete Permanently", color = StockProColors.Danger, fontWeight = FontWeight.Bold)
+                        Text(strings.deleteAccount, color = StockProColors.Danger, fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = onDismissDialog) { Text("Cancel") }
+                    TextButton(onClick = onDismissDialog) { Text(strings.cancel) }
                 },
             )
         }

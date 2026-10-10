@@ -8,8 +8,7 @@ enum class ThemeMode(val displayLabel: String) {
 
 enum class AppLanguage(val displayLabel: String, val code: String) {
     ENGLISH("English", "en"),
-    HINDI("हिन्दी (Hindi)", "hi"),
-    MARATHI("मराठी (Marathi)", "mr");
+    HINDI("हिन्दी (Hindi)", "hi");
 }
 
 enum class UnitSystem(

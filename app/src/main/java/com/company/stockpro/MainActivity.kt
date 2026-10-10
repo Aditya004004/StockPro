@@ -141,9 +141,25 @@ fun StockProApp(
         com.company.stockpro.core.domain.model.ThemeMode.SYSTEM -> androidx.compose.foundation.isSystemInDarkTheme()
     }
 
+    val currentLocale = remember(userSettings.language) {
+        java.util.Locale(userSettings.language.code)
+    }
+    java.util.Locale.setDefault(currentLocale)
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val localizedConfiguration = remember(configuration, currentLocale) {
+        android.content.res.Configuration(configuration).apply {
+            setLocale(currentLocale)
+            setLayoutDirection(currentLocale)
+        }
+    }
+
     if (authState is AppAuthState.Loading) {
-        StockProTheme(darkTheme = isDarkTheme) {
-            StockProSplashScreen()
+        androidx.compose.runtime.CompositionLocalProvider(
+            androidx.compose.ui.platform.LocalConfiguration provides localizedConfiguration,
+        ) {
+            StockProTheme(darkTheme = isDarkTheme, language = userSettings.language) {
+                StockProSplashScreen()
+            }
         }
         return
     }
@@ -154,11 +170,14 @@ fun StockProApp(
         StockProRoute.Auth
     }
 
-    StockProTheme(darkTheme = isDarkTheme) {
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            containerColor = StockProColors.Canvas,
-            contentColor = StockProColors.TextPrimary,
+    androidx.compose.runtime.CompositionLocalProvider(
+        androidx.compose.ui.platform.LocalConfiguration provides localizedConfiguration,
+    ) {
+        StockProTheme(darkTheme = isDarkTheme, language = userSettings.language) {
+            Scaffold(
+                modifier = Modifier.fillMaxSize(),
+                containerColor = StockProColors.Canvas,
+                contentColor = StockProColors.TextPrimary,
             bottomBar = {
                 // Only show bottom nav on top-level destinations
                 val dest = currentTopLevelDestination
@@ -454,6 +473,7 @@ fun StockProApp(
             }
         }
     }
+}
 }
 
 /**

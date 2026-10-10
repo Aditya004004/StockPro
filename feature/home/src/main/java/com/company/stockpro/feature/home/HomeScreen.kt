@@ -82,6 +82,7 @@ import com.company.stockpro.core.designsystem.theme.Radius
 import com.company.stockpro.core.designsystem.theme.Spacing
 import com.company.stockpro.core.designsystem.theme.StockProCodeTextStyle
 import com.company.stockpro.core.designsystem.theme.StockProColors
+import com.company.stockpro.core.designsystem.theme.StockProStrings
 import com.company.stockpro.core.domain.model.Currency
 import com.company.stockpro.core.domain.model.Item
 import com.company.stockpro.core.domain.model.Money
@@ -236,6 +237,7 @@ private fun HomeContent(
     onNeedsAttentionClick: () -> Unit,
 ) {
     val scrollState = rememberScrollState()
+    val strings = StockProStrings.current
     var plantDropdownExpanded by rememberSaveable { mutableStateOf(false) }
     var currencyDropdownExpanded by rememberSaveable { mutableStateOf(false) }
     var showAddPlantDialog by rememberSaveable { mutableStateOf(false) }
@@ -285,7 +287,7 @@ private fun HomeContent(
                                     .padding(vertical = 1.dp),
                             ) {
                                 Text(
-                                    text = state.activePlant.ifBlank { "Select Plant" },
+                                    text = state.activePlant.ifBlank { strings.selectPlant },
                                     style = MaterialTheme.typography.titleMedium.copy(
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 19.sp,
@@ -296,7 +298,7 @@ private fun HomeContent(
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Icon(
                                     imageVector = Icons.Default.KeyboardArrowDown,
-                                    contentDescription = "Select Plant",
+                                    contentDescription = strings.selectPlant,
                                     tint = StockProColors.TextPrimary,
                                     modifier = Modifier.size(18.dp),
                                 )
@@ -350,7 +352,7 @@ private fun HomeContent(
                                 DropdownMenuItem(
                                     text = {
                                         Text(
-                                            text = "Add New Plant",
+                                            text = strings.addNewPlant,
                                             color = StockProColors.Primary,
                                             fontWeight = FontWeight.SemiBold,
                                         )
@@ -358,7 +360,7 @@ private fun HomeContent(
                                     leadingIcon = {
                                         Icon(
                                             imageVector = Icons.Default.Add,
-                                            contentDescription = "Add Plant",
+                                            contentDescription = strings.addPlant,
                                             tint = StockProColors.Primary,
                                             modifier = Modifier.size(18.dp),
                                         )
@@ -410,7 +412,7 @@ private fun HomeContent(
                         },
                         title = {
                             Text(
-                                text = "Add New Plant",
+                                text = strings.addNewPlant,
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                 color = StockProColors.TextPrimary,
                             )
@@ -429,7 +431,7 @@ private fun HomeContent(
                                         newPlantName = it
                                         if (errorMessage != null) errorMessage = null
                                     },
-                                    label = "Plant Name *",
+                                    label = "${strings.plantName} *",
                                     placeholder = "e.g. Chakan Warehouse B",
                                     singleLine = true,
                                     modifier = Modifier.fillMaxWidth(),
@@ -441,7 +443,7 @@ private fun HomeContent(
                                         newPlantCode = it.uppercase()
                                         if (errorMessage != null) errorMessage = null
                                     },
-                                    label = "Plant Code / Identifier *",
+                                    label = "${strings.plantCode} *",
                                     placeholder = "e.g. CHK-02",
                                     singleLine = true,
                                     modifier = Modifier.fillMaxWidth(),
@@ -453,7 +455,7 @@ private fun HomeContent(
                                         newPlantLocation = it
                                         if (errorMessage != null) errorMessage = null
                                     },
-                                    label = "Facility Location *",
+                                    label = "${strings.facilityLocation} *",
                                     placeholder = "e.g. Pune, Maharashtra",
                                     singleLine = true,
                                     modifier = Modifier.fillMaxWidth(),
@@ -479,7 +481,7 @@ private fun HomeContent(
                         },
                         confirmButton = {
                             StockProButton(
-                                text = "Add Plant",
+                                text = strings.addPlant,
                                 onClick = {
                                     val trimmedName = newPlantName.trim()
                                     val trimmedCode = newPlantCode.trim()
@@ -515,7 +517,7 @@ private fun HomeContent(
                         },
                         dismissButton = {
                             StockProButton(
-                                text = "Cancel",
+                                text = strings.cancel,
                                 onClick = {
                                     if (!isSaving) {
                                         showAddPlantDialog = false
@@ -605,7 +607,7 @@ private fun HomeContent(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     HomeKpiCard(
-                        title = "TOTAL ITEMS",
+                        title = strings.totalItems.uppercase(),
                         value = String.format("%,d", state.totalItems),
                         icon = Icons.Default.Inventory2,
                         iconColor = StockProColors.Primary,
@@ -618,7 +620,7 @@ private fun HomeContent(
                         modifier = Modifier.weight(1f),
                     )
                     HomeKpiCard(
-                        title = "LOW STOCK",
+                        title = strings.lowStock.uppercase(),
                         value = "${state.lowStockCount}",
                         icon = Icons.Default.Warning,
                         iconColor = StockProColors.Warning,
@@ -637,7 +639,7 @@ private fun HomeContent(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     HomeKpiCard(
-                        title = "IN PRODUCTION",
+                        title = strings.inProduction.uppercase(),
                         value = String.format("%,d", state.finishedGoodsCount),
                         icon = Icons.Default.Settings,
                         iconColor = StockProColors.Production,
@@ -650,7 +652,7 @@ private fun HomeContent(
                         modifier = Modifier.weight(1f),
                     )
                     HomeKpiCard(
-                        title = "RAW MATERIALS",
+                        title = strings.rawMaterials.uppercase(),
                         value = String.format("%,d", state.rawMaterialsCount),
                         icon = Icons.Default.Storefront,
                         iconColor = StockProColors.Success,
@@ -702,7 +704,7 @@ private fun HomeContent(
                             Column {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        text = "TOTAL VALUATION",
+                                        text = strings.totalValuation.uppercase(),
                                         style = StockProCodeTextStyle.copy(
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold,
@@ -899,7 +901,7 @@ private fun HomeContent(
                     ) {
                         Column {
                             Text(
-                                text = "STOCK HEALTH & COMPOSITION",
+                                text = strings.stockComposition,
                                 style = MaterialTheme.typography.titleSmall.copy(
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
@@ -922,7 +924,7 @@ private fun HomeContent(
                                 .padding(horizontal = 4.dp, vertical = 2.dp),
                         ) {
                             Text(
-                                text = "View All",
+                                text = strings.viewAll,
                                 style = MaterialTheme.typography.labelMedium.copy(
                                     fontSize = 12.5.sp,
                                     fontWeight = FontWeight.Bold,
@@ -960,7 +962,7 @@ private fun HomeContent(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "FLOOR OPERATIONS",
+                    text = strings.quickActions.uppercase(),
                     style = StockProCodeTextStyle.copy(
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
@@ -1045,7 +1047,7 @@ private fun HomeContent(
                                 )
                                 Spacer(modifier = Modifier.width(Spacing.x1))
                                 Text(
-                                    text = "PRIORITY RESTOCK ALERTS (${state.topLowStockItems.size})",
+                                    text = "${strings.lowStockAlerts} (${state.topLowStockItems.size})",
                                     style = StockProCodeTextStyle.copy(
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
@@ -1054,7 +1056,7 @@ private fun HomeContent(
                                 )
                             }
                             Text(
-                                text = "See All",
+                                text = strings.viewAll,
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     color = StockProColors.Primary,
                                     fontWeight = FontWeight.SemiBold,
@@ -1095,7 +1097,7 @@ private fun HomeContent(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = "RECENT MOVEMENTS LEDGER",
+                            text = strings.recentActivity,
                             style = StockProCodeTextStyle.copy(
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
@@ -1108,7 +1110,7 @@ private fun HomeContent(
                             modifier = Modifier.clickable(onClick = onNavigateToReports),
                         ) {
                             Text(
-                                text = "History",
+                                text = strings.viewAll,
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     color = StockProColors.Primary,
                                     fontWeight = FontWeight.Bold,
@@ -1150,7 +1152,7 @@ private fun HomeContent(
                             }
                             Spacer(modifier = Modifier.height(10.dp))
                             Text(
-                                text = "No stock movements recorded yet.",
+                                text = strings.noRecentActivity,
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.SemiBold,

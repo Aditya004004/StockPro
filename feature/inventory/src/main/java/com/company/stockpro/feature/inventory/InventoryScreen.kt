@@ -85,6 +85,7 @@ import com.company.stockpro.core.designsystem.theme.Radius
 import com.company.stockpro.core.designsystem.theme.Spacing
 import com.company.stockpro.core.designsystem.theme.StockProCodeTextStyle
 import com.company.stockpro.core.designsystem.theme.StockProColors
+import com.company.stockpro.core.designsystem.theme.StockProStrings
 import com.company.stockpro.core.domain.model.InventorySummary
 import com.company.stockpro.core.domain.model.Item
 import com.company.stockpro.core.domain.model.ItemClass
@@ -377,6 +378,7 @@ private fun InventoryTelemetryStrip(
     onNeedsAttentionClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val strings = StockProStrings.current
     val isOnline = syncStatus !is SyncStatus.NeedsAttention
     val isSyncing = syncStatus is SyncStatus.Syncing
     val statusColor = when (syncStatus) {
@@ -395,10 +397,10 @@ private fun InventoryTelemetryStrip(
         is SyncStatus.Synced -> {
             if (syncStatus.lastSyncedEpochMs > 0L) {
                 val minsAgo = ((System.currentTimeMillis() - syncStatus.lastSyncedEpochMs) / 60000L).coerceAtLeast(0L)
-                if (minsAgo == 0L) "Just now" else "${minsAgo}m ago"
-            } else "Just now"
+                if (minsAgo == 0L) strings.justNow else "${minsAgo}m ago"
+            } else strings.justNow
         }
-        else -> "Pending"
+        else -> strings.pending
     }
 
     Surface(
@@ -454,7 +456,7 @@ private fun InventoryTelemetryStrip(
             // Last Sync timestamp + Sync Button
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "LAST SYNC: $lastSyncLabel",
+                    text = "${strings.lastSync}: $lastSyncLabel",
                     style = StockProCodeTextStyle.copy(
                         fontSize = 10.sp,
                         color = StockProColors.TextSecondary,
@@ -481,7 +483,7 @@ private fun InventoryTelemetryStrip(
                         )
                         Spacer(modifier = Modifier.width(3.dp))
                         Text(
-                            text = if (isSyncing) "Syncing" else "Sync",
+                            text = if (isSyncing) strings.syncing else strings.sync,
                             style = StockProCodeTextStyle.copy(
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
@@ -505,6 +507,7 @@ private fun InventoryHeader(
     onAddItemClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val strings = StockProStrings.current
     var plantDropdownExpanded by rememberSaveable { mutableStateOf(false) }
 
     Row(
@@ -534,7 +537,7 @@ private fun InventoryHeader(
                         .padding(vertical = 1.dp),
                 ) {
                     Text(
-                        text = activePlant.ifBlank { "Select Plant" },
+                        text = activePlant.ifBlank { strings.selectPlant },
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             fontSize = 20.sp,
@@ -545,7 +548,7 @@ private fun InventoryHeader(
                     Spacer(modifier = Modifier.width(4.dp))
                     Icon(
                         imageVector = Icons.Default.KeyboardArrowDown,
-                        contentDescription = "Select Plant",
+                        contentDescription = strings.selectPlant,
                         tint = StockProColors.TextPrimary,
                         modifier = Modifier.size(18.dp),
                     )
@@ -631,7 +634,7 @@ private fun InventoryHeader(
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Default.QrCodeScanner,
-                        contentDescription = "Scan Item Barcode",
+                        contentDescription = strings.scanBarcode,
                         tint = StockProColors.TextPrimary,
                         modifier = Modifier.size(20.dp),
                     )
@@ -660,7 +663,7 @@ private fun InventoryHeader(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "Add Item",
+                        text = strings.addItem,
                         style = MaterialTheme.typography.labelMedium.copy(
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
@@ -680,6 +683,7 @@ private fun SearchAndFilterBar(
     onScanClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val strings = StockProStrings.current
     Surface(
         shape = RoundedCornerShape(12.dp),
         color = StockProColors.Surface,
@@ -712,7 +716,7 @@ private fun SearchAndFilterBar(
                 decorationBox = { innerTextField ->
                     if (searchQuery.isEmpty()) {
                         Text(
-                            text = "Search Item Name, SKU, Category, Warehouse...",
+                            text = strings.searchInventoryPlaceholder,
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 color = StockProColors.TextTertiary,
                                 fontSize = 13.sp,
@@ -741,7 +745,7 @@ private fun SearchAndFilterBar(
                 ) {
                     Icon(
                         imageVector = Icons.Default.QrCodeScanner,
-                        contentDescription = "Scan Barcode",
+                        contentDescription = strings.scanBarcode,
                         tint = StockProColors.Primary,
                         modifier = Modifier.size(20.dp),
                     )
@@ -820,12 +824,13 @@ private fun InventorySummaryCards(
     summary: InventorySummary,
     modifier: Modifier = Modifier,
 ) {
+    val strings = StockProStrings.current
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         MetricSummaryCard(
-            label = "Total Items",
+            label = strings.totalItems,
             value = "${summary.totalItems}",
             icon = Icons.Default.Inventory2,
             iconColor = StockProColors.Primary,
@@ -834,7 +839,7 @@ private fun InventorySummaryCards(
             modifier = Modifier.weight(1f),
         )
         MetricSummaryCard(
-            label = "Low Stock",
+            label = strings.lowStock,
             value = "${summary.lowStockCount}",
             icon = Icons.Default.Warning,
             iconColor = StockProColors.Warning,
@@ -843,7 +848,7 @@ private fun InventorySummaryCards(
             modifier = Modifier.weight(1f),
         )
         MetricSummaryCard(
-            label = "Out of Stock",
+            label = strings.outOfStock,
             value = "${summary.outOfStockCount}",
             icon = Icons.Default.CancelPresentation,
             iconColor = StockProColors.Danger,
@@ -852,7 +857,7 @@ private fun InventorySummaryCards(
             modifier = Modifier.weight(1f),
         )
         MetricSummaryCard(
-            label = "Reserved",
+            label = strings.reserved,
             value = "${summary.reservedCount}",
             icon = Icons.Default.BookmarkBorder,
             iconColor = StockProColors.Reserved,
@@ -1056,6 +1061,7 @@ private fun SectionHeaderWithSort(
 
 @Composable
 private fun InventoryTableHeader(modifier: Modifier = Modifier) {
+    val strings = StockProStrings.current
     Surface(
         shape = RoundedCornerShape(8.dp),
         color = StockProColors.SurfaceAlt,
@@ -1073,7 +1079,7 @@ private fun InventoryTableHeader(modifier: Modifier = Modifier) {
             )
             Spacer(modifier = Modifier.width(12.dp))
             Text(
-                text = "ITEM",
+                text = strings.tableHeaderItem,
                 style = StockProCodeTextStyle.copy(
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
@@ -1083,7 +1089,7 @@ private fun InventoryTableHeader(modifier: Modifier = Modifier) {
                 modifier = Modifier.weight(1.8f),
             )
             Text(
-                text = "SKU",
+                text = strings.tableHeaderSku,
                 style = StockProCodeTextStyle.copy(
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
@@ -1093,7 +1099,7 @@ private fun InventoryTableHeader(modifier: Modifier = Modifier) {
                 modifier = Modifier.weight(1.1f),
             )
             Text(
-                text = "STOCK",
+                text = strings.tableHeaderOnHand,
                 style = StockProCodeTextStyle.copy(
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
@@ -1103,7 +1109,7 @@ private fun InventoryTableHeader(modifier: Modifier = Modifier) {
                 modifier = Modifier.weight(1.0f),
             )
             Text(
-                text = "LOCATION",
+                text = strings.tableHeaderLocation,
                 style = StockProCodeTextStyle.copy(
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
@@ -1113,7 +1119,7 @@ private fun InventoryTableHeader(modifier: Modifier = Modifier) {
                 modifier = Modifier.weight(1.3f),
             )
             Text(
-                text = "STATUS",
+                text = strings.tableHeaderStatus,
                 style = StockProCodeTextStyle.copy(
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
@@ -1211,8 +1217,9 @@ private fun InventoryEmptyStateCard(
                 modifier = Modifier.size(120.dp),
             )
             Spacer(modifier = Modifier.height(18.dp))
+            val strings = StockProStrings.current
             Text(
-                text = "No items yet",
+                text = strings.noItemsYet,
                 style = MaterialTheme.typography.titleMedium.copy(
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
@@ -1249,7 +1256,7 @@ private fun InventoryEmptyStateCard(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Add Item",
+                        text = strings.addItem,
                         style = MaterialTheme.typography.labelMedium.copy(
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,

@@ -182,15 +182,14 @@ class UiVisualAndResponsivenessTest {
     // =========================================================================
 
     @Test
-    fun `language options support English, Hindi, Marathi and extensible codes`() {
+    fun `language options support English and Hindi only`() {
         val languages = AppLanguage.entries
+        assertEquals(2, languages.size)
         assertTrue(languages.contains(AppLanguage.ENGLISH))
         assertTrue(languages.contains(AppLanguage.HINDI))
-        assertTrue(languages.contains(AppLanguage.MARATHI))
 
         assertEquals("en", AppLanguage.ENGLISH.code)
         assertEquals("hi", AppLanguage.HINDI.code)
-        assertEquals("mr", AppLanguage.MARATHI.code)
 
         assertEquals("English", AppLanguage.ENGLISH.displayLabel)
         assertEquals("हिन्दी (Hindi)", AppLanguage.HINDI.displayLabel)

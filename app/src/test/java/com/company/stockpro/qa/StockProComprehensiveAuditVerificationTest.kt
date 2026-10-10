@@ -326,15 +326,15 @@ class StockProComprehensiveAuditVerificationTest {
     fun `appearance and language preferences persist across reloads`() {
         val prefs = mutableMapOf<String, String>()
 
-        // Update Theme to DARK and Language to MARATHI
+        // Update Theme to DARK and Language to HINDI
         prefs["PREF_THEME_MODE"] = ThemeMode.DARK.name
-        prefs["PREF_LANGUAGE"] = AppLanguage.MARATHI.name
+        prefs["PREF_LANGUAGE"] = AppLanguage.HINDI.name
 
         // Restore
         val restoredTheme = ThemeMode.valueOf(prefs["PREF_THEME_MODE"]!!)
         val restoredLang = AppLanguage.valueOf(prefs["PREF_LANGUAGE"]!!)
 
         assertEquals(ThemeMode.DARK, restoredTheme)
-        assertEquals(AppLanguage.MARATHI, restoredLang)
+        assertEquals(AppLanguage.HINDI, restoredLang)
     }
 }

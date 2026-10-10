@@ -46,6 +46,7 @@ import com.company.stockpro.core.designsystem.theme.Radius
 import com.company.stockpro.core.designsystem.theme.Spacing
 import com.company.stockpro.core.designsystem.theme.StockProCodeTextStyle
 import com.company.stockpro.core.designsystem.theme.StockProColors
+import com.company.stockpro.core.designsystem.theme.StockProStrings
 import com.company.stockpro.core.domain.model.Item
 import com.company.stockpro.core.domain.model.MovementType
 import com.company.stockpro.core.domain.model.Quantity
@@ -66,6 +67,7 @@ fun PostMovementDialog(
     isLoading: Boolean = false,
     errorMessage: String? = null,
 ) {
+    val strings = StockProStrings.current
     var selectedType by remember { mutableStateOf(initialType) }
     var quantityUnits by remember { mutableLongStateOf(10L) }
     var reference by remember { mutableStateOf("") }
@@ -111,7 +113,7 @@ fun PostMovementDialog(
                 ) {
                     Column {
                         Text(
-                            text = "POST STOCK MOVEMENT",
+                            text = strings.postMovementTitle.uppercase(),
                             style = StockProCodeTextStyle.copy(
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
@@ -148,9 +150,9 @@ fun PostMovementDialog(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     val types = listOf(
-                        Triple(MovementType.RECEIPT, "Receipt (+)", StockProColors.Success),
-                        Triple(MovementType.ISSUE, "Issue (-)", StockProColors.Primary),
-                        Triple(MovementType.ADJUSTMENT, "Adjust (~)", StockProColors.Warning),
+                        Triple(MovementType.RECEIPT, "${strings.movementReceipt} (+)", StockProColors.Success),
+                        Triple(MovementType.ISSUE, "${strings.movementIssue} (-)", StockProColors.Primary),
+                        Triple(MovementType.ADJUSTMENT, "${strings.movementAdjustment} (~)", StockProColors.Warning),
                     )
 
                     types.forEach { (type, label, accent) ->
@@ -371,14 +373,14 @@ fun PostMovementDialog(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     StockProButton(
-                        text = "Cancel",
+                        text = strings.cancel,
                         onClick = onDismiss,
                         variant = ButtonVariant.GHOST,
                         enabled = !isLoading,
                     )
                     Spacer(modifier = Modifier.width(Spacing.x2))
                     StockProButton(
-                        text = "Post Movement",
+                        text = strings.postMovementSubmit,
                         onClick = {
                             val deltaMilli = if (isAdjustment) {
                                 (quantityUnits * 1000L) - item.onHand.milli

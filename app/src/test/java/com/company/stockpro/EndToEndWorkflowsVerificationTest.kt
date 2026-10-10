@@ -394,12 +394,12 @@ class EndToEndWorkflowsVerificationTest {
         settingsContent = settingsViewModel.uiState.value as SettingsUiState.Content
         assertEquals(ThemeMode.DARK, settingsContent.userSettings.themeMode)
 
-        // Update Language to Marathi
-        settingsViewModel.updateLanguage(AppLanguage.MARATHI)
+        // Update Language to Hindi
+        settingsViewModel.updateLanguage(AppLanguage.HINDI)
         advanceUntilIdle()
 
         settingsContent = settingsViewModel.uiState.value as SettingsUiState.Content
-        assertEquals(AppLanguage.MARATHI, settingsContent.userSettings.language)
+        assertEquals(AppLanguage.HINDI, settingsContent.userSettings.language)
 
         // Update Measurement Units to Imperial
         settingsViewModel.updateUnitSystem(UnitSystem.IMPERIAL)
