@@ -11,8 +11,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
@@ -109,7 +111,10 @@ fun PostMovementDialog(
         },
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
         modifier = modifier
-            .padding(horizontal = 16.dp)
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 12.dp)
             .imePadding(),
     ) {
         Surface(
@@ -438,6 +443,8 @@ fun PostMovementDialog(
                         variant = ButtonVariant.PRIMARY,
                     )
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }

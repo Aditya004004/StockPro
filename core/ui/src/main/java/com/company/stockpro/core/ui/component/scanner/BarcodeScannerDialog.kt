@@ -24,8 +24,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -138,7 +140,10 @@ fun BarcodeScannerDialog(
         },
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
         modifier = modifier
-            .padding(horizontal = 16.dp)
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 12.dp)
             .imePadding(),
     ) {
         Surface(
@@ -407,6 +412,8 @@ fun BarcodeScannerDialog(
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
+
+                Spacer(modifier = Modifier.height(12.dp))
             }
         }
     }

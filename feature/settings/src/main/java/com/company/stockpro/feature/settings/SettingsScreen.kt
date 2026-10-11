@@ -16,8 +16,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -2031,18 +2033,17 @@ private fun EditProfileDialog(
     val focusManager = LocalFocusManager.current
 
     var name by remember { mutableStateOf(profile.displayName) }
-    var email by remember { mutableStateOf(profile.email) }
+    val email = profile.email
     var phone by remember { mutableStateOf(profile.phone) }
     var company by remember { mutableStateOf(profile.company) }
     var selectedPlant by remember { mutableStateOf(profile.plantName) }
     var plantDropdownExpanded by remember { mutableStateOf(false) }
 
     val isNameValid = name.trim().length >= 2
-    val isEmailValid = email.trim().contains("@") && email.trim().contains(".")
     val isPhoneValid = phone.trim().length >= 8
     val isCompanyValid = company.trim().isNotBlank()
     val isPlantValid = selectedPlant.trim().isNotBlank()
-    val isFormValid = isNameValid && isEmailValid && isPhoneValid && isCompanyValid && isPlantValid
+    val isFormValid = isNameValid && isPhoneValid && isCompanyValid && isPlantValid
 
     BasicAlertDialog(
         onDismissRequest = {
@@ -2052,7 +2053,10 @@ private fun EditProfileDialog(
         },
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
         modifier = Modifier
-            .padding(horizontal = 16.dp)
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 12.dp)
             .imePadding(),
     ) {
         Surface(
@@ -2155,17 +2159,26 @@ private fun EditProfileDialog(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // 3. Email Address
+                // 3. Email Address (Registered Account ID - Non-editable)
                 ProfileFieldLabel(label = strings.emailAddressLabel)
                 Spacer(modifier = Modifier.height(6.dp))
                 ProfileTextInput(
                     value = email,
-                    onValueChange = { email = it },
+                    onValueChange = {},
                     icon = Icons.Default.MailOutline,
-                    placeholder = "12345@gmail.com",
+                    placeholder = "operator@company.com",
                     keyboardType = KeyboardType.Email,
-                    imeAction = ImeAction.Next,
-                    errorMessage = if (!isEmailValid && email.isNotBlank()) "Valid email required (e.g. user@org.com)" else null,
+                    enabled = false,
+                    readOnly = true,
+                    trailingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = "Non-editable",
+                            tint = StockProColors.TextTertiary,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    },
+                    supportingText = "Registered operator email cannot be changed",
                 )
 
                 Spacer(modifier = Modifier.height(14.dp))
@@ -2351,6 +2364,8 @@ private fun EditProfileDialog(
                         }
                     }
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
@@ -2377,6 +2392,10 @@ private fun ProfileTextInput(
     keyboardType: KeyboardType = KeyboardType.Text,
     imeAction: ImeAction = ImeAction.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
+    enabled: Boolean = true,
+    readOnly: Boolean = false,
+    trailingIcon: @Composable (() -> Unit)? = null,
+    supportingText: String? = null,
     errorMessage: String? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -2385,12 +2404,16 @@ private fun ProfileTextInput(
     val inputColors = OutlinedTextFieldDefaults.colors(
         focusedContainerColor = fieldBg,
         unfocusedContainerColor = fieldBg,
-        disabledContainerColor = fieldBg,
+        disabledContainerColor = if (isDark) StockProColors.SurfaceAlt.copy(alpha = 0.6f) else Color(0xFFF1F5F9),
+        disabledBorderColor = StockProColors.Outline.copy(alpha = 0.5f),
         focusedBorderColor = StockProColors.Primary,
         unfocusedBorderColor = StockProColors.Outline,
         cursorColor = StockProColors.Primary,
         focusedTextColor = StockProColors.TextPrimary,
         unfocusedTextColor = StockProColors.TextPrimary,
+        disabledTextColor = StockProColors.TextSecondary,
+        disabledLeadingIconColor = StockProColors.TextTertiary,
+        disabledTrailingIconColor = StockProColors.TextTertiary,
     )
 
     Column(modifier = modifier) {
@@ -2409,11 +2432,14 @@ private fun ProfileTextInput(
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = StockProColors.TextSecondary,
+                        tint = if (enabled) StockProColors.TextSecondary else StockProColors.TextTertiary,
                         modifier = Modifier.size(18.dp),
                     )
                 }
             },
+            trailingIcon = trailingIcon,
+            enabled = enabled,
+            readOnly = readOnly,
             shape = RoundedCornerShape(10.dp),
             colors = inputColors,
             singleLine = true,
@@ -2425,11 +2451,12 @@ private fun ProfileTextInput(
             keyboardActions = keyboardActions,
             modifier = Modifier.fillMaxWidth(),
         )
-        if (!errorMessage.isNullOrBlank()) {
+        val infoText = errorMessage ?: supportingText
+        if (!infoText.isNullOrBlank()) {
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = errorMessage,
-                color = StockProColors.Danger,
+                text = infoText,
+                color = if (!errorMessage.isNullOrBlank()) StockProColors.Danger else StockProColors.TextTertiary,
                 style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
             )
         }
