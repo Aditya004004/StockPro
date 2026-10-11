@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -75,8 +76,10 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.runtime.Composable
@@ -94,6 +97,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -941,31 +946,60 @@ fun SettingsScreen(
         }
         SettingsDialog.Feedback -> {
             var feedbackText by remember { mutableStateOf("") }
+            val keyboardController = LocalSoftwareKeyboardController.current
+            val focusManager = LocalFocusManager.current
+
             AlertDialog(
-                onDismissRequest = onDismissDialog,
+                onDismissRequest = {
+                    focusManager.clearFocus()
+                    keyboardController?.hide()
+                    onDismissDialog()
+                },
+                properties = DialogProperties(decorFitsSystemWindows = false),
+                modifier = Modifier.imePadding(),
                 title = { Text("Send Feedback") },
                 text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(Spacing.x2)) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(Spacing.x2),
+                    ) {
                         Text("We value your input from the plant shop floor:")
                         StockProTextField(
                             value = feedbackText,
                             onValueChange = { feedbackText = it },
                             label = "Your Thoughts",
                             placeholder = "Describe issues or feature requests...",
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(
+                                onDone = {
+                                    focusManager.clearFocus()
+                                    keyboardController?.hide()
+                                }
+                            ),
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
                 },
                 confirmButton = {
                     TextButton(
-                        onClick = onDismissDialog,
+                        onClick = {
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
+                            onDismissDialog()
+                        },
                         enabled = feedbackText.isNotBlank(),
                     ) {
                         Text("Submit", fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = onDismissDialog) { Text("Cancel") }
+                    TextButton(onClick = {
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                        onDismissDialog()
+                    }) { Text("Cancel") }
                 },
             )
         }
@@ -1993,6 +2027,8 @@ private fun EditProfileDialog(
 ) {
     val strings = StockProStrings.current
     val isDark = StockProColors.isDark
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
 
     var name by remember { mutableStateOf(profile.displayName) }
     var email by remember { mutableStateOf(profile.email) }
@@ -2009,9 +2045,15 @@ private fun EditProfileDialog(
     val isFormValid = isNameValid && isEmailValid && isPhoneValid && isCompanyValid && isPlantValid
 
     BasicAlertDialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
-        modifier = Modifier.padding(horizontal = 16.dp),
+        onDismissRequest = {
+            focusManager.clearFocus()
+            keyboardController?.hide()
+            onDismiss()
+        },
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .imePadding(),
     ) {
         Surface(
             shape = RoundedCornerShape(24.dp),
@@ -2058,6 +2100,7 @@ private fun EditProfileDialog(
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = StockProColors.TextPrimary,
+                                    letterSpacing = (-0.2).sp,
                                 ),
                             )
                             Spacer(modifier = Modifier.height(2.dp))
@@ -2076,7 +2119,11 @@ private fun EditProfileDialog(
                         color = if (isDark) StockProColors.SurfaceAlt else Color(0xFFF1F5F9),
                         modifier = Modifier
                             .size(32.dp)
-                            .clickable { onDismiss() },
+                            .clickable {
+                                focusManager.clearFocus()
+                                keyboardController?.hide()
+                                onDismiss()
+                            },
                     ) {
                         Box(
                             contentAlignment = Alignment.Center,
@@ -2102,6 +2149,7 @@ private fun EditProfileDialog(
                     onValueChange = { name = it },
                     icon = Icons.Default.Person,
                     placeholder = "Aditya",
+                    imeAction = ImeAction.Next,
                     errorMessage = if (!isNameValid && name.isNotBlank()) "Minimum 2 characters required" else null,
                 )
 
@@ -2116,6 +2164,7 @@ private fun EditProfileDialog(
                     icon = Icons.Default.MailOutline,
                     placeholder = "12345@gmail.com",
                     keyboardType = KeyboardType.Email,
+                    imeAction = ImeAction.Next,
                     errorMessage = if (!isEmailValid && email.isNotBlank()) "Valid email required (e.g. user@org.com)" else null,
                 )
 
@@ -2130,6 +2179,7 @@ private fun EditProfileDialog(
                     icon = Icons.Default.Phone,
                     placeholder = "+91 98765 43210",
                     keyboardType = KeyboardType.Phone,
+                    imeAction = ImeAction.Next,
                     errorMessage = if (!isPhoneValid && phone.isNotBlank()) "Minimum 8 digits required" else null,
                 )
 
@@ -2143,6 +2193,13 @@ private fun EditProfileDialog(
                     onValueChange = { company = it },
                     icon = Icons.Default.Apartment,
                     placeholder = "StockPro Manufacturing Ltd",
+                    imeAction = ImeAction.Done,
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
+                        }
+                    ),
                     errorMessage = if (!isCompanyValid && company.isNotBlank()) "Company name cannot be blank" else null,
                 )
 
@@ -2230,7 +2287,11 @@ private fun EditProfileDialog(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     OutlinedButton(
-                        onClick = onDismiss,
+                        onClick = {
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
+                            onDismiss()
+                        },
                         shape = RoundedCornerShape(12.dp),
                         border = BorderStroke(1.5.dp, StockProColors.Primary),
                         colors = ButtonDefaults.outlinedButtonColors(
@@ -2252,6 +2313,8 @@ private fun EditProfileDialog(
 
                     Button(
                         onClick = {
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
                             onSave(name.trim(), email.trim(), phone.trim(), company.trim(), selectedPlant.trim())
                         },
                         enabled = isFormValid,
@@ -2312,6 +2375,8 @@ private fun ProfileTextInput(
     icon: ImageVector,
     placeholder: String = "",
     keyboardType: KeyboardType = KeyboardType.Text,
+    imeAction: ImeAction = ImeAction.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
     errorMessage: String? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -2353,7 +2418,11 @@ private fun ProfileTextInput(
             colors = inputColors,
             singleLine = true,
             isError = !errorMessage.isNullOrBlank(),
-            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = keyboardType,
+                imeAction = imeAction,
+            ),
+            keyboardActions = keyboardActions,
             modifier = Modifier.fillMaxWidth(),
         )
         if (!errorMessage.isNullOrBlank()) {

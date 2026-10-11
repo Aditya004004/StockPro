@@ -10,9 +10,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -35,9 +40,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.DialogProperties
 import com.company.stockpro.core.designsystem.component.ButtonVariant
 import com.company.stockpro.core.designsystem.component.NumericStepper
 import com.company.stockpro.core.designsystem.component.StockProButton
@@ -89,9 +98,19 @@ fun PostMovementDialog(
         else -> currentUnits
     }
 
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+
     BasicAlertDialog(
-        onDismissRequest = onDismiss,
-        modifier = modifier,
+        onDismissRequest = {
+            focusManager.clearFocus()
+            keyboardController?.hide()
+            onDismiss()
+        },
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+        modifier = modifier
+            .padding(horizontal = 16.dp)
+            .imePadding(),
     ) {
         Surface(
             shape = Radius.lg,
@@ -103,7 +122,8 @@ fun PostMovementDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(Spacing.cardPadding),
+                    .padding(Spacing.cardPadding)
+                    .verticalScroll(rememberScrollState()),
             ) {
                 // 1. Industrial Header
                 Row(
@@ -308,6 +328,13 @@ fun PostMovementDialog(
                     onValueChange = { reference = it },
                     label = if (selectedType == MovementType.RECEIPT) "PO / Vendor Reference" else "Department / Job Reference",
                     placeholder = "e.g. PO-88219 or JOB-401",
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
+                        }
+                    ),
                 )
 
                 // 6. Reason Code (Mandatory for ADJUSTMENT)
@@ -374,7 +401,11 @@ fun PostMovementDialog(
                 ) {
                     StockProButton(
                         text = strings.cancel,
-                        onClick = onDismiss,
+                        onClick = {
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
+                            onDismiss()
+                        },
                         variant = ButtonVariant.GHOST,
                         enabled = !isLoading,
                     )
@@ -382,6 +413,8 @@ fun PostMovementDialog(
                     StockProButton(
                         text = strings.postMovementSubmit,
                         onClick = {
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
                             val deltaMilli = if (isAdjustment) {
                                 (quantityUnits * 1000L) - item.onHand.milli
                             } else {

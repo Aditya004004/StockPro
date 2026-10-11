@@ -23,11 +23,16 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FlashOff
@@ -53,10 +58,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.company.stockpro.core.designsystem.component.ButtonVariant
@@ -118,10 +127,19 @@ fun BarcodeScannerDialog(
     var showManualEntry by remember { mutableStateOf(false) }
     var manualCodeInput by remember { mutableStateOf("") }
     var lastScannedTimestamp by remember { mutableLongStateOf(0L) }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
 
     BasicAlertDialog(
-        onDismissRequest = onDismissRequest,
-        modifier = modifier.fillMaxWidth(),
+        onDismissRequest = {
+            focusManager.clearFocus()
+            keyboardController?.hide()
+            onDismissRequest()
+        },
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+        modifier = modifier
+            .padding(horizontal = 16.dp)
+            .imePadding(),
     ) {
         Surface(
             shape = Radius.lg,
@@ -133,7 +151,8 @@ fun BarcodeScannerDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(Spacing.x4),
+                    .padding(Spacing.x4)
+                    .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 // Top Header: Title + Torch + Close
@@ -163,7 +182,11 @@ fun BarcodeScannerDialog(
                                 )
                             }
                         }
-                        IconButton(onClick = onDismissRequest) {
+                        IconButton(onClick = {
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
+                            onDismissRequest()
+                        }) {
                             Icon(
                                 imageVector = Icons.Default.Close,
                                 contentDescription = "Close scanner",
@@ -189,6 +212,16 @@ fun BarcodeScannerDialog(
                             onValueChange = { manualCodeInput = it },
                             label = "Item Code (e.g. BRG-001)",
                             placeholder = "BRG-001",
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                            keyboardActions = KeyboardActions(
+                                onSearch = {
+                                    if (manualCodeInput.isNotBlank()) {
+                                        focusManager.clearFocus()
+                                        keyboardController?.hide()
+                                        onBarcodeScanned(manualCodeInput.trim())
+                                    }
+                                }
+                            ),
                             modifier = Modifier.fillMaxWidth(),
                         )
                         Spacer(modifier = Modifier.height(Spacing.x3))
@@ -198,7 +231,11 @@ fun BarcodeScannerDialog(
                         ) {
                             StockProButton(
                                 text = "Use Camera",
-                                onClick = { showManualEntry = false },
+                                onClick = {
+                                    focusManager.clearFocus()
+                                    keyboardController?.hide()
+                                    showManualEntry = false
+                                },
                                 variant = ButtonVariant.SECONDARY,
                                 modifier = Modifier.weight(1f),
                             )
@@ -206,6 +243,8 @@ fun BarcodeScannerDialog(
                                 text = "Lookup Item",
                                 onClick = {
                                     if (manualCodeInput.isNotBlank()) {
+                                        focusManager.clearFocus()
+                                        keyboardController?.hide()
                                         onBarcodeScanned(manualCodeInput.trim())
                                     }
                                 },

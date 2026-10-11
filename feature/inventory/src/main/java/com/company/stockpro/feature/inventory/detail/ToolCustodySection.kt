@@ -8,9 +8,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AssignmentInd
 import androidx.compose.material.icons.filled.Build
@@ -23,6 +28,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -246,17 +255,31 @@ fun ToolCustodySection(
     if (showIssueDialog) {
         var operatorName by remember { mutableStateOf("") }
         var notes by remember { mutableStateOf("") }
+        val keyboardController = LocalSoftwareKeyboardController.current
+        val focusManager = LocalFocusManager.current
 
         AlertDialog(
-            onDismissRequest = { showIssueDialog = false },
+            onDismissRequest = {
+                focusManager.clearFocus()
+                keyboardController?.hide()
+                showIssueDialog = false
+            },
+            properties = DialogProperties(decorFitsSystemWindows = false),
+            modifier = Modifier.imePadding(),
             title = { Text("Issue Tool to Operator") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(Spacing.x3)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.x3),
+                ) {
                     StockProTextField(
                         value = operatorName,
                         onValueChange = { operatorName = it },
                         label = "Operator Name / Badge ID",
                         placeholder = "e.g. Ramesh P. (ID-842)",
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                         modifier = Modifier.fillMaxWidth(),
                     )
                     StockProTextField(
@@ -264,6 +287,13 @@ fun ToolCustodySection(
                         onValueChange = { notes = it },
                         label = "Usage Notes / Station",
                         placeholder = "e.g. Station Line 2 Assembly",
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                focusManager.clearFocus()
+                                keyboardController?.hide()
+                            }
+                        ),
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
@@ -272,6 +302,8 @@ fun ToolCustodySection(
                 TextButton(
                     onClick = {
                         if (operatorName.isNotBlank()) {
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
                             onIssueTool(operatorName, notes.ifBlank { null })
                             showIssueDialog = false
                         }
@@ -282,7 +314,11 @@ fun ToolCustodySection(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showIssueDialog = false }) {
+                TextButton(onClick = {
+                    focusManager.clearFocus()
+                    keyboardController?.hide()
+                    showIssueDialog = false
+                }) {
                     Text("Cancel")
                 }
             },
@@ -292,12 +328,25 @@ fun ToolCustodySection(
     // Return Tool Dialog
     if (showReturnDialog) {
         var notes by remember { mutableStateOf("") }
+        val keyboardController = LocalSoftwareKeyboardController.current
+        val focusManager = LocalFocusManager.current
 
         AlertDialog(
-            onDismissRequest = { showReturnDialog = false },
+            onDismissRequest = {
+                focusManager.clearFocus()
+                keyboardController?.hide()
+                showReturnDialog = false
+            },
+            properties = DialogProperties(decorFitsSystemWindows = false),
+            modifier = Modifier.imePadding(),
             title = { Text("Return Tool to Store") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(Spacing.x2)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.x2),
+                ) {
                     Text(
                         text = "Returning tool '${item.name}' from ${activeCustody.assignedToOperator ?: "Operator"}.",
                         style = MaterialTheme.typography.bodyMedium,
@@ -308,6 +357,13 @@ fun ToolCustodySection(
                         onValueChange = { notes = it },
                         label = "Condition / Check-in Notes",
                         placeholder = "e.g. Cleaned, no visible wear",
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                focusManager.clearFocus()
+                                keyboardController?.hide()
+                            }
+                        ),
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
@@ -315,6 +371,8 @@ fun ToolCustodySection(
             confirmButton = {
                 TextButton(
                     onClick = {
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
                         onReturnTool(notes.ifBlank { null })
                         showReturnDialog = false
                     },
@@ -323,7 +381,11 @@ fun ToolCustodySection(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showReturnDialog = false }) {
+                TextButton(onClick = {
+                    focusManager.clearFocus()
+                    keyboardController?.hide()
+                    showReturnDialog = false
+                }) {
                     Text("Cancel")
                 }
             },
@@ -335,12 +397,25 @@ fun ToolCustodySection(
         var notes by remember { mutableStateOf("") }
         val now = System.currentTimeMillis()
         val nextDue = now + (180L * 24 * 60 * 60 * 1000L) // 180 days interval
+        val keyboardController = LocalSoftwareKeyboardController.current
+        val focusManager = LocalFocusManager.current
 
         AlertDialog(
-            onDismissRequest = { showCalibrateDialog = false },
+            onDismissRequest = {
+                focusManager.clearFocus()
+                keyboardController?.hide()
+                showCalibrateDialog = false
+            },
+            properties = DialogProperties(decorFitsSystemWindows = false),
+            modifier = Modifier.imePadding(),
             title = { Text("Log Tool Calibration") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(Spacing.x2)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.x2),
+                ) {
                     Text(
                         text = "Record calibration verification. Next calibration will be scheduled 180 days from today.",
                         style = MaterialTheme.typography.bodyMedium,
@@ -351,6 +426,13 @@ fun ToolCustodySection(
                         onValueChange = { notes = it },
                         label = "Calibration Certificate / Notes",
                         placeholder = "e.g. Certified by Metrology Lab #42",
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                focusManager.clearFocus()
+                                keyboardController?.hide()
+                            }
+                        ),
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
@@ -358,6 +440,8 @@ fun ToolCustodySection(
             confirmButton = {
                 TextButton(
                     onClick = {
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
                         onLogCalibration(now, nextDue, notes.ifBlank { null })
                         showCalibrateDialog = false
                     },
@@ -366,7 +450,11 @@ fun ToolCustodySection(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showCalibrateDialog = false }) {
+                TextButton(onClick = {
+                    focusManager.clearFocus()
+                    keyboardController?.hide()
+                    showCalibrateDialog = false
+                }) {
                     Text("Cancel")
                 }
             },

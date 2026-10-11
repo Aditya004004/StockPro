@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -19,6 +20,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
@@ -69,10 +72,14 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.company.stockpro.core.designsystem.component.ButtonVariant
 import com.company.stockpro.core.designsystem.component.StatusBadge
@@ -403,13 +410,19 @@ private fun HomeContent(
                     var newPlantLocation by rememberSaveable { mutableStateOf("") }
                     var isSaving by rememberSaveable { mutableStateOf(false) }
                     var errorMessage by rememberSaveable { mutableStateOf<String?>(null) }
+                    val keyboardController = LocalSoftwareKeyboardController.current
+                    val focusManager = LocalFocusManager.current
 
                     AlertDialog(
                         onDismissRequest = {
                             if (!isSaving) {
+                                focusManager.clearFocus()
+                                keyboardController?.hide()
                                 showAddPlantDialog = false
                             }
                         },
+                        properties = DialogProperties(decorFitsSystemWindows = false),
+                        modifier = Modifier.imePadding(),
                         title = {
                             Text(
                                 text = strings.addNewPlant,
@@ -418,7 +431,11 @@ private fun HomeContent(
                             )
                         },
                         text = {
-                            Column {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .verticalScroll(rememberScrollState()),
+                            ) {
                                 Text(
                                     text = "Register an enterprise facility or warehouse location:",
                                     style = MaterialTheme.typography.bodyMedium,
@@ -434,6 +451,7 @@ private fun HomeContent(
                                     label = "${strings.plantName} *",
                                     placeholder = "e.g. Chakan Warehouse B",
                                     singleLine = true,
+                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                                     modifier = Modifier.fillMaxWidth(),
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
@@ -446,6 +464,7 @@ private fun HomeContent(
                                     label = "${strings.plantCode} *",
                                     placeholder = "e.g. CHK-02",
                                     singleLine = true,
+                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                                     modifier = Modifier.fillMaxWidth(),
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
@@ -458,6 +477,13 @@ private fun HomeContent(
                                     label = "${strings.facilityLocation} *",
                                     placeholder = "e.g. Pune, Maharashtra",
                                     singleLine = true,
+                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                                    keyboardActions = KeyboardActions(
+                                        onDone = {
+                                            focusManager.clearFocus()
+                                            keyboardController?.hide()
+                                        }
+                                    ),
                                     modifier = Modifier.fillMaxWidth(),
                                 )
                                 if (errorMessage != null) {
@@ -483,6 +509,8 @@ private fun HomeContent(
                             StockProButton(
                                 text = strings.addPlant,
                                 onClick = {
+                                    focusManager.clearFocus()
+                                    keyboardController?.hide()
                                     val trimmedName = newPlantName.trim()
                                     val trimmedCode = newPlantCode.trim()
                                     val trimmedLoc = newPlantLocation.trim()
@@ -520,6 +548,8 @@ private fun HomeContent(
                                 text = strings.cancel,
                                 onClick = {
                                     if (!isSaving) {
+                                        focusManager.clearFocus()
+                                        keyboardController?.hide()
                                         showAddPlantDialog = false
                                     }
                                 },

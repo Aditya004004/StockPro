@@ -14,10 +14,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -28,6 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,12 +43,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -88,6 +96,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@kotlin.OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun StockProApp(
     mainViewModel: MainViewModel = hiltViewModel(),
@@ -170,6 +179,21 @@ fun StockProApp(
         StockProRoute.Auth
     }
 
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+
+    // Automatically dismiss keyboard and clear input focus whenever navigating between screens
+    DisposableEffect(navController) {
+        val listener = NavController.OnDestinationChangedListener { _, _, _ ->
+            focusManager.clearFocus()
+            keyboardController?.hide()
+        }
+        navController.addOnDestinationChangedListener(listener)
+        onDispose {
+            navController.removeOnDestinationChangedListener(listener)
+        }
+    }
+
     androidx.compose.runtime.CompositionLocalProvider(
         androidx.compose.ui.platform.LocalConfiguration provides localizedConfiguration,
     ) {
@@ -179,12 +203,14 @@ fun StockProApp(
                 containerColor = StockProColors.Canvas,
                 contentColor = StockProColors.TextPrimary,
             bottomBar = {
-                // Only show bottom nav on top-level destinations
+                // Only show bottom nav on top-level destinations when software keyboard is closed
                 val dest = currentTopLevelDestination
-                if (dest != null) {
+                if (dest != null && !WindowInsets.isImeVisible) {
                     StockProBottomNav(
                         currentDestination = dest,
                         onNavigateToDestination = { destination ->
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
                             val route: Any = when (destination) {
                                 StockProTopLevelDestination.HOME -> StockProRoute.Home
                                 StockProTopLevelDestination.INVENTORY -> StockProRoute.Inventory
@@ -204,6 +230,7 @@ fun StockProApp(
             val modifier = Modifier
                 .padding(innerPadding)
                 .consumeWindowInsets(innerPadding)
+                .imePadding()
 
             NavHost(
                 navController = navController,

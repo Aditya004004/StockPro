@@ -10,12 +10,17 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Archive
@@ -48,9 +53,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.DialogProperties
 import com.company.stockpro.core.designsystem.component.ButtonVariant
 import com.company.stockpro.core.designsystem.component.StatusBadge
 import com.company.stockpro.core.designsystem.component.StockProButton
@@ -503,9 +513,17 @@ fun ItemDetailScreen(
             val initialVal = item.reorderLevel.toUnitsDouble.let { if (it % 1.0 == 0.0) it.toLong().toString() else it.toString() }
             var thresholdInput by remember { mutableStateOf(initialVal) }
             var errorMsg by remember { mutableStateOf<String?>(null) }
+            val keyboardController = LocalSoftwareKeyboardController.current
+            val focusManager = LocalFocusManager.current
 
             AlertDialog(
-                onDismissRequest = { showEditThresholdDialog = false },
+                onDismissRequest = {
+                    focusManager.clearFocus()
+                    keyboardController?.hide()
+                    showEditThresholdDialog = false
+                },
+                properties = DialogProperties(decorFitsSystemWindows = false),
+                modifier = Modifier.imePadding(),
                 title = {
                     Text(
                         text = "Edit Low-Stock Threshold",
@@ -514,7 +532,11 @@ fun ItemDetailScreen(
                     )
                 },
                 text = {
-                    Column {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState()),
+                    ) {
                         Text(
                             text = "Set minimum stock threshold (T). When available stock (Q) drops to or below this level, a low-stock alert is generated.",
                             style = MaterialTheme.typography.bodySmall,
@@ -530,6 +552,16 @@ fun ItemDetailScreen(
                             label = "Minimum Threshold (${item.unitOfMeasure})",
                             placeholder = "e.g. 20",
                             errorMessage = errorMsg,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Decimal,
+                                imeAction = ImeAction.Done,
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onDone = {
+                                    focusManager.clearFocus()
+                                    keyboardController?.hide()
+                                }
+                            ),
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
@@ -542,6 +574,8 @@ fun ItemDetailScreen(
                             if (parsed == null || parsed < 0) {
                                 errorMsg = "Please enter a valid non-negative number"
                             } else {
+                                focusManager.clearFocus()
+                                keyboardController?.hide()
                                 val milli = (parsed * 1000).toLong()
                                 onUpdateThreshold?.invoke(milli)
                                 showEditThresholdDialog = false
@@ -553,7 +587,11 @@ fun ItemDetailScreen(
                 dismissButton = {
                     StockProButton(
                         text = "Cancel",
-                        onClick = { showEditThresholdDialog = false },
+                        onClick = {
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
+                            showEditThresholdDialog = false
+                        },
                         variant = ButtonVariant.GHOST,
                     )
                 },

@@ -12,12 +12,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -55,8 +57,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -122,10 +127,19 @@ fun AddItemDialog(
         unfocusedTextColor = StockProColors.TextPrimary,
     )
 
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+
     BasicAlertDialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
-        modifier = modifier.padding(horizontal = 16.dp),
+        onDismissRequest = {
+            focusManager.clearFocus()
+            keyboardController?.hide()
+            onDismiss()
+        },
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+        modifier = modifier
+            .padding(horizontal = 16.dp)
+            .imePadding(),
     ) {
         Surface(
             shape = RoundedCornerShape(24.dp),
@@ -190,7 +204,11 @@ fun AddItemDialog(
                         color = StockProColors.SurfaceAlt,
                         modifier = Modifier
                             .size(32.dp)
-                            .clickable { onDismiss() },
+                            .clickable {
+                                focusManager.clearFocus()
+                                keyboardController?.hide()
+                                onDismiss()
+                            },
                     ) {
                         Box(
                             contentAlignment = Alignment.Center,
@@ -229,6 +247,10 @@ fun AddItemDialog(
                             modifier = Modifier.size(20.dp),
                         )
                     },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Text,
+                        imeAction = ImeAction.Next,
+                    ),
                     shape = RoundedCornerShape(10.dp),
                     colors = inputColors,
                     singleLine = true,
@@ -258,6 +280,10 @@ fun AddItemDialog(
                             modifier = Modifier.size(20.dp),
                         )
                     },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Text,
+                        imeAction = ImeAction.Next,
+                    ),
                     shape = RoundedCornerShape(10.dp),
                     colors = inputColors,
                     singleLine = true,
@@ -498,6 +524,10 @@ fun AddItemDialog(
                             modifier = Modifier.size(20.dp),
                         )
                     },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Text,
+                        imeAction = ImeAction.Next,
+                    ),
                     shape = RoundedCornerShape(10.dp),
                     colors = inputColors,
                     singleLine = true,
@@ -617,7 +647,16 @@ fun AddItemDialog(
                     shape = RoundedCornerShape(10.dp),
                     colors = inputColors,
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
+                        }
+                    ),
                     modifier = Modifier.fillMaxWidth(),
                 )
 
@@ -629,7 +668,11 @@ fun AddItemDialog(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     OutlinedButton(
-                        onClick = onDismiss,
+                        onClick = {
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
+                            onDismiss()
+                        },
                         shape = RoundedCornerShape(12.dp),
                         border = BorderStroke(1.5.dp, StockProColors.Primary),
                         colors = ButtonDefaults.outlinedButtonColors(
@@ -651,6 +694,8 @@ fun AddItemDialog(
 
                     Button(
                         onClick = {
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
                             val onHandDouble = onHandText.toDoubleOrNull() ?: 0.0
                             val reorderDouble = reorderLevelText.toDoubleOrNull() ?: 10.0
                             val parDouble = parLevelText.toDoubleOrNull() ?: 50.0
@@ -803,7 +848,10 @@ private fun MetricInputCard(
                             color = StockProColors.TextPrimary,
                         ),
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Next,
+                        ),
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }

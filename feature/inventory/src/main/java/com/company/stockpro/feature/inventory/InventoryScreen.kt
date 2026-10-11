@@ -24,6 +24,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -73,7 +75,10 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -198,6 +203,8 @@ fun InventoryScreen(
     }
 
     var showSortMenu by rememberSaveable { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     Box(
         modifier = modifier
@@ -230,8 +237,16 @@ fun InventoryScreen(
                         activeWarehouse = activeWarehouse,
                         availablePlants = availablePlants,
                         onSelectPlant = onSelectPlant,
-                        onScanClick = onScanClick,
-                        onAddItemClick = onAddItemClick,
+                        onScanClick = {
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
+                            onScanClick()
+                        },
+                        onAddItemClick = {
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
+                            onAddItemClick()
+                        },
                     )
 
                     Spacer(modifier = Modifier.height(14.dp))
@@ -290,7 +305,11 @@ fun InventoryScreen(
 
                         is InventoryUiState.Empty -> {
                             InventoryEmptyStateCard(
-                                onAddItemClick = onAddItemClick,
+                                onAddItemClick = {
+                                    focusManager.clearFocus()
+                                    keyboardController?.hide()
+                                    onAddItemClick()
+                                },
                             )
                         }
 
@@ -331,14 +350,22 @@ fun InventoryScreen(
                         is InventoryUiState.Content -> {
                             if (uiState.items.isEmpty()) {
                                 InventoryEmptyStateCard(
-                                    onAddItemClick = onAddItemClick,
+                                    onAddItemClick = {
+                                        focusManager.clearFocus()
+                                        keyboardController?.hide()
+                                        onAddItemClick()
+                                    },
                                 )
                             } else {
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     uiState.items.forEach { item ->
                                         InventoryItemTableRow(
                                             item = item,
-                                            onClick = { onItemClick(item) },
+                                            onClick = {
+                                                focusManager.clearFocus()
+                                                keyboardController?.hide()
+                                                onItemClick(item)
+                                            },
                                         )
                                     }
                                 }
@@ -351,7 +378,11 @@ fun InventoryScreen(
 
         // Floating Action Button
         FloatingActionButton(
-            onClick = onAddItemClick,
+            onClick = {
+                focusManager.clearFocus()
+                keyboardController?.hide()
+                onAddItemClick()
+            },
             containerColor = StockProColors.Primary,
             contentColor = Color.White,
             shape = CircleShape,
@@ -684,6 +715,9 @@ private fun SearchAndFilterBar(
     modifier: Modifier = Modifier,
 ) {
     val strings = StockProStrings.current
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
     Surface(
         shape = RoundedCornerShape(12.dp),
         color = StockProColors.Surface,
@@ -712,6 +746,13 @@ private fun SearchAndFilterBar(
                 ),
                 singleLine = true,
                 cursorBrush = SolidColor(StockProColors.Primary),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(
+                    onSearch = {
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                    }
+                ),
                 modifier = Modifier.weight(1f),
                 decorationBox = { innerTextField ->
                     if (searchQuery.isEmpty()) {
@@ -728,7 +769,11 @@ private fun SearchAndFilterBar(
             )
             if (searchQuery.isNotEmpty()) {
                 IconButton(
-                    onClick = { onSearchQueryChanged("") },
+                    onClick = {
+                        onSearchQueryChanged("")
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                    },
                     modifier = Modifier.size(24.dp),
                 ) {
                     Icon(
@@ -740,7 +785,11 @@ private fun SearchAndFilterBar(
                 }
             } else {
                 IconButton(
-                    onClick = onScanClick,
+                    onClick = {
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                        onScanClick()
+                    },
                     modifier = Modifier.size(24.dp),
                 ) {
                     Icon(

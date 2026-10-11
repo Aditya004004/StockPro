@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -64,6 +65,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -143,6 +145,7 @@ private fun AuthScreen(
     modifier: Modifier = Modifier,
 ) {
     val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
 
@@ -185,6 +188,7 @@ private fun AuthScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
+                .imePadding()
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -493,6 +497,7 @@ private fun AuthScreen(
                             keyboardActions = KeyboardActions(
                                 onDone = {
                                     focusManager.clearFocus()
+                                    keyboardController?.hide()
                                     onSubmitClick()
                                 }
                             ),
@@ -649,6 +654,7 @@ private fun AuthScreen(
                             keyboardActions = KeyboardActions(
                                 onDone = {
                                     focusManager.clearFocus()
+                                    keyboardController?.hide()
                                     onSubmitClick()
                                 }
                             ),
@@ -679,7 +685,11 @@ private fun AuthScreen(
                                     .clickable(
                                         interactionSource = remember { MutableInteractionSource() },
                                         indication = null,
-                                        onClick = onForgotPasswordClick,
+                                        onClick = {
+                                            focusManager.clearFocus()
+                                            keyboardController?.hide()
+                                            onForgotPasswordClick()
+                                        },
                                     )
                                     .padding(vertical = 4.dp),
                             )
@@ -709,6 +719,7 @@ private fun AuthScreen(
                     Button(
                         onClick = {
                             focusManager.clearFocus()
+                            keyboardController?.hide()
                             onSubmitClick()
                         },
                         enabled = !uiState.isLoading,
@@ -822,7 +833,11 @@ private fun AuthScreen(
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null,
-                                onClick = onToggleModeClick,
+                                onClick = {
+                                    focusManager.clearFocus()
+                                    keyboardController?.hide()
+                                    onToggleModeClick()
+                                },
                             )
                             .padding(vertical = 4.dp),
                     )
