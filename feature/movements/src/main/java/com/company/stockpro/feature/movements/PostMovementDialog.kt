@@ -28,8 +28,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -55,6 +58,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import com.company.stockpro.core.designsystem.component.ButtonVariant
@@ -111,13 +115,7 @@ fun PostMovementDialog(
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
 
-    val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    val isImeVisible = WindowInsets.isImeVisible
-    val bottomInset = if (isImeVisible) 16.dp else maxOf(navBarBottom, 24.dp) + 16.dp
-    val topInset = maxOf(statusBarTop, 16.dp) + 8.dp
-
-    BasicAlertDialog(
+    Dialog(
         onDismissRequest = {
             focusManager.clearFocus()
             keyboardController?.hide()
@@ -127,30 +125,60 @@ fun PostMovementDialog(
             usePlatformDefaultWidth = false,
             decorFitsSystemWindows = false,
         ),
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(start = 16.dp, top = topInset, end = 16.dp, bottom = bottomInset)
-            .imePadding(),
     ) {
         val dialogWindow = (LocalView.current.parent as? DialogWindowProvider)?.window
         SideEffect {
-            @Suppress("DEPRECATION")
-            dialogWindow?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+            dialogWindow?.let { win ->
+                win.setLayout(
+                    WindowManager.LayoutParams.MATCH_PARENT,
+                    WindowManager.LayoutParams.MATCH_PARENT,
+                )
+                @Suppress("DEPRECATION")
+                win.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+            }
         }
 
-        Surface(
-            shape = Radius.lg,
-            color = StockProColors.Surface,
-            border = androidx.compose.foundation.BorderStroke(1.dp, StockProColors.OutlineSubtle),
-            shadowElevation = 8.dp,
-            modifier = Modifier.fillMaxWidth(),
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = {
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                        onDismiss()
+                    },
+                ),
+            contentAlignment = Alignment.Center,
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(Spacing.cardPadding)
-                    .verticalScroll(rememberScrollState()),
+            Box(
+                modifier = modifier
+                    .fillMaxSize()
+                    .safeDrawingPadding()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                contentAlignment = Alignment.Center,
             ) {
+                Surface(
+                    shape = Radius.lg,
+                    color = StockProColors.Surface,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, StockProColors.OutlineSubtle),
+                    shadowElevation = 8.dp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = { /* Consume clicks inside card */ },
+                        ),
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(Spacing.cardPadding)
+                            .verticalScroll(rememberScrollState()),
+                    ) {
                 // 1. Industrial Header
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -470,3 +498,5 @@ fun PostMovementDialog(
         }
     }
 }
+        }
+    }

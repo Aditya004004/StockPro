@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -42,7 +43,8 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.TrackChanges
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.BasicAlertDialog
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
@@ -74,6 +76,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import com.company.stockpro.core.designsystem.theme.StockProColors
@@ -140,13 +143,7 @@ fun AddItemDialog(
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
 
-    val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    val isImeVisible = WindowInsets.isImeVisible
-    val bottomInset = if (isImeVisible) 16.dp else maxOf(navBarBottom, 24.dp) + 16.dp
-    val topInset = maxOf(statusBarTop, 16.dp) + 8.dp
-
-    BasicAlertDialog(
+    Dialog(
         onDismissRequest = {
             focusManager.clearFocus()
             keyboardController?.hide()
@@ -156,30 +153,60 @@ fun AddItemDialog(
             usePlatformDefaultWidth = false,
             decorFitsSystemWindows = false,
         ),
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(start = 16.dp, top = topInset, end = 16.dp, bottom = bottomInset)
-            .imePadding(),
     ) {
         val dialogWindow = (LocalView.current.parent as? DialogWindowProvider)?.window
         SideEffect {
-            @Suppress("DEPRECATION")
-            dialogWindow?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+            dialogWindow?.let { win ->
+                win.setLayout(
+                    WindowManager.LayoutParams.MATCH_PARENT,
+                    WindowManager.LayoutParams.MATCH_PARENT,
+                )
+                @Suppress("DEPRECATION")
+                win.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+            }
         }
 
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = StockProColors.Surface,
-            shadowElevation = 10.dp,
-            border = BorderStroke(1.dp, StockProColors.Outline),
-            modifier = Modifier.fillMaxWidth(),
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = {
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                        onDismiss()
+                    },
+                ),
+            contentAlignment = Alignment.Center,
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp)
-                    .verticalScroll(rememberScrollState()),
+            Box(
+                modifier = modifier
+                    .fillMaxSize()
+                    .safeDrawingPadding()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                contentAlignment = Alignment.Center,
             ) {
+                Surface(
+                    shape = RoundedCornerShape(24.dp),
+                    color = StockProColors.Surface,
+                    shadowElevation = 10.dp,
+                    border = BorderStroke(1.dp, StockProColors.Outline),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = { /* Consume clicks inside card */ },
+                        ),
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp)
+                            .verticalScroll(rememberScrollState()),
+                    ) {
                 // 1. Header with Badge, Title/Subtitle, and Circular Close Button
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -784,6 +811,8 @@ fun AddItemDialog(
         }
     }
 }
+        }
+    }
 
 @Composable
 private fun AddItemFieldLabel(

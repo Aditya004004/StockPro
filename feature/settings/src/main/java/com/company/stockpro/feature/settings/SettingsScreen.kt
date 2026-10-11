@@ -110,6 +110,10 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -2053,13 +2057,7 @@ private fun EditProfileDialog(
     val isPlantValid = selectedPlant.trim().isNotBlank()
     val isFormValid = isNameValid && isPhoneValid && isCompanyValid && isPlantValid
 
-    val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    val isImeVisible = WindowInsets.isImeVisible
-    val bottomInset = if (isImeVisible) 16.dp else maxOf(navBarBottom, 24.dp) + 16.dp
-    val topInset = maxOf(statusBarTop, 16.dp) + 8.dp
-
-    BasicAlertDialog(
+    Dialog(
         onDismissRequest = {
             focusManager.clearFocus()
             keyboardController?.hide()
@@ -2069,30 +2067,60 @@ private fun EditProfileDialog(
             usePlatformDefaultWidth = false,
             decorFitsSystemWindows = false,
         ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 16.dp, top = topInset, end = 16.dp, bottom = bottomInset)
-            .imePadding(),
     ) {
         val dialogWindow = (LocalView.current.parent as? DialogWindowProvider)?.window
         SideEffect {
-            @Suppress("DEPRECATION")
-            dialogWindow?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+            dialogWindow?.let { win ->
+                win.setLayout(
+                    WindowManager.LayoutParams.MATCH_PARENT,
+                    WindowManager.LayoutParams.MATCH_PARENT,
+                )
+                @Suppress("DEPRECATION")
+                win.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+            }
         }
 
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = StockProColors.Surface,
-            shadowElevation = 10.dp,
-            border = BorderStroke(1.dp, StockProColors.Outline),
-            modifier = Modifier.fillMaxWidth(),
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = {
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                        onDismiss()
+                    },
+                ),
+            contentAlignment = Alignment.Center,
         ) {
-            Column(
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp)
-                    .verticalScroll(rememberScrollState()),
+                    .fillMaxSize()
+                    .safeDrawingPadding()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                contentAlignment = Alignment.Center,
             ) {
+                Surface(
+                    shape = RoundedCornerShape(24.dp),
+                    color = StockProColors.Surface,
+                    shadowElevation = 10.dp,
+                    border = BorderStroke(1.dp, StockProColors.Outline),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = { /* Consume clicks inside card */ },
+                        ),
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp)
+                            .verticalScroll(rememberScrollState()),
+                    ) {
                 // 1. Header with Badge, Title/Subtitle, and Circular Close Button
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -2391,6 +2419,8 @@ private fun EditProfileDialog(
         }
     }
 }
+        }
+    }
 
 @Composable
 private fun ProfileFieldLabel(label: String) {

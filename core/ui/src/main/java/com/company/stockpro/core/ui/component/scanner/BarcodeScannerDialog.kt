@@ -40,12 +40,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FlashOff
 import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material.icons.filled.Keyboard
-import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -74,6 +77,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.content.ContextCompat
@@ -140,13 +144,7 @@ fun BarcodeScannerDialog(
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
 
-    val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    val isImeVisible = WindowInsets.isImeVisible
-    val bottomInset = if (isImeVisible) 16.dp else maxOf(navBarBottom, 24.dp) + 16.dp
-    val topInset = maxOf(statusBarTop, 16.dp) + 8.dp
-
-    BasicAlertDialog(
+    Dialog(
         onDismissRequest = {
             focusManager.clearFocus()
             keyboardController?.hide()
@@ -156,31 +154,60 @@ fun BarcodeScannerDialog(
             usePlatformDefaultWidth = false,
             decorFitsSystemWindows = false,
         ),
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(start = 16.dp, top = topInset, end = 16.dp, bottom = bottomInset)
-            .imePadding(),
     ) {
         val dialogWindow = (LocalView.current.parent as? DialogWindowProvider)?.window
         SideEffect {
-            @Suppress("DEPRECATION")
-            dialogWindow?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+            dialogWindow?.let { win ->
+                win.setLayout(
+                    WindowManager.LayoutParams.MATCH_PARENT,
+                    WindowManager.LayoutParams.MATCH_PARENT,
+                )
+                @Suppress("DEPRECATION")
+                win.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+            }
         }
 
-        Surface(
-            shape = Radius.lg,
-            color = StockProColors.Canvas,
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .clip(Radius.lg),
+                .fillMaxSize()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = {
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                        onDismissRequest()
+                    },
+                ),
+            contentAlignment = Alignment.Center,
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(Spacing.x4)
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally,
+            Box(
+                modifier = modifier
+                    .fillMaxSize()
+                    .safeDrawingPadding()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                contentAlignment = Alignment.Center,
             ) {
+                Surface(
+                    shape = Radius.lg,
+                    color = StockProColors.Canvas,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .clip(Radius.lg)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = { /* Consume clicks inside card */ },
+                        ),
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(Spacing.x4)
+                            .verticalScroll(rememberScrollState()),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
                 // Top Header: Title + Torch + Close
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -439,3 +466,5 @@ fun BarcodeScannerDialog(
         }
     }
 }
+        }
+    }
