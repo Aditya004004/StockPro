@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.navigationBars
@@ -181,12 +182,17 @@ fun BarcodeScannerDialog(
                 ),
             contentAlignment = Alignment.Center,
         ) {
+            val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
+            val isKeyboardOpen = WindowInsets.isImeVisible || imeBottom > 0.dp
+            val bottomClearance = if (isKeyboardOpen) maxOf(imeBottom, 320.dp) else 32.dp
+            val verticalMargin = if (isKeyboardOpen) 6.dp else 12.dp
+
             Box(
                 modifier = modifier
                     .fillMaxSize()
                     .safeDrawingPadding()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                contentAlignment = Alignment.Center,
+                    .padding(horizontal = 16.dp, vertical = verticalMargin),
+                contentAlignment = if (isKeyboardOpen) Alignment.TopCenter else Alignment.Center,
             ) {
                 Surface(
                     shape = Radius.lg,
@@ -461,7 +467,7 @@ fun BarcodeScannerDialog(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(bottomClearance))
             }
         }
     }
