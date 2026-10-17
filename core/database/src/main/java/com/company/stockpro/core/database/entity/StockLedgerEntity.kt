@@ -2,6 +2,7 @@ package com.company.stockpro.core.database.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
@@ -12,7 +13,16 @@ import androidx.room.PrimaryKey
  * by the server yet. Once the outbox receives a 2xx, the entry is replaced
  * with the server-authoritative version.
  */
-@Entity(tableName = "stock_ledger")
+@Entity(
+    tableName = "stock_ledger",
+    indices = [
+        Index(value = ["item_id", "created_at"]),
+        Index(value = ["created_at"]),
+        Index(value = ["idempotency_key"]),
+        Index(value = ["from_location_id"]),
+        Index(value = ["to_location_id"]),
+    ],
+)
 data class StockLedgerEntity(
     @PrimaryKey
     val id: String,

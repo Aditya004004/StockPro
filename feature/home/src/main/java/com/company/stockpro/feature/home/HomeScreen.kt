@@ -643,7 +643,7 @@ private fun HomeContent(
                         iconColor = StockProColors.Primary,
                         iconBgColor = Color(0xFFEEF2FF),
                         barColor = Color(0xFFDBEAFE),
-                        barHeights = listOf(0.40f, 0.85f, 0.30f, 0.65f),
+                        barHeights = TotalItemsBarHeights,
                         deltaText = "${state.totalItemsDeltaPercent}%",
                         subText = "this month",
                         isPill = true,
@@ -656,7 +656,7 @@ private fun HomeContent(
                         iconColor = StockProColors.Warning,
                         iconBgColor = Color(0xFFFEF3C7),
                         barColor = Color(0xFFFED7AA),
-                        barHeights = listOf(0.65f, 0.40f, 0.90f, 0.50f),
+                        barHeights = LowStockBarHeights,
                         deltaText = "${state.lowStockItemsNeedReorder} Critical",
                         subText = "need reorder",
                         isPill = false,
@@ -675,7 +675,7 @@ private fun HomeContent(
                         iconColor = StockProColors.Production,
                         iconBgColor = Color(0xFFF3E8FF),
                         barColor = Color(0xFFDDD6FE),
-                        barHeights = listOf(0.35f, 0.60f, 0.90f, 0.50f),
+                        barHeights = InProductionBarHeights,
                         deltaText = "${state.finishedGoodsDeltaPercent}%",
                         subText = "active runs",
                         isPill = true,
@@ -688,7 +688,7 @@ private fun HomeContent(
                         iconColor = StockProColors.Success,
                         iconBgColor = Color(0xFFDCFCE7),
                         barColor = Color(0xFFBBF7D0),
-                        barHeights = listOf(0.40f, 0.70f, 0.90f, 0.50f),
+                        barHeights = RawMaterialsBarHeights,
                         deltaText = "${state.rawMaterialsDeltaPercent}%",
                         subText = "in warehouse",
                         isPill = true,
@@ -1764,3 +1764,9 @@ private fun HomeLoadingSkeleton() {
         )
     }
 }
+
+private val TotalItemsBarHeights = listOf(0.40f, 0.85f, 0.30f, 0.65f)
+private val LowStockBarHeights = listOf(0.65f, 0.40f, 0.90f, 0.50f)
+private val InProductionBarHeights = listOf(0.35f, 0.60f, 0.90f, 0.50f)
+private val RawMaterialsBarHeights = listOf(0.40f, 0.70f, 0.90f, 0.50f)
+

@@ -2,6 +2,7 @@ package com.company.stockpro.core.database.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
@@ -11,7 +12,16 @@ import androidx.room.PrimaryKey
  * All quantities are Long milli-units. All money values are Long paise.
  * Never floating-point (rules.md §4).
  */
-@Entity(tableName = "items")
+@Entity(
+    tableName = "items",
+    indices = [
+        Index(value = ["is_active", "item_class", "name"]),
+        Index(value = ["is_active", "location_id"]),
+        Index(value = ["is_active", "on_hand_milli"]),
+        Index(value = ["is_active", "last_movement_at"]),
+        Index(value = ["code"]),
+    ],
+)
 data class ItemEntity(
     @PrimaryKey
     val id: String,

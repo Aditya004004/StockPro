@@ -36,10 +36,12 @@ import androidx.room.withTransaction
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
@@ -219,7 +221,9 @@ class InventoryRepositoryImpl(
                             try {
                                 com.google.firebase.messaging.FirebaseMessaging.getInstance()
                                     .subscribeToTopic("plant_$currentPlantId")
-                            } catch (_: Exception) {}
+                            } catch (e: Exception) {
+                                if (e is kotlinx.coroutines.CancellationException) throw e
+                            }
                             try {
                                 syncManager?.pullDelta(currentOrgId, currentPlantId)
                             } catch (e: Exception) {
@@ -266,7 +270,7 @@ class InventoryRepositoryImpl(
         notificationDao.deleteById("notif_3")
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
+    @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
     private suspend fun observeAndReconcileNotifications() {
         combine(
             itemDao.observeActiveItems(),
@@ -274,7 +278,7 @@ class InventoryRepositoryImpl(
             userSettingsFlow,
         ) { items, failedEntries, settings ->
             Triple(items, failedEntries, settings)
-        }.collect { (items, failedEntries, settings) ->
+        }.debounce(1000L).collect { (items, failedEntries, settings) ->
             reconcileNotifications(items, failedEntries, settings)
         }
     }
@@ -997,10 +1001,14 @@ class InventoryRepositoryImpl(
             try {
                 com.google.firebase.messaging.FirebaseMessaging.getInstance()
                     .unsubscribeFromTopic("plant_$currentPlantId")
-            } catch (_: Exception) {}
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+            }
             try {
                 com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
-            } catch (_: Exception) {}
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+            }
             DataResult.Success(Unit)
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e

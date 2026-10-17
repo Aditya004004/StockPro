@@ -123,6 +123,7 @@ class OutboxWorker(
                         }
                     }
                 } catch (e: Exception) {
+                    if (e is kotlinx.coroutines.CancellationException) throw e
                     // Network or unexpected failure — retry with backoff
                     Log.e(TAG, "Network/unexpected error for ${entry.idempotencyKey}", e)
                     handleRetryable(entry, e, outboxDao, now)

@@ -181,16 +181,20 @@ class InventoryViewModel @Inject constructor(
 
     fun retryFailedOutbox(id: Long) {
         viewModelScope.launch {
-            runCatching {
+            try {
                 repository.retryFailedOutbox(id)
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
             }
         }
     }
 
     fun discardFailedOutbox(id: Long) {
         viewModelScope.launch {
-            runCatching {
+            try {
                 repository.discardFailedOutbox(id)
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
             }
         }
     }

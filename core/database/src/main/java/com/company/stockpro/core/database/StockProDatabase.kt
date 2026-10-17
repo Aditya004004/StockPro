@@ -38,7 +38,7 @@ import com.company.stockpro.core.database.entity.ToolCustodyEntity
         PlantEntity::class,
         ThresholdAuditEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 abstract class StockProDatabase : RoomDatabase() {
@@ -165,6 +165,32 @@ abstract class StockProDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_4_5 = object : androidx.room.migration.Migration(4, 5) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                // items secondary indices
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_items_is_active_item_class_name` ON `items` (`is_active`, `item_class`, `name`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_items_is_active_location_id` ON `items` (`is_active`, `location_id`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_items_is_active_on_hand_milli` ON `items` (`is_active`, `on_hand_milli`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_items_is_active_last_movement_at` ON `items` (`is_active`, `last_movement_at`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_items_code` ON `items` (`code`)")
+
+                // stock_ledger secondary indices
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_stock_ledger_item_id_created_at` ON `stock_ledger` (`item_id`, `created_at`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_stock_ledger_created_at` ON `stock_ledger` (`created_at`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_stock_ledger_idempotency_key` ON `stock_ledger` (`idempotency_key`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_stock_ledger_from_location_id` ON `stock_ledger` (`from_location_id`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_stock_ledger_to_location_id` ON `stock_ledger` (`to_location_id`)")
+
+                // outbox secondary indices
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_outbox_status_item_id_created_at` ON `outbox` (`status`, `item_id`, `created_at`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_outbox_status` ON `outbox` (`status`)")
+
+                // notifications secondary indices
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_notifications_plant_id_is_read` ON `notifications` (`plant_id`, `is_read`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_notifications_plant_id_created_at` ON `notifications` (`plant_id`, `created_at`)")
+            }
+        }
+
         fun getInstance(context: android.content.Context): StockProDatabase {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: androidx.room.Room.databaseBuilder(
@@ -172,7 +198,7 @@ abstract class StockProDatabase : RoomDatabase() {
                     StockProDatabase::class.java,
                     "stockpro.db",
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .fallbackToDestructiveMigrationOnDowngrade()
                     .build()
                     .also { INSTANCE = it }

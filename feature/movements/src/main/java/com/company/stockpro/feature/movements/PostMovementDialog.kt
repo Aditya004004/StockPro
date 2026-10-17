@@ -1,5 +1,6 @@
 package com.company.stockpro.feature.movements
 
+import android.view.ViewParent
 import android.view.WindowManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
@@ -37,6 +39,7 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -127,7 +130,17 @@ fun PostMovementDialog(
             decorFitsSystemWindows = false,
         ),
     ) {
-        val dialogWindow = (LocalView.current.parent as? DialogWindowProvider)?.window
+        val view = LocalView.current
+        val dialogWindow = remember(view) {
+            var current: ViewParent? = view.parent
+            while (current != null) {
+                if (current is DialogWindowProvider) {
+                    return@remember current.window
+                }
+                current = current.parent
+            }
+            (view as? DialogWindowProvider)?.window
+        }
         SideEffect {
             dialogWindow?.let { win ->
                 win.setLayout(
@@ -155,15 +168,20 @@ fun PostMovementDialog(
         ) {
             val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
             val isKeyboardOpen = WindowInsets.isImeVisible || imeBottom > 0.dp
-            val bottomClearance = if (isKeyboardOpen) maxOf(imeBottom, 320.dp) else 40.dp
-            val verticalMargin = if (isKeyboardOpen) 6.dp else 12.dp
+            val topMargin = if (isKeyboardOpen) 6.dp else 16.dp
+            val bottomMargin = if (isKeyboardOpen) 8.dp else 28.dp
 
             Box(
                 modifier = modifier
                     .fillMaxSize()
                     .safeDrawingPadding()
-                    .padding(horizontal = 16.dp, vertical = verticalMargin),
-                contentAlignment = if (isKeyboardOpen) Alignment.TopCenter else Alignment.Center,
+                    .padding(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = topMargin,
+                        bottom = bottomMargin,
+                    ),
+                contentAlignment = Alignment.Center,
             ) {
                 Surface(
                     shape = Radius.lg,
@@ -172,7 +190,7 @@ fun PostMovementDialog(
                     shadowElevation = 8.dp,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .wrapContentHeight()
+                        .fillMaxHeight(if (isKeyboardOpen) 0.96f else 0.82f)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
@@ -180,49 +198,57 @@ fun PostMovementDialog(
                         ),
                 ) {
                     Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(Spacing.cardPadding)
-                            .verticalScroll(rememberScrollState()),
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
-                // 1. Industrial Header
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column {
-                        Text(
-                            text = strings.postMovementTitle.uppercase(),
-                            style = StockProCodeTextStyle.copy(
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = StockProColors.TextSecondary,
-                            ),
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = item.name,
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
-                            color = StockProColors.TextPrimary,
-                            maxLines = 1,
-                        )
-                    }
+                        // 1. Industrial Header (Fixed Top)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = Spacing.cardPadding, vertical = Spacing.x3),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column {
+                                Text(
+                                    text = strings.postMovementTitle.uppercase(),
+                                    style = StockProCodeTextStyle.copy(
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = StockProColors.TextSecondary,
+                                    ),
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = item.name,
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                                    color = StockProColors.TextPrimary,
+                                    maxLines = 1,
+                                )
+                            }
 
-                    Surface(
-                        shape = Radius.xs,
-                        color = StockProColors.SurfaceAlt,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, StockProColors.Outline),
-                    ) {
-                        Text(
-                            text = item.code,
-                            style = StockProCodeTextStyle.copy(fontSize = 11.sp, fontWeight = FontWeight.Bold),
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                        )
-                    }
-                }
+                            Surface(
+                                shape = Radius.xs,
+                                color = StockProColors.SurfaceAlt,
+                                border = androidx.compose.foundation.BorderStroke(1.dp, StockProColors.Outline),
+                            ) {
+                                Text(
+                                    text = item.code,
+                                    style = StockProCodeTextStyle.copy(fontSize = 11.sp, fontWeight = FontWeight.Bold),
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                )
+                            }
+                        }
 
-                Spacer(modifier = Modifier.height(Spacing.x3))
+                        HorizontalDivider(color = StockProColors.OutlineSubtle, thickness = 1.dp)
+
+                        // 2. Scrollable Body
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f, fill = false)
+                                .verticalScroll(rememberScrollState())
+                                .padding(horizontal = Spacing.cardPadding, vertical = Spacing.x3),
+                        ) {
 
                 // 2. Movement Type Segmented Selector with Semantic Colors
                 Row(
@@ -452,12 +478,22 @@ fun PostMovementDialog(
                     Text(it, color = StockProColors.Danger, style = MaterialTheme.typography.bodySmall)
                 }
 
-                Spacer(modifier = Modifier.height(Spacing.x4))
+                Spacer(modifier = Modifier.height(Spacing.x2))
+            }
 
-                // 7. Actions
+            HorizontalDivider(color = StockProColors.OutlineSubtle, thickness = 1.dp)
+
+            // 7. Actions (Fixed Bottom Action Bar)
+            Surface(
+                color = StockProColors.Surface,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
                 Row(
                     horizontalArrangement = Arrangement.End,
-                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = Spacing.cardPadding, end = Spacing.cardPadding, top = 12.dp, bottom = 22.dp),
                 ) {
                     StockProButton(
                         text = strings.cancel,
@@ -498,11 +534,10 @@ fun PostMovementDialog(
                         variant = ButtonVariant.PRIMARY,
                     )
                 }
-
-                Spacer(modifier = Modifier.height(bottomClearance))
             }
         }
     }
 }
         }
     }
+}

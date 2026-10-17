@@ -1,5 +1,6 @@
 package com.company.stockpro.feature.home
 
+import androidx.compose.runtime.Immutable
 import com.company.stockpro.core.domain.model.Currency
 import com.company.stockpro.core.domain.model.Item
 import com.company.stockpro.core.domain.model.MovementType
@@ -13,6 +14,7 @@ import com.company.stockpro.core.ui.component.chart.StockSegment
 sealed interface HomeUiState {
     data object Loading : HomeUiState
 
+    @Immutable
     data class Content(
         val userName: String = "Aditya",
         val activePlant: String = "Plant 1",
@@ -48,6 +50,7 @@ sealed interface HomeUiState {
     data class Error(val message: String) : HomeUiState
 }
 
+@Immutable
 data class HomeActivityItem(
     val id: String,
     val title: String,

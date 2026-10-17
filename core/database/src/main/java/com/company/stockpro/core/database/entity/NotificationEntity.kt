@@ -2,13 +2,20 @@ package com.company.stockpro.core.database.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
  * Room entity for cached notifications.
  * Drives unread badge counts and notification center (prd.md §3.5, §4.1 H11).
  */
-@Entity(tableName = "notifications")
+@Entity(
+    tableName = "notifications",
+    indices = [
+        Index(value = ["plant_id", "is_read"]),
+        Index(value = ["plant_id", "created_at"]),
+    ],
+)
 data class NotificationEntity(
     @PrimaryKey
     val id: String,

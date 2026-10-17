@@ -1,5 +1,9 @@
+
+
+
 package com.company.stockpro.feature.inventory
 
+import android.view.ViewParent
 import android.view.WindowManager
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -12,6 +16,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -51,6 +56,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -155,7 +161,17 @@ fun AddItemDialog(
             decorFitsSystemWindows = false,
         ),
     ) {
-        val dialogWindow = (LocalView.current.parent as? DialogWindowProvider)?.window
+        val view = LocalView.current
+        val dialogWindow = remember(view) {
+            var current: ViewParent? = view.parent
+            while (current != null) {
+                if (current is DialogWindowProvider) {
+                    return@remember current.window
+                }
+                current = current.parent
+            }
+            (view as? DialogWindowProvider)?.window
+        }
         SideEffect {
             dialogWindow?.let { win ->
                 win.setLayout(
@@ -183,15 +199,20 @@ fun AddItemDialog(
         ) {
             val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
             val isKeyboardOpen = WindowInsets.isImeVisible || imeBottom > 0.dp
-            val bottomClearance = if (isKeyboardOpen) maxOf(imeBottom, 320.dp) else 40.dp
-            val verticalMargin = if (isKeyboardOpen) 6.dp else 12.dp
+            val topMargin = if (isKeyboardOpen) 6.dp else 16.dp
+            val bottomMargin = if (isKeyboardOpen) 8.dp else 28.dp
 
             Box(
                 modifier = modifier
                     .fillMaxSize()
                     .safeDrawingPadding()
-                    .padding(horizontal = 16.dp, vertical = verticalMargin),
-                contentAlignment = if (isKeyboardOpen) Alignment.TopCenter else Alignment.Center,
+                    .padding(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = topMargin,
+                        bottom = bottomMargin,
+                    ),
+                contentAlignment = Alignment.Center,
             ) {
                 Surface(
                     shape = RoundedCornerShape(24.dp),
@@ -200,7 +221,7 @@ fun AddItemDialog(
                     border = BorderStroke(1.dp, StockProColors.Outline),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .wrapContentHeight()
+                        .fillMaxHeight(if (isKeyboardOpen) 0.96f else 0.80f)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
@@ -208,82 +229,93 @@ fun AddItemDialog(
                         ),
                 ) {
                     Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(20.dp)
-                            .verticalScroll(rememberScrollState()),
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
-                // 1. Header with Badge, Title/Subtitle, and Circular Close Button
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Box(
+                        // 1. Header with Badge, Title/Subtitle, and Circular Close Button (Fixed Top)
+                        Row(
                             modifier = Modifier
-                                .size(44.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(if (isDark) Color(0xFF1E3A8A).copy(alpha = 0.5f) else Color(0xFFE8F1FC)),
-                            contentAlignment = Alignment.Center,
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp, vertical = 16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Inventory2,
-                                contentDescription = null,
-                                tint = if (isDark) Color(0xFF60A5FA) else Color(0xFF2563EB),
-                                modifier = Modifier.size(24.dp),
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = strings.addNewItemTitle,
-                                style = TextStyle(
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = StockProColors.TextPrimary,
-                                ),
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = strings.createMasterDataSubtitle,
-                                style = TextStyle(
-                                    fontSize = 12.sp,
-                                    color = StockProColors.TextSecondary,
-                                ),
-                            )
-                        }
-                    }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(if (isDark) Color(0xFF1E3A8A).copy(alpha = 0.5f) else Color(0xFFE8F1FC)),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Inventory2,
+                                        contentDescription = null,
+                                        tint = if (isDark) Color(0xFF60A5FA) else Color(0xFF2563EB),
+                                        modifier = Modifier.size(24.dp),
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(
+                                        text = strings.addNewItemTitle,
+                                        style = TextStyle(
+                                            fontSize = 18.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = StockProColors.TextPrimary,
+                                        ),
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = strings.createMasterDataSubtitle,
+                                        style = TextStyle(
+                                            fontSize = 12.sp,
+                                            color = StockProColors.TextSecondary,
+                                        ),
+                                    )
+                                }
+                            }
 
-                    Surface(
-                        shape = CircleShape,
-                        color = StockProColors.SurfaceAlt,
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clickable {
-                                focusManager.clearFocus()
-                                keyboardController?.hide()
-                                onDismiss()
-                            },
-                    ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.fillMaxSize(),
+                            Surface(
+                                shape = CircleShape,
+                                color = StockProColors.SurfaceAlt,
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clickable {
+                                        focusManager.clearFocus()
+                                        keyboardController?.hide()
+                                        onDismiss()
+                                    },
+                            ) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier.fillMaxSize(),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Close",
+                                        tint = StockProColors.TextSecondary,
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                }
+                            }
+                        }
+
+                        HorizontalDivider(
+                            color = StockProColors.OutlineSubtle,
+                            thickness = 1.dp,
+                        )
+
+                        // 2. Scrollable Body: Form Fields
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f, fill = false)
+                                .verticalScroll(rememberScrollState())
+                                .padding(horizontal = 20.dp, vertical = 16.dp),
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Close",
-                                tint = StockProColors.TextSecondary,
-                                modifier = Modifier.size(16.dp),
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
 
                 // 2. Item Code Field
                 AddItemFieldLabel(label = strings.itemCodeLabel, isRequired = true)
@@ -719,106 +751,117 @@ fun AddItemDialog(
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // 10. Action Buttons (Cancel & Create Item)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    OutlinedButton(
-                        onClick = {
-                            focusManager.clearFocus()
-                            keyboardController?.hide()
-                            onDismiss()
-                        },
-                        shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.5.dp, StockProColors.Primary),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = StockProColors.Primary,
-                        ),
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp),
-                    ) {
-                        Text(
-                            text = strings.cancel,
-                            style = TextStyle(
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = StockProColors.Primary,
-                            ),
-                        )
+                        Spacer(modifier = Modifier.height(24.dp))
                     }
 
-                    Button(
-                        onClick = {
-                            focusManager.clearFocus()
-                            keyboardController?.hide()
-                            val onHandDouble = onHandText.toDoubleOrNull() ?: 0.0
-                            val reorderDouble = reorderLevelText.toDoubleOrNull() ?: 10.0
-                            val parDouble = parLevelText.toDoubleOrNull() ?: 50.0
-                            val unitCostMinor = ((unitCostText.toDoubleOrNull() ?: 0.0) * currency.minorUnitFactor).toLong()
+                    HorizontalDivider(
+                        color = StockProColors.OutlineSubtle,
+                        thickness = 1.dp,
+                    )
 
-                            val newItem = Item(
-                                id = UUID.randomUUID().toString(),
-                                code = code.trim(),
-                                name = name.trim(),
-                                itemClass = itemClass,
-                                categoryName = categoryName.trim().ifBlank { "General" },
-                                unitOfMeasure = unitOfMeasure.trim().ifBlank { "PCS" },
-                                onHand = Quantity((onHandDouble * 1000).toLong()),
-                                reserved = Quantity.ZERO,
-                                inProduction = Quantity.ZERO,
-                                reorderLevel = Quantity((reorderDouble * 1000).toLong()),
-                                parLevel = Quantity((parDouble * 1000).toLong()),
-                                unitCost = Money(unitCostMinor),
-                                locationCode = locationCode.trim().ifBlank { "STORE" },
-                            )
-                            onConfirm(newItem)
-                        },
-                        enabled = isValid,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = StockProColors.Primary,
-                            contentColor = Color.White,
-                            disabledContainerColor = if (isDark) Color(0xFF1E3A8A).copy(alpha = 0.5f) else Color(0xFF93C5FD),
-                            disabledContentColor = Color.White,
-                        ),
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp),
+                    // 10. Action Buttons (Cancel & Create Item) - Fixed Uplifted Bottom Action Bar
+                    Surface(
+                        color = StockProColors.Surface,
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
                         Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 22.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Inventory2,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(18.dp),
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = strings.createItemButton,
-                                style = TextStyle(
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White,
+                            OutlinedButton(
+                                onClick = {
+                                    focusManager.clearFocus()
+                                    keyboardController?.hide()
+                                    onDismiss()
+                                },
+                                shape = RoundedCornerShape(14.dp),
+                                border = BorderStroke(1.5.dp, StockProColors.Primary),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = StockProColors.Primary,
                                 ),
-                            )
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(50.dp),
+                            ) {
+                                Text(
+                                    text = strings.cancel,
+                                    style = TextStyle(
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = StockProColors.Primary,
+                                    ),
+                                )
+                            }
+
+                            Button(
+                                onClick = {
+                                    focusManager.clearFocus()
+                                    keyboardController?.hide()
+                                    val onHandDouble = onHandText.toDoubleOrNull() ?: 0.0
+                                    val reorderDouble = reorderLevelText.toDoubleOrNull() ?: 10.0
+                                    val parDouble = parLevelText.toDoubleOrNull() ?: 50.0
+                                    val unitCostMinor = ((unitCostText.toDoubleOrNull() ?: 0.0) * currency.minorUnitFactor).toLong()
+
+                                    val newItem = Item(
+                                        id = UUID.randomUUID().toString(),
+                                        code = code.trim(),
+                                        name = name.trim(),
+                                        itemClass = itemClass,
+                                        categoryName = categoryName.trim().ifBlank { "General" },
+                                        unitOfMeasure = unitOfMeasure.trim().ifBlank { "PCS" },
+                                        onHand = Quantity((onHandDouble * 1000).toLong()),
+                                        reserved = Quantity.ZERO,
+                                        inProduction = Quantity.ZERO,
+                                        reorderLevel = Quantity((reorderDouble * 1000).toLong()),
+                                        parLevel = Quantity((parDouble * 1000).toLong()),
+                                        unitCost = Money(unitCostMinor),
+                                        locationCode = locationCode.trim().ifBlank { "STORE" },
+                                    )
+                                    onConfirm(newItem)
+                                },
+                                enabled = isValid,
+                                shape = RoundedCornerShape(14.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = StockProColors.Primary,
+                                    contentColor = Color.White,
+                                    disabledContainerColor = if (isDark) Color(0xFF1E3A8A).copy(alpha = 0.5f) else Color(0xFF93C5FD),
+                                    disabledContentColor = Color.White,
+                                ),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(50.dp),
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center,
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Inventory2,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = strings.createItemButton,
+                                        style = TextStyle(
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White,
+                                        ),
+                                    )
+                                }
+                            }
                         }
                     }
                 }
-
-                Spacer(modifier = Modifier.height(bottomClearance))
             }
         }
     }
 }
-        }
-    }
+}
 
 @Composable
 private fun AddItemFieldLabel(

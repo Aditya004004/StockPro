@@ -2,6 +2,7 @@ package com.company.stockpro.core.database.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
@@ -16,7 +17,13 @@ import androidx.room.PrimaryKey
  * Retry is only for 5xx/network errors (stays PENDING with bumped retryCount).
  * Ordering is FIFO per item to ensure balanceAfter consistency.
  */
-@Entity(tableName = "outbox")
+@Entity(
+    tableName = "outbox",
+    indices = [
+        Index(value = ["status", "item_id", "created_at"]),
+        Index(value = ["status"]),
+    ],
+)
 data class OutboxEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0L,

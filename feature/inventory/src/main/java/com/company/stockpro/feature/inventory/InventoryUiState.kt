@@ -1,5 +1,6 @@
 package com.company.stockpro.feature.inventory
 
+import androidx.compose.runtime.Immutable
 import com.company.stockpro.core.domain.model.Currency
 import com.company.stockpro.core.domain.model.InventorySummary
 import com.company.stockpro.core.domain.model.Item
@@ -18,6 +19,7 @@ sealed interface InventoryUiState {
     data object Loading : InventoryUiState
 
     /** Active inventory catalogue content with summary KPI cards and item rows. */
+    @Immutable
     data class Content(
         val items: List<Item>,
         val summary: InventorySummary = InventorySummary(),
@@ -32,6 +34,7 @@ sealed interface InventoryUiState {
     ) : InventoryUiState
 
     /** Contextual empty state naming the cause (no items, search miss, filter miss). */
+    @Immutable
     data class Empty(
         val reason: EmptyReason,
         val summary: InventorySummary = InventorySummary(),

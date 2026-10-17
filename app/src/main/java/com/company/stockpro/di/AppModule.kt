@@ -34,9 +34,6 @@ object AppModule {
         database: StockProDatabase,
     ): InventorySyncManager? {
         return runCatching {
-            if (FirebaseApp.getApps(context).isEmpty()) {
-                FirebaseApp.initializeApp(context)
-            }
             InventorySyncManager(
                 database = database,
                 firestore = FirebaseFirestore.getInstance(),
@@ -112,9 +109,6 @@ object AppModule {
     fun provideFirebaseAuth(
         @ApplicationContext context: Context,
     ): FirebaseAuth {
-        if (FirebaseApp.getApps(context).isEmpty()) {
-            FirebaseApp.initializeApp(context)
-        }
         return FirebaseAuth.getInstance()
     }
 }

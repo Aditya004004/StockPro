@@ -33,6 +33,7 @@ class InventorySyncManager(
 
     private val isSyncing = MutableStateFlow(false)
     private val lastSyncedTime = AtomicLong(0L)
+    private val syncMutex = kotlinx.coroutines.sync.Mutex()
 
     /**
      * Combined reactive sync status stream (architecture.md §7.2).
@@ -61,6 +62,9 @@ class InventorySyncManager(
      * Pulls changed documents since the last cursor timestamp (architecture.md §7.1).
      */
     suspend fun pullDelta(orgId: String, plantId: String): Result<Int> {
+        if (!syncMutex.tryLock()) {
+            return Result.success(0)
+        }
         isSyncing.value = true
         return try {
             var totalCount = 0
@@ -120,10 +124,12 @@ class InventorySyncManager(
 
             Result.success(totalCount)
         } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
             Log.e(TAG, "Failed to pull delta sync: ${e.message}", e)
             Result.failure(e)
         } finally {
             isSyncing.value = false
+            syncMutex.unlock()
         }
     }
 
@@ -131,6 +137,9 @@ class InventorySyncManager(
      * Performs a full resync on first login, plant switch, or on demand (architecture.md §7.1).
      */
     suspend fun fullResync(orgId: String, plantId: String): Result<Int> {
+        if (!syncMutex.tryLock()) {
+            return Result.success(0)
+        }
         isSyncing.value = true
         return try {
             val querySnapshot = firestore
@@ -174,10 +183,12 @@ class InventorySyncManager(
             lastSyncedTime.set(System.currentTimeMillis())
             Result.success(entities.size)
         } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
             Log.e(TAG, "Full resync failed: ${e.message}", e)
             Result.failure(e)
         } finally {
             isSyncing.value = false
+            syncMutex.unlock()
         }
     }
 }
